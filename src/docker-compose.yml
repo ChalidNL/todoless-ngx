@@ -13,10 +13,26 @@ services:
       resources:
         limits:
           memory: 2048M
+    image: ghcr.io/chalidnl/todoless-ngx-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile
     hostname: todoless-ngx
+    labels:
+      casaos.app.name: Todoless-ngx
+      casaos.icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+      icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+    ports:
+      - target: 80
+        published: "3000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes: []
+    devices: []
+    cap_add: []
+    networks:
+      - todoless-ngx-net
+    privileged: false
 
   todoless-ngx-backend:
     cpu_shares: 90
@@ -30,6 +46,7 @@ services:
       resources:
         limits:
           memory: 2048M
+    image: ghcr.io/chalidnl/todoless-ngx-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
