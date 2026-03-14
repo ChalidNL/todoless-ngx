@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  todoless:
+    build: .
+    container_name: todoless-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      # Persistent storage for app data
+      - todoless_data:/app/data
+    restart: unless-stopped
+    networks:
+      - todoless_network
+    labels:
+      # CasaOS labels for better integration
+      - "casaos.name=Todoless"
+      - "casaos.icon=https://raw.githubusercontent.com/yourusername/todoless/main/public/icon.png"
+      - "casaos.description=Compact task management app with multi-user support"
+      - "casaos.category=Productivity"
+      - "casaos.port=3000"
+
+networks:
+  todoless_network:
+    driver: bridge
+
+volumes:
+  todoless_data:
+    driver: local

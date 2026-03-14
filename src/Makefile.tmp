@@ -1,0 +1,182 @@
+# Todoless Makefile
+# Quick commands for development and deployment
+
+.PHONY: help setup start stop restart logs status db backup restore clean migrate git-prepare
+
+# Default target
+help:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  📋 Todoless - Available Commands"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "  🚀 Quick Start:"
+	@echo "    make setup      - First time setup (creates .env, starts services)"
+	@echo "    make start      - Start all services"
+	@echo "    make stop       - Stop all services"
+	@echo ""
+	@echo "  🔧 Development:"
+	@echo "    make restart    - Restart all services"
+	@echo "    make logs       - Show logs (follow mode)"
+	@echo "    make status     - Show service status"
+	@echo "    make db         - Open database console"
+	@echo ""
+	@echo "  💾 Data Management:"
+	@echo "    make backup     - Create database backup"
+	@echo "    make restore    - Restore from backup (requires BACKUP_FILE=...)"
+	@echo "    make migrate    - Run database migrations"
+	@echo "    make import     - Import localStorage data (requires BACKUP_FILE=...)"
+	@echo ""
+	@echo "  📤 Git Operations:"
+	@echo "    make git-prepare - Prepare for git commit (check sensitive files)"
+	@echo "    make git-push    - Prepare and push to git"
+	@echo ""
+	@echo "  🧹 Maintenance:"
+	@echo "    make clean      - Remove containers (keeps data)"
+	@echo "    make reset      - ⚠️  Reset everything (deletes all data!)"
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# First time setup
+setup:
+	@echo "🚀 Running first-time setup..."
+	@chmod +x scripts/setup.sh
+	@./scripts/setup.sh
+
+# Start all services
+start:
+	@echo "🚀 Starting Todoless services..."
+	@docker-compose -f docker-compose.supabase.yml up -d
+	@echo ""
+	@echo "✅ Services started!"
+	@echo "   📱 App:    http://localhost:3000"
+	@echo "   🎨 Studio: http://localhost:3010"
+	@echo "   🔌 API:    http://localhost:8000"
+	@echo ""
+
+# Stop all services
+stop:
+	@echo "🛑 Stopping Todoless services..."
+	@docker-compose -f docker-compose.supabase.yml down
+	@echo "✅ Services stopped"
+
+# Restart all services
+restart:
+	@echo "🔄 Restarting Todoless services..."
+	@docker-compose -f docker-compose.supabase.yml restart
+	@echo "✅ Services restarted"
+
+# Show logs
+logs:
+	@docker-compose -f docker-compose.supabase.yml logs -f
+
+# Show service status
+status:
+	@echo "📊 Service Status:"
+	@docker-compose -f docker-compose.supabase.yml ps
+
+# Open database console
+db:
+	@echo "🗄️  Opening database console..."
+	@docker exec -it supabase-db psql -U postgres -d todoless
+
+# Create backup
+backup:
+	@echo "💾 Creating database backup..."
+	@mkdir -p backups
+	@docker exec supabase-db pg_dump -U postgres todoless | gzip > backups/todoless-$(shell date +%Y%m%d-%H%M%S).sql.gz
+	@echo "✅ Backup created in backups/"
+	@ls -lh backups/ | tail -1
+
+# Restore from backup
+restore:
+ifndef BACKUP_FILE
+	@echo "❌ Error: Please specify BACKUP_FILE"
+	@echo "   Usage: make restore BACKUP_FILE=backups/todoless-20260314.sql.gz"
+else
+	@echo "📥 Restoring from $(BACKUP_FILE)..."
+	@gunzip -c $(BACKUP_FILE) | docker exec -i supabase-db psql -U postgres todoless
+	@echo "✅ Restore completed"
+endif
+
+# Run migrations
+migrate:
+	@echo "📦 Running database migrations..."
+	@chmod +x scripts/migrate.sh
+	@./scripts/migrate.sh
+
+# Import localStorage data
+import:
+ifndef BACKUP_FILE
+	@echo "❌ Error: Please specify BACKUP_FILE"
+	@echo "   Usage: make import BACKUP_FILE=backup.json"
+else
+	@echo "📥 Importing data from $(BACKUP_FILE)..."
+	@node scripts/import-localstorage.js $(BACKUP_FILE)
+endif
+
+# Git preparation
+git-prepare:
+	@chmod +x scripts/git-prepare.sh
+	@./scripts/git-prepare.sh
+
+# Git push (prepare + push)
+git-push: git-prepare
+	@echo "🚀 Pushing to git..."
+	@git push
+
+# Clean containers (keep data)
+clean:
+	@echo "🧹 Cleaning up containers..."
+	@docker-compose -f docker-compose.supabase.yml down
+	@docker system prune -f
+	@echo "✅ Cleanup completed"
+
+# Reset everything (⚠️ deletes all data!)
+reset:
+	@echo "⚠️  WARNING: This will delete ALL data!"
+	@read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
+	@echo "🗑️  Resetting everything..."
+	@docker-compose -f docker-compose.supabase.yml down -v
+	@rm -rf .supabase
+	@echo "✅ Reset completed. Run 'make setup' to start fresh."
+
+# Development helpers
+dev:
+	@echo "💻 Starting development mode..."
+	@npm run dev
+
+build:
+	@echo "🏗️  Building frontend..."
+	@npm run build
+
+# Install dependencies
+install:
+	@echo "📦 Installing dependencies..."
+	@npm install
+
+# Health check
+health:
+	@echo "🏥 Checking service health..."
+	@curl -s http://localhost:8000/health || echo "❌ API not responding"
+	@curl -s http://localhost:3000 > /dev/null && echo "✅ Frontend is up" || echo "❌ Frontend not responding"
+	@docker exec supabase-db pg_isready -U postgres && echo "✅ Database is up" || echo "❌ Database not responding"
+
+# View stats
+stats:
+	@echo "📊 Database Statistics:"
+	@docker exec supabase-db psql -U postgres -d todoless -c "\
+		SELECT 'Tasks' as table, COUNT(*) as count FROM tasks UNION ALL \
+		SELECT 'Items', COUNT(*) FROM items UNION ALL \
+		SELECT 'Notes', COUNT(*) FROM notes UNION ALL \
+		SELECT 'Users', COUNT(*) FROM users UNION ALL \
+		SELECT 'Labels', COUNT(*) FROM labels UNION ALL \
+		SELECT 'Sprints', COUNT(*) FROM sprints;"
+
+# Tail logs
+tail:
+	@docker-compose -f docker-compose.supabase.yml logs --tail=100
+
+# Generate new JWT tokens
+jwt:
+	@echo "🔐 Generating new JWT tokens..."
+	@node scripts/generate-jwt.js $(shell openssl rand -base64 32)
