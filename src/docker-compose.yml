@@ -1,7 +1,7 @@
-version: '3.8'
+name: todoless
 
 services:
-  db:
+  todoless-db:
     image: postgres:15-alpine
     container_name: todoless-db
     restart: unless-stopped
@@ -10,29 +10,27 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: todoless123
     volumes:
-      - todoless_db:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - todoless-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - todoless
+      - todoless-net
 
-  auth:
+  todoless-auth:
     image: supabase/gotrue:v2.99.0
     container_name: todoless-auth
     restart: unless-stopped
     depends_on:
-      db:
+      todoless-db:
         condition: service_healthy
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://postgres:todoless123@db:5432/todoless
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:todoless123@todoless-db:5432/todoless
       GOTRUE_SITE_URL: http://localhost:3000
       GOTRUE_DISABLE_SIGNUP: false
       GOTRUE_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
@@ -41,38 +39,32 @@ services:
       GOTRUE_EXTERNAL_EMAIL_ENABLED: true
       GOTRUE_MAILER_AUTOCONFIRM: true
       GOTRUE_SMTP_ADMIN_EMAIL: admin@todoless.local
-    ports:
-      - "9999:9999"
     networks:
-      - todoless
+      - todoless-net
 
-  api:
+  todoless-api:
     image: postgrest/postgrest:v11.2.2
     container_name: todoless-api
     restart: unless-stopped
     depends_on:
-      db:
+      todoless-db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://postgres:todoless123@db:5432/todoless
+      PGRST_DB_URI: postgres://postgres:todoless123@todoless-db:5432/todoless
       PGRST_DB_SCHEMAS: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
       PGRST_DB_USE_LEGACY_GUCS: "false"
-    ports:
-      - "3001:3000"
     networks:
-      - todoless
+      - todoless-net
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile/main.tsx
-    container_name: todoless-app
+  todoless:
+    build: .
+    container_name: todoless
     restart: unless-stopped
     depends_on:
-      - auth
-      - api
+      - todoless-auth
+      - todoless-api
     environment:
       VITE_SUPABASE_URL: http://localhost:3001
       VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvZG9sZXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.dummykey
@@ -80,11 +72,37 @@ services:
       POSTGRES_PASSWORD: todoless123
     ports:
       - "3000:3000"
+    labels:
+      casaos.app.name: Todoless
+      casaos.icon: https://raw.githubusercontent.com/ChalidNL/todoless/main/public/icons/todoless-bw.svg
+      icon: https://github.com/ChalidNL/todoless/blob/main/public/icons/todoless-bw.png?raw=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000 || exit 1"]
+      timeout: 5s
+      interval: 30s
+      retries: 5
+      start_period: 60s
     networks:
-      - todoless
+      - todoless-net
 
 volumes:
-  todoless_db:
+  todoless-data:
 
 networks:
-  todoless:
+  todoless-net:
+    name: todoless_todoless-net
+    driver: bridge
+
+x-casaos:
+  author: ChalidNL
+  category: productivity
+  hostname: ""
+  icon: https://github.com/ChalidNL/todoless/blob/main/public/icons/todoless-bw.png?raw=true
+  index: /
+  is_uncontrolled: false
+  port_map: "3000"
+  scheme: http
+  store_app_id: todoless
+  title:
+    custom: Todoless
+    en_us: Todoless

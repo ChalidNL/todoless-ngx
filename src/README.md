@@ -1,48 +1,62 @@
 # Todoless
 
-Lightweight task management app.
+Lightweight self-hosted task management app with multi-user support.
 
 ## Quick Start
 
 ```bash
-# Clone
-git clone https://github.com/ChalidNL/Todolessngx
-cd Todolessngx
+# Clone the repository
+git clone <your-repo-url>
+cd todoless
 
-# Start
+# Start with Docker Compose
 docker-compose up -d
 ```
 
-Access: http://localhost:3000
+## Access
 
-**Login:**
-- Email: `admin@todoless.local`
-- Password: `admin123`
+- **Web Interface**: `http://localhost:3000`
+- **Default Login**:
+  - Email: `admin@todoless.local`
+  - Password: `admin123`
 
-## Commands
+## Features
 
-```bash
-# Start
-docker-compose up -d
+- Multi-user task management
+- Inbox, Tasks, Items, Notes, Calendar
+- Sprint tracking with card icons
+- Private labels per user
+- Auto-archive with configurable retention
+- Smart search with @user, #label, //date parsing
+- Self-hosted with Supabase backend
 
-# Stop
-docker-compose down
+## Architecture
 
-# Logs
-docker-compose logs -f
-
-# Backup database
-docker exec todoless-db pg_dump -U postgres todoless > backup.sql
-```
+- **Frontend**: React + Vite + Tailwind CSS
+- **Backend**: Supabase (GoTrue + PostgREST)
+- **Database**: PostgreSQL 15
+- **Deployment**: Docker Compose
 
 ## Ports
 
-- 3000 - App
-- 3001 - API
-- 5432 - Database
-- 9999 - Auth
+- `3000` - Web application
+- `5432` - PostgreSQL (internal)
+- `9999` - GoTrue Auth (internal)
+- `3001` - PostgREST API (internal)
 
-## Resources
+## Data Persistence
 
-- RAM: ~300MB
-- Services: 4
+All data is stored in Docker volume `todoless-data`.
+
+## Stopping
+
+```bash
+docker-compose down
+```
+
+## Reset
+
+```bash
+docker-compose down -v
+docker-compose up -d
+```
