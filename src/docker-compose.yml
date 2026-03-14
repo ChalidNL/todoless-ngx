@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     container_name: todoless-db
     restart: unless-stopped
     environment:
@@ -11,7 +13,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless123}
     volumes:
       - todoless_db:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:

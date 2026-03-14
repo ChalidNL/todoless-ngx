@@ -5,6 +5,11 @@ Lightweight task management app.
 ## Quick Start
 
 ```bash
+# Clone
+git clone https://github.com/ChalidNL/Todolessngx
+cd Todolessngx
+
+# Start
 docker-compose up -d
 ```
 
