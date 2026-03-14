@@ -1,84 +1,129 @@
 name: todoless-ngx
 
 services:
-  frontend:
+  todoless-ngx-frontend:
+    cpu_shares: 90
+    command: []
+    container_name: todoless-ngx-frontend
+    depends_on:
+      todoless-ngx-backend:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: todoless-ngx-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - todoless-net
+    hostname: todoless-ngx
     labels:
       casaos.app.name: Todoless-ngx
       casaos.icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
       icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+    ports:
+      - target: 80
+        published: "3000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes: []
+    devices: []
+    cap_add: []
+    networks:
+      - todoless-ngx-net
+    privileged: false
 
-  backend:
+  todoless-ngx-backend:
+    cpu_shares: 90
+    command: []
+    container_name: todoless-ngx-backend
+    depends_on:
+      todoless-ngx-db:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: todoless-ngx-backend
-    restart: unless-stopped
-    ports:
-      - "4000:4000"
     environment:
-      PORT: 4000
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: todoless
-      DB_USER: todoless
-      DB_PASSWORD: todoless_secure_password_change_me
-      JWT_SECRET: change-this-secret-key-in-production-use-at-least-32-random-characters
-      CORS_ORIGIN: "*"
-      COOKIE_SECURE: "false"
-    depends_on:
-      db:
-        condition: service_healthy
+      - PORT=4000
+      - DB_HOST=todoless-ngx-db
+      - DB_PORT=5432
+      - DB_NAME=todoless
+      - DB_USER=todoless
+      - DB_PASSWORD=todoless_secure_password_change_me
+      - JWT_SECRET=change-this-secret-key-in-production-use-at-least-32-random-characters
+      - CORS_ORIGIN=*
+      - COOKIE_SECURE=false
+    hostname: todoless-ngx-backend
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:4000/api/health || exit 1"]
-      interval: 30s
+      test:
+        - CMD-SHELL
+        - wget --spider -q http://localhost:4000/api/health || exit 1
       timeout: 5s
+      interval: 30s
       retries: 5
-      start_period: 60s
-    networks:
-      - todoless-net
+      start_period: 1m0s
     labels:
       icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
-
-  db:
-    image: postgres:16-alpine
-    container_name: todoless-ngx-db
+    ports:
+      - target: 4000
+        published: "4000"
+        protocol: tcp
     restart: unless-stopped
+    volumes: []
+    devices: []
+    cap_add: []
+    networks:
+      - todoless-ngx-net
+    privileged: false
+
+  todoless-ngx-db:
+    cpu_shares: 90
+    command: []
+    container_name: todoless-ngx-db
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
     environment:
-      POSTGRES_DB: todoless
-      POSTGRES_USER: todoless
-      POSTGRES_PASSWORD: todoless_secure_password_change_me
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - POSTGRES_DB=todoless
+      - POSTGRES_USER=todoless
+      - POSTGRES_PASSWORD=todoless_secure_password_change_me
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    hostname: todoless-ngx-db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U todoless -d todoless"]
-      interval: 10s
+      test:
+        - CMD-SHELL
+        - pg_isready -U todoless -d todoless
       timeout: 5s
+      interval: 10s
       retries: 5
       start_period: 30s
+    image: postgres:16-alpine
+    labels:
+      icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/todoless-ngx/db
+        target: /var/lib/postgresql/data
+      - type: bind
+        source: ./database/init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
+    devices: []
+    cap_add: []
     networks:
-      - todoless-net
-
-volumes:
-  db-data:
-    name: todoless-ngx-db-data
+      - todoless-ngx-net
+    privileged: false
 
 networks:
-  todoless-net:
-    name: todoless-ngx-net
+  todoless-ngx-net:
+    name: todoless-ngx_todoless-ngx-net
     driver: bridge
 
 x-casaos:
@@ -95,4 +140,4 @@ x-casaos:
     custom: Todoless-ngx
     en_us: Todoless-ngx
   description:
-    en_us: "Multi-user task management with PostgreSQL - Real-time sync, private labels, auto-archive"
+    en_us: Multi-user task management with PostgreSQL - Real-time sync, private labels, auto-archive
