@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Brain, Inbox, Calendar, Check, Eye, EyeOff, ShoppingCart, StickyNote, UserPlus, Sparkles } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/AppContext'; // Use localStorage version
 import { AppLogo } from './shared/AppLogo';
 
 interface OnboardingProps {
@@ -91,6 +91,7 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       return;
     }
 
+    // Create admin user in localStorage
     const newUser = {
       id: Math.random().toString(36).substring(2, 11),
       email,
@@ -98,11 +99,17 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       role: 'admin' as const,
     };
 
+    console.log('🔐 Creating first admin user:', newUser.email);
+
     addUser(newUser);
     updateAppSettings({ 
       currentUserId: newUser.id,
-      onboardingCompleted: true 
+      hasCompletedOnboarding: true 
     });
+
+    console.log('✅ Admin user created successfully');
+
+    // Complete onboarding
     onComplete();
   };
 

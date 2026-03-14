@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/api-client';
+import { api } from '../lib/pocketbase-client'; // Changed from api-client to pocketbase-client
+import { pb } from '../lib/pocketbase'; // Added PocketBase instance for auth state
 
 interface User {
   id: string;
@@ -32,21 +33,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in via PocketBase authStore
     const checkAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
+      if (pb.authStore.isValid && pb.authStore.record) {
         try {
-          const data = await api.getCurrentUser();
-          setUser(data.user);
+          // Refresh auth state from PocketBase
+          await pb.collection('users').authRefresh();
+          const record = pb.authStore.record;
+          setUser({
+            id: record.id,
+            email: record.email,
+            name: record.name,
+            role: record.role,
+            avatar_url: record.avatar,
+          });
         } catch (error) {
-          localStorage.removeItem('auth_token');
+          // Token expired or invalid
+          pb.authStore.clear();
         }
       }
       setLoading(false);
     };
 
     checkAuth();
+
+    // Listen to auth store changes
+    const unsubscribe = pb.authStore.onChange((token, record) => {
+      if (record) {
+        setUser({
+          id: record.id,
+          email: record.email,
+          name: record.name,
+          role: record.role,
+          avatar_url: record.avatar,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

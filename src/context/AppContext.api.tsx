@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Item, Task, Note, Label, Shop, CalendarEvent, Filter, FilterView, AppSettings, ProgressStats, Sprint, User, InviteCode } from '../types';
 import { getISOWeek } from '../utils/dateUtils';
-import { api } from '../lib/api-client';
+import { api } from '../lib/pocketbase-client'; // Changed from api-client to pocketbase-client
+import { pb } from '../lib/pocketbase'; // Added for real-time subscriptions
 
 // Context for managing app state with REST API
 interface AppContextType {
@@ -122,9 +123,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Load initial data
   const loadData = async () => {
+    // Skip loading if not authenticated
+    if (!pb.authStore.isValid) {
+      console.log('⏭️ Skipping data load (not authenticated)');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
+
+      console.log('📥 Loading data from PocketBase...');
 
       const [
         tasksData,
@@ -161,8 +171,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUsers(usersData);
       setInviteCodes(invitesData);
 
+      console.log('✅ Data loaded successfully');
+
     } catch (err: any) {
-      console.error('Error loading data:', err);
+      console.error('❌ Error loading data:', err);
       setError(err.message || 'Failed to load data');
     } finally {
       setIsLoading(false);
@@ -173,75 +185,81 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     loadData();
   }, []);
 
-  // Setup WebSocket for real-time updates
+  // Reload data when authentication state changes
   useEffect(() => {
-    // If VITE_API_URL is empty, use same host (nginx proxy at /ws)
-    // Otherwise convert http to ws for WebSocket connection
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    let wsUrl: string;
-    
-    if (!apiUrl) {
-      // Same host via nginx proxy
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.host}/ws`;
+    if (pb.authStore.isValid) {
+      console.log('🔐 User authenticated, loading data...');
+      loadData();
     } else {
-      // Development or custom backend
-      wsUrl = apiUrl.replace('http', 'ws');
+      console.log('🔓 User not authenticated, clearing data...');
+      // Clear all data when logged out
+      setTasks([]);
+      setItems([]);
+      setNotes([]);
+      setLabels([]);
+      setShops([]);
+      setSprints([]);
+      setCalendarEvents([]);
+      setUsers([]);
+      setInviteCodes([]);
+    }
+  }, [pb.authStore.isValid]);
+
+  // Setup PocketBase real-time subscriptions
+  useEffect(() => {
+    if (!pb.authStore.isValid) {
+      console.log('⏭️ Skipping realtime subscriptions (not authenticated)');
+      return;
     }
 
-    const ws = new WebSocket(wsUrl);
+    console.log('🔄 Setting up PocketBase realtime subscriptions');
 
-    ws.onopen = () => {
-      console.log('✅ WebSocket connected');
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data);
-        if (update.type === 'data_change') {
-          console.log('🔄 Real-time update:', update.table, update.action);
-          // Refresh specific data type
-          switch (update.table) {
-            case 'tasks':
-              api.getTasks().then(setTasks);
-              break;
-            case 'items':
-              api.getItems().then(setItems);
-              break;
-            case 'notes':
-              api.getNotes().then(setNotes);
-              break;
-            case 'labels':
-              api.getLabels().then(setLabels);
-              break;
-            case 'shops':
-              api.getShops().then(setShops);
-              break;
-            case 'sprints':
-              api.getSprints().then(setSprints);
-              break;
-            case 'calendar_events':
-              api.getCalendarEvents().then(setCalendarEvents);
-              break;
-          }
-        }
-      } catch (err) {
-        console.error('WebSocket message error:', err);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-    };
-
-    ws.onclose = () => {
-      console.log('❌ WebSocket disconnected');
-    };
+    // Subscribe to each collection for real-time updates
+    const subscriptions = [
+      pb.collection('tasks').subscribe('*', (e) => {
+        console.log('📋 Tasks update:', e.action);
+        api.getTasks().then(setTasks);
+      }),
+      pb.collection('items').subscribe('*', (e) => {
+        console.log('🛒 Items update:', e.action);
+        api.getItems().then(setItems);
+      }),
+      pb.collection('notes').subscribe('*', (e) => {
+        console.log('📝 Notes update:', e.action);
+        api.getNotes().then(setNotes);
+      }),
+      pb.collection('labels').subscribe('*', (e) => {
+        console.log('🏷️ Labels update:', e.action);
+        api.getLabels().then(setLabels);
+      }),
+      pb.collection('shops').subscribe('*', (e) => {
+        console.log('🏪 Shops update:', e.action);
+        api.getShops().then(setShops);
+      }),
+      pb.collection('sprints').subscribe('*', (e) => {
+        console.log('🏃 Sprints update:', e.action);
+        api.getSprints().then(setSprints);
+      }),
+      pb.collection('calendar_events').subscribe('*', (e) => {
+        console.log('📅 Calendar update:', e.action);
+        api.getCalendarEvents().then(setCalendarEvents);
+      }),
+    ];
 
     return () => {
-      ws.close();
+      // Unsubscribe from all collections on cleanup
+      console.log('🔕 Unsubscribing from realtime updates');
+      Promise.all([
+        pb.collection('tasks').unsubscribe(),
+        pb.collection('items').unsubscribe(),
+        pb.collection('notes').unsubscribe(),
+        pb.collection('labels').unsubscribe(),
+        pb.collection('shops').unsubscribe(),
+        pb.collection('sprints').unsubscribe(),
+        pb.collection('calendar_events').unsubscribe(),
+      ]);
     };
-  }, []);
+  }, [pb.authStore.isValid]);
 
   // Save client-only data to localStorage
   useEffect(() => {

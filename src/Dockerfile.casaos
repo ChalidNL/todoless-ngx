@@ -1,0 +1,55 @@
+# ========================================
+# To Do Less - Frontend for CasaOS
+# Builds React app with PocketBase proxy
+# ========================================
+
+# ----------------------------------------
+# Stage 1: Build React/Vite Application
+# ----------------------------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build with PocketBase URL pointing to nginx proxy path
+# Browser will access PocketBase at /pb/* which nginx proxies to pocketbase:8090
+ENV VITE_POCKETBASE_URL=/pb
+RUN npm run build
+
+# ----------------------------------------
+# Stage 2: Serve with Nginx
+# ----------------------------------------
+FROM nginx:1.27-alpine
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy CasaOS nginx configuration with PocketBase proxy
+COPY nginx-casaos.conf /etc/nginx/conf.d/default.conf
+
+# Copy built React app from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Create nginx cache directory
+RUN mkdir -p /var/cache/nginx/client_temp
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Start nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
