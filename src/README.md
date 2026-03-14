@@ -32,7 +32,7 @@ docker-compose ps
 ### Access the Application
 
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:4000/api/health
+- **Backend API**: http://localhost:4001/api/health
 
 Done! 🎉
 
@@ -80,7 +80,7 @@ environment:
 **Ports**
 
 - Frontend: `3000:80` (change left number)
-- Backend: `4000:4000` (change left number)
+- Backend: `4001:4000` (change left number)
 
 Example: `8080:80` makes frontend available on port 8080
 
@@ -144,7 +144,7 @@ docker-compose up -d --build
 
 **Check backend health**
 ```bash
-curl http://localhost:4000/api/health
+curl http://localhost:4001/api/health
 ```
 
 ## 🏗️ Architecture
