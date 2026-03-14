@@ -1,207 +1,71 @@
-# ========================================
-# Todoless-ngx - CasaOS Compatible
-# Multi-User Task Management System
-# ========================================
-# 
-# Usage:
-#   1. Copy .env.example to .env and update values
-#   2. Run: docker-compose up -d
-#   3. Access: http://localhost (or your server IP)
-#   4. Generate invite: docker-compose exec backend node -e "console.log(Math.random().toString().slice(2,8))"
-# 
-# ========================================
-
 version: "3.8"
 
 services:
-  # ----------------------------------------
-  # PostgreSQL Database
-  # ----------------------------------------
   db:
     image: postgres:16-alpine
-    container_name: todoless-ngx-db
+    container_name: todoless-db
     restart: unless-stopped
-    
-    # Internal network only - never expose to host
     networks:
-      - todoless-network
-    
+      - todoless
     environment:
       POSTGRES_DB: ${DB_NAME:-todoless}
       POSTGRES_USER: ${DB_USER:-todoless}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password must be set in .env}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-      # Connection pooling settings
-      POSTGRES_MAX_CONNECTIONS: 100
-    
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required in .env}
     volumes:
-      # Named volume for persistent data
-      - todoless-db-data:/var/lib/postgresql/data
-      # Initialization scripts
-      - ./database:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    
-    # Health check for database readiness
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-todoless} -d ${DB_NAME:-todoless}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-todoless}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    
-    # Security: Run as non-root
-    user: postgres
-    
-    # Resource limits (adjust based on your server)
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
 
-  # ----------------------------------------
-  # Backend API Server
-  # ----------------------------------------
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: todoless-ngx-backend:latest
-    container_name: todoless-ngx-backend
+    image: todoless-backend
+    container_name: todoless-backend
     restart: unless-stopped
-    
-    # Internal network only - frontend proxies to this
     networks:
-      - todoless-network
-    
-    # Wait for database to be healthy
+      - todoless
     depends_on:
       db:
         condition: service_healthy
-    
     environment:
-      # Node environment
       NODE_ENV: production
       PORT: 4000
-      
-      # Database connection
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-todoless}
       DB_USER: ${DB_USER:-todoless}
-      DB_PASSWORD: ${DB_PASSWORD:?Database password must be set in .env}
-      
-      # JWT secret for authentication
-      JWT_SECRET: ${JWT_SECRET:?JWT secret must be set in .env}
-      
-      # CORS origin (set to your domain in production)
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT secret required in .env}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      
-      # WebSocket settings
-      WS_ENABLED: "true"
-      WS_HEARTBEAT_INTERVAL: 30000
-      
-      # Session settings
-      SESSION_TIMEOUT: 86400000
-      
-      # Rate limiting
-      RATE_LIMIT_WINDOW: 900000
-      RATE_LIMIT_MAX: 100
-    
-    # Health check
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 60s
-    
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
 
-  # ----------------------------------------
-  # Frontend (Nginx + React)
-  # ----------------------------------------
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    image: todoless-ngx-frontend:latest
-    container_name: todoless-ngx-frontend
+    image: todoless-frontend
+    container_name: todoless-frontend
     restart: unless-stopped
-    
-    # Expose to host network for CasaOS routing
     ports:
       - "${FRONTEND_PORT:-80}:80"
-    
     networks:
-      - todoless-network
-    
-    # Wait for backend to be healthy
+      - todoless
     depends_on:
       backend:
         condition: service_healthy
-    
-    # CasaOS UI metadata
-    labels:
-      # CasaOS display information
-      casaos.name: "To Do Less"
-      casaos.icon: "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/tasks.png"
-      casaos.description: "Self-hosted multi-user task management system with real-time sync"
-      casaos.category: "Productivity"
-      casaos.port.map: "${FRONTEND_PORT:-80}:80"
-      casaos.main: "frontend"
-      
-      # Additional metadata
-      org.opencontainers.image.title: "Todoless-ngx"
-      org.opencontainers.image.description: "Multi-user task management with PostgreSQL backend"
-      org.opencontainers.image.vendor: "Todoless-ngx"
-      org.opencontainers.image.version: "2.0.0"
-      
-      # Traefik labels (if using reverse proxy)
-      traefik.enable: "true"
-      traefik.http.routers.todoless.rule: "Host(`${DOMAIN:-todoless.local}`)"
-      traefik.http.services.todoless.loadbalancer.server.port: "80"
-    
-    # Health check
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 128M
 
-# ----------------------------------------
-# Named Volumes
-# ----------------------------------------
 volumes:
-  # PostgreSQL data persistence
-  todoless-db-data:
-    driver: local
-    name: todoless-ngx-db-data
+  db-data:
 
-# ----------------------------------------
-# Networks
-# ----------------------------------------
 networks:
-  # Internal bridge network for service communication
-  todoless-network:
+  todoless:
     driver: bridge
-    name: todoless-ngx-network
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16

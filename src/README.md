@@ -1,6 +1,23 @@
 # Todoless-ngx
 
-Multi-user task management with PostgreSQL, real-time sync, and **CasaOS-ready** Docker deployment.
+Multi-user task management with PostgreSQL, real-time sync, and Docker deployment.
+
+---
+
+## ⚡ PLAIN DOCKER COMPOSE (RECOMMENDED!)
+
+✅ **Clean 70-line docker-compose.yml**  
+✅ **No CasaOS labels or complexity**  
+✅ **Just works!**
+
+```bash
+./start.sh  # Start everything
+./stop.sh   # Stop
+./logs.sh   # View logs
+```
+
+👉 **[READ: README-PLAIN.md](./README-PLAIN.md)** - Complete plain guide  
+👉 **[READ: ✅-PLAIN-DOCKER-COMPOSE-READY.md](./✅-PLAIN-DOCKER-COMPOSE-READY.md)** - What changed
 
 ---
 
@@ -92,7 +109,6 @@ npm run dev
 - ✅ Calendar integration
 - ✅ PostgreSQL database
 - ✅ Docker deployment
-- ✅ CasaOS ready
 
 ## 🔧 Troubleshooting
 
