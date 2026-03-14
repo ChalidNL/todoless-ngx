@@ -1,58 +1,6 @@
 name: todoless-ngx
 
 services:
-  todoless-ngx-db:
-    image: postgres:16-alpine
-    container_name: todoless-ngx-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-todoless}
-      POSTGRES_USER: ${POSTGRES_USER:-todoless}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - todoless-ngx-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-todoless} -d ${POSTGRES_DB:-todoless}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - todoless-ngx-net
-
-  todoless-ngx-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: todoless-ngx-backend
-    restart: unless-stopped
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
-    environment:
-      - PORT=4000
-      - DB_HOST=todoless-ngx-db
-      - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB:-todoless}
-      - DB_USER=${POSTGRES_USER:-todoless}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-todoless}
-      - JWT_SECRET=${JWT_SECRET:-change-this-secret-key-in-production}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - COOKIE_SECURE=${COOKIE_SECURE:-false}
-    depends_on:
-      todoless-ngx-db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:4000/api/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    networks:
-      - todoless-ngx-net
-    labels:
-      icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
-
   todoless-ngx-frontend:
     build:
       context: .
@@ -70,6 +18,59 @@ services:
       casaos.app.name: Todoless-ngx
       casaos.icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
       icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+
+  todoless-ngx-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todoless-ngx-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: todoless-ngx-db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-todoless}
+      DB_USER: ${POSTGRES_USER:-todoless}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-todoless_secure_password_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production-use-at-least-32-random-characters}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      todoless-ngx-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - todoless-ngx-net
+    labels:
+      icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/public/icon.png
+
+  todoless-ngx-db:
+    image: postgres:16-alpine
+    container_name: todoless-ngx-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-todoless}
+      POSTGRES_USER: ${POSTGRES_USER:-todoless}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless_secure_password_change_me}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - todoless-ngx-db-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-todoless} -d ${POSTGRES_DB:-todoless}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - todoless-ngx-net
 
 volumes:
   todoless-ngx-db-data:

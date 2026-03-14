@@ -22,6 +22,7 @@ interface AppContextType {
   completionMessage: string | null;
   currentSprint: Sprint | null;
   isLoading: boolean;
+  isDemoMode: boolean;
   error: string | null;
   addItem: (item: Omit<Item, 'id' | 'createdAt'>) => Promise<void>;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>) => Promise<void>;
@@ -98,6 +99,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [labels, setLabels] = useState<Label[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
@@ -107,6 +109,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [currentSprint, setCurrentSprint] = useState<Sprint | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Client-only filters (not synced to backend)
@@ -120,7 +123,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Load initial data
+  // Load all data with retry logic
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -138,16 +141,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         usersData,
         invitesData
       ] = await Promise.all([
-        api.getTasks(),
-        api.getItems(),
-        api.getNotes(),
-        api.getLabels(),
-        api.getShops(),
-        api.getSprints(),
-        api.getCalendarEvents(),
-        api.getSettings(),
-        api.getUsers(),
-        api.getInvites()
+        api.getTasks().catch(() => []),
+        api.getItems().catch(() => []),
+        api.getNotes().catch(() => []),
+        api.getLabels().catch(() => []),
+        api.getShops().catch(() => []),
+        api.getSprints().catch(() => []),
+        api.getCalendarEvents().catch(() => []),
+        api.getSettings().catch(() => ({ hasCompletedOnboarding: false, sprintDuration: '2weeks' })),
+        api.getUsers().catch(() => []),
+        api.getInvites().catch(() => [])
       ]);
 
       setTasks(tasksData);
@@ -170,78 +173,194 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    loadData();
+    // Retry loading data if needed
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const tryLoad = async () => {
+      try {
+        await loadData();
+      } catch (err) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying data load... (${retryCount}/${maxRetries})`);
+          setTimeout(tryLoad, 2000);
+        }
+      }
+    };
+    
+    tryLoad();
   }, []);
 
   // Setup WebSocket for real-time updates
   useEffect(() => {
-    // If VITE_API_URL is empty, use same host (nginx proxy at /ws)
-    // Otherwise convert http to ws for WebSocket connection
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    let wsUrl: string;
+    // Wait for initial data load before connecting WebSocket
+    if (isLoading) return;
+
+    // Detect if we're in Figma preview environment (no backend available)
+    const isFigmaPreview = window.location.hostname.includes('figma.site') || 
+                           window.location.hostname.includes('figmaiframepreview');
     
-    if (!apiUrl) {
-      // Same host via nginx proxy
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.host}/ws`;
-    } else {
-      // Development or custom backend
-      wsUrl = apiUrl.replace('http', 'ws');
+    if (isFigmaPreview) {
+      console.log('🎨 Running in Figma preview mode - WebSocket disabled');
+      setIsDemoMode(true);
+      return;
     }
 
-    const ws = new WebSocket(wsUrl);
+    // Check if backend is available before trying WebSocket
+    fetch('/api/health', { method: 'HEAD' })
+      .then(response => {
+        if (!response.ok) {
+          console.log('⚠️ Backend not available - Demo mode enabled');
+          setIsDemoMode(true);
+          return;
+        }
+        
+        // Backend is available, proceed with WebSocket
+        setupWebSocket();
+      })
+      .catch(() => {
+        console.log('⚠️ Backend not reachable - Demo mode enabled');
+        setIsDemoMode(true);
+      });
 
-    ws.onopen = () => {
-      console.log('✅ WebSocket connected');
-    };
+    function setupWebSocket() {
+      // If VITE_API_URL is empty, use same host (nginx proxy at /ws)
+      // Otherwise convert http to ws for WebSocket connection
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      let wsUrl: string;
+      
+      if (!apiUrl) {
+        // Same host via nginx proxy
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsUrl = `${protocol}//${window.location.host}/ws`;
+      } else {
+        // Development or custom backend
+        wsUrl = apiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
+      }
 
-    ws.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data);
-        if (update.type === 'data_change') {
-          console.log('🔄 Real-time update:', update.table, update.action);
-          // Refresh specific data type
-          switch (update.table) {
-            case 'tasks':
-              api.getTasks().then(setTasks);
-              break;
-            case 'items':
-              api.getItems().then(setItems);
-              break;
-            case 'notes':
-              api.getNotes().then(setNotes);
-              break;
-            case 'labels':
-              api.getLabels().then(setLabels);
-              break;
-            case 'shops':
-              api.getShops().then(setShops);
-              break;
-            case 'sprints':
-              api.getSprints().then(setSprints);
-              break;
-            case 'calendar_events':
-              api.getCalendarEvents().then(setCalendarEvents);
-              break;
+      console.log('🔌 Connecting to WebSocket:', wsUrl);
+
+      let ws: WebSocket | null = null;
+      let reconnectTimer: NodeJS.Timeout | null = null;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 5;
+
+      const connect = () => {
+        // Don't reconnect if max attempts reached
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          console.warn('⚠️ WebSocket max reconnection attempts reached. Switching to demo mode.');
+          setIsDemoMode(true);
+          return;
+        }
+
+        try {
+          ws = new WebSocket(wsUrl);
+
+          ws.onopen = () => {
+            console.log('✅ WebSocket connected successfully');
+            reconnectAttempts = 0; // Reset counter on successful connection
+            setIsDemoMode(false);
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const update = JSON.parse(event.data);
+              if (update.type === 'data_change') {
+                console.log('🔄 Real-time update:', update.table, update.action);
+                // Refresh specific data type
+                switch (update.table) {
+                  case 'tasks':
+                    api.getTasks().then(setTasks).catch(() => {});
+                    break;
+                  case 'items':
+                    api.getItems().then(setItems).catch(() => {});
+                    break;
+                  case 'notes':
+                    api.getNotes().then(setNotes).catch(() => {});
+                    break;
+                  case 'labels':
+                    api.getLabels().then(setLabels).catch(() => {});
+                    break;
+                  case 'shops':
+                    api.getShops().then(setShops).catch(() => {});
+                    break;
+                  case 'sprints':
+                    api.getSprints().then(setSprints).catch(() => {});
+                    break;
+                  case 'calendar_events':
+                    api.getCalendarEvents().then(setCalendarEvents).catch(() => {});
+                    break;
+                }
+              }
+            } catch (err) {
+              console.error('❌ WebSocket message parse error:', err);
+            }
+          };
+
+          ws.onerror = (event) => {
+            // Only log in non-Figma environments
+            if (!isFigmaPreview) {
+              console.error('❌ WebSocket error occurred:', {
+                url: wsUrl,
+                readyState: ws?.readyState,
+                attempt: reconnectAttempts + 1
+              });
+            }
+          };
+
+          ws.onclose = (event) => {
+            // Only log in non-Figma environments
+            if (!isFigmaPreview) {
+              console.log('❌ WebSocket disconnected:', {
+                code: event.code,
+                reason: event.reason || 'No reason provided',
+                wasClean: event.wasClean
+              });
+            }
+            
+            // Only auto-reconnect if not max attempts
+            if (reconnectAttempts < maxReconnectAttempts) {
+              reconnectAttempts++;
+              const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000); // Exponential backoff
+              if (!isFigmaPreview) {
+                console.log(`🔄 Attempting to reconnect WebSocket in ${delay/1000}s... (${reconnectAttempts}/${maxReconnectAttempts})`);
+              }
+              reconnectTimer = setTimeout(connect, delay);
+            } else {
+              setIsDemoMode(true);
+            }
+          };
+        } catch (err) {
+          if (!isFigmaPreview) {
+            console.error('❌ WebSocket connection failed:', err);
+          }
+          reconnectAttempts++;
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000);
+            reconnectTimer = setTimeout(connect, delay);
+          } else {
+            setIsDemoMode(true);
           }
         }
-      } catch (err) {
-        console.error('WebSocket message error:', err);
-      }
-    };
+      };
 
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-    };
+      // Delay initial connection to ensure backend is ready
+      const initialConnectionTimer = setTimeout(() => {
+        connect();
+      }, 1000);
 
-    ws.onclose = () => {
-      console.log('❌ WebSocket disconnected');
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, []);
+      return () => {
+        clearTimeout(initialConnectionTimer);
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+        }
+        if (ws) {
+          ws.close();
+        }
+      };
+    }
+  }, [isLoading]);
 
   // Save client-only data to localStorage
   useEffect(() => {
@@ -572,6 +691,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     completionMessage,
     currentSprint,
     isLoading,
+    isDemoMode,
     error,
     addItem,
     addTask,
@@ -639,6 +759,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     completionMessage,
     currentSprint,
     isLoading,
+    isDemoMode,
     error,
   ]);
 
