@@ -10,7 +10,8 @@ const router = express.Router();
 router.post('/register', [
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
-  body('name').notEmpty()
+  body('name').notEmpty(),
+  body('inviteCode').notEmpty()
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -26,57 +27,40 @@ router.post('/register', [
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Check if this is the first user (onboarding)
-    const userCount = await query('SELECT COUNT(*) as count FROM users');
-    const isFirstUser = parseInt(userCount.rows[0].count) === 0;
+    // Validate invite code
+    const invite = await query(`
+      SELECT * FROM invite_codes 
+      WHERE code = $1 AND used_by IS NULL 
+      AND (expires_at IS NULL OR expires_at > NOW())
+    `, [inviteCode]);
 
-    // If not first user, validate invite code
-    if (!isFirstUser) {
-      if (!inviteCode) {
-        return res.status(400).json({ error: 'Invite code required' });
-      }
+    if (invite.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired invite code' });
+    }
 
-      const invite = await query(`
-        SELECT * FROM invite_codes 
-        WHERE code = $1 AND used_by IS NULL 
-        AND (expires_at IS NULL OR expires_at > NOW())
-      `, [inviteCode]);
-
-      if (invite.rows.length === 0) {
-        return res.status(400).json({ error: 'Invalid or expired invite code' });
-      }
-
-      const inviteData = invite.rows[0];
-      if (inviteData.max_uses && inviteData.current_uses >= inviteData.max_uses) {
-        return res.status(400).json({ error: 'Invite code has reached maximum uses' });
-      }
+    const inviteData = invite.rows[0];
+    if (inviteData.max_uses && inviteData.current_uses >= inviteData.max_uses) {
+      return res.status(400).json({ error: 'Invite code has reached maximum uses' });
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user - first user is admin
-    const userRole = isFirstUser ? 'admin' : 'user';
+    // Create user
     const userResult = await query(`
       INSERT INTO users (email, name, password_hash, role)
-      VALUES ($1, $2, $3, $4)
+      VALUES ($1, $2, $3, 'user')
       RETURNING id, email, name, role
-    `, [email, name, passwordHash, userRole]);
+    `, [email, name, passwordHash]);
 
     const user = userResult.rows[0];
 
-    // Update invite code if not first user
-    if (!isFirstUser && inviteCode) {
-      const inviteData = (await query(`
-        SELECT id FROM invite_codes WHERE code = $1
-      `, [inviteCode])).rows[0];
-      
-      await query(`
-        UPDATE invite_codes 
-        SET used_by = $1, used_at = NOW(), current_uses = current_uses + 1
-        WHERE id = $2
-      `, [user.id, inviteData.id]);
-    }
+    // Update invite code
+    await query(`
+      UPDATE invite_codes 
+      SET used_by = $1, used_at = NOW(), current_uses = current_uses + 1
+      WHERE id = $2
+    `, [user.id, inviteData.id]);
 
     // Create default settings
     await query('INSERT INTO app_settings (user_id) VALUES ($1)', [user.id]);
@@ -90,7 +74,7 @@ router.post('/register', [
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.json({ user, token, isFirstUser });
+    res.json({ user, token });
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ error: 'Registration failed' });

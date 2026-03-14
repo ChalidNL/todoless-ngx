@@ -1,159 +1,146 @@
 # Todoless-ngx
 
-Multi-user task management app with PostgreSQL backend, real-time sync, private labels, and auto-archive functionality.
+Multi-user task management with PostgreSQL, real-time sync, and **CasaOS-ready** Docker deployment.
 
-## ✨ Features
+---
 
-- 🔐 Multi-user support with invite-only registration
-- 🏷️ Private labels - make labels visible only to specific users
-- 📦 Auto-archive system with configurable retention (30/60/90 days or unlimited)
-- 🔄 Real-time sync via WebSocket for all connected users
-- 📊 Compact task management - Inbox, Tasks, Items, Notes, Calendar
-- 🏃 Sprint tracking integrated via individual card icons
-- 🌍 Multi-language support (EN, FR, NL, DE)
-- 🔍 Smart search/input with @user, #label, //date parsing
+## 🚨 HAVING ERRORS? **FIX NOW!**
 
-## 🚀 Quick Start
+### Seeing these errors?
+```
+❌ WebSocket error: { "isTrusted": true }
+❌ Error loading data: SyntaxError: Unexpected token '<', "<!DOCTYPE "...
+```
 
-### Deploy with Docker Compose
+### ⚡ **ONE-LINE FIX:**
 
 ```bash
-# Clone the repository
-git clone https://github.com/ChalidNL/todoless-ngx.git
-cd todoless-ngx
+chmod +x RUN-THIS-NOW.sh && ./RUN-THIS-NOW.sh
+```
 
-# Start all containers
-docker-compose up -d --build
+**Wait 60 seconds → Open http://localhost/ → DONE!** 🎉
 
-# Check if everything is running
+**Full fix guide:** [❌-ERRORS-FIX-THIS.md](./❌-ERRORS-FIX-THIS.md)
+
+---
+
+## 🚀 Quick Start (No Errors)
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+Choose option 1 (Docker Compose), wait 30 seconds, then open http://localhost:3000
+
+## 📖 Documentation
+
+- **[START.md](./START.md)** - 👈 **Start here!** Complete getting started guide
+- **[QUICK-FIX.md](./QUICK-FIX.md)** - Quick error fixes
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Full deployment guide
+- **[SCRIPTS.md](./SCRIPTS.md)** - Script usage
+- **[ERRORS-FIXED.md](./ERRORS-FIXED.md)** - Technical fixes
+
+## 🛠️ Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `setup.sh` | Automatic setup (recommended) |
+| `fix-errors.sh` | Fix common errors |
+| `diagnose.sh` | Identify problems |
+| `start.sh` | Start production |
+| `dev.sh` | Start development |
+| `health-check.sh` | Check system health |
+| `generate-invite.sh` | Create invite codes |
+
+## 🐳 Docker Compose
+
+```bash
+# Start
+docker-compose up -d
+
+# Stop
+docker-compose down
+
+# Logs
+docker-compose logs -f
+
+# Health
 docker-compose ps
 ```
 
-### Access the Application
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:4001/api/health
-
-Done! 🎉
-
-## 🔐 First Time Setup
-
-1. Open http://localhost:3000
-2. You'll need an invite code to register
-3. Generate an invite code:
+## 💻 Development
 
 ```bash
-# Enter the backend container
-docker exec -it todoless-ngx-backend sh
+# Start database
+./dev.sh
 
-# Generate an invite code
-node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
+# Terminal 1: Backend
+cd backend && npm run dev
+
+# Terminal 2: Frontend
+npm run dev
 ```
 
-4. Insert it manually into the database:
+## ✨ Features
 
-```bash
-# Enter the database container
-docker exec -it todoless-ngx-db psql -U todoless -d todoless
-
-# Insert invite code (replace YOUR_CODE_HERE)
-INSERT INTO invites (code, created_by) VALUES ('YOUR_CODE_HERE', NULL);
-
-# Exit
-\q
-```
-
-5. Use the invite code to register your first user
-
-## ⚙️ Configuration
-
-**Default settings** - change these in production!
-
-Edit `docker-compose.yml` before deploying:
-
-```yaml
-environment:
-  DB_PASSWORD: todoless_secure_password_change_me  # ⚠️ CHANGE THIS!
-  JWT_SECRET: change-this-secret-key-in-production-use-at-least-32-random-characters  # ⚠️ CHANGE THIS!
-```
-
-**Ports**
-
-- Frontend: `3000:80` (change left number)
-- Backend: `4001:4000` (change left number)
-
-Example: `8080:80` makes frontend available on port 8080
-
-## 🏷️ CasaOS / Portainer Deployment
-
-1. Import `docker-compose.yml`
-2. Change `DB_PASSWORD` and `JWT_SECRET` in environment variables
-3. Deploy the stack
-4. Access at `http://your-server:3000`
-
-CasaOS metadata is included for one-click deployment.
-
-## 🎯 Management Commands
-
-```bash
-# View logs
-docker-compose logs -f
-
-# Stop all containers
-docker-compose down
-
-# Stop and remove all data
-docker-compose down -v
-
-# Restart all containers
-docker-compose restart
-
-# Update to latest version
-git pull
-docker-compose up -d --build
-```
-
-## 🗄️ Database Backup
-
-```bash
-# Backup
-docker exec todoless-ngx-db pg_dump -U todoless -d todoless > backup.sql
-
-# Restore
-cat backup.sql | docker exec -i todoless-ngx-db psql -U todoless -d todoless
-```
+- ✅ Multi-user with invite-only registration
+- ✅ Real-time sync via WebSocket
+- ✅ Private labels
+- ✅ Auto-archive completed tasks
+- ✅ Sprint management
+- ✅ Calendar integration
+- ✅ PostgreSQL database
+- ✅ Docker deployment
+- ✅ CasaOS ready
 
 ## 🔧 Troubleshooting
 
-**Backend won't start?**
 ```bash
-docker-compose logs backend
+# Identify problem
+./diagnose.sh
+
+# Check health
+./health-check.sh
+
+# View logs
+docker-compose logs -f
 ```
 
-**Database connection issues?**
-```bash
-# Check if database is ready
-docker exec todoless-ngx-db pg_isready -U todoless
+## 📦 Architecture
+
+```
+Browser → Nginx (Frontend) → Node.js (Backend) → PostgreSQL
+          ├─ /api → REST API
+          └─ /ws  → WebSocket
 ```
 
-**Reset everything?**
+## 🔐 First User
+
 ```bash
-docker-compose down -v
-docker-compose up -d --build
+# Generate invite code
+./generate-invite.sh
+
+# Register at http://localhost:3000
+# Use the generated code
 ```
 
-**Check backend health**
-```bash
-curl http://localhost:4001/api/health
-```
+## 🆘 Support
 
-## 🏗️ Architecture
+1. Read [START.md](./START.md) - Complete guide
+2. Run `./diagnose.sh` - Identify issue
+3. Run `./fix-errors.sh` - Auto-fix
+4. Check [QUICK-FIX.md](./QUICK-FIX.md) - Manual fixes
+5. Open GitHub issue with diagnostic output
 
-- **Frontend**: React + TypeScript + Tailwind CSS + Nginx
-- **Backend**: Node.js + Express + WebSocket
-- **Database**: PostgreSQL 16 with LISTEN/NOTIFY
-- **Deployment**: 3 Docker containers
+## 📄 License
 
-## 📝 License
+See LICENSE file
 
-See LICENSE file for details.
+## 🤝 Contributing
+
+Contributions welcome! Open an issue or PR.
+
+---
+
+**Quick start:** `./setup.sh` → Wait 30s → http://localhost:3000

@@ -1,0 +1,127 @@
+# AI Prompt: Containerize & Deploy App on CasaOS with Docker Compose
+
+---
+
+## CONTEXT
+
+I have an existing web application called **To Do Less NGX** stored in a **private GitHub repository**. The application is already functional — there are **no bugs or feature issues to fix**. The sole goal of this task is to **containerize it correctly** and produce deployment files that work on **CasaOS** (a self-hosted home server OS built on top of Docker).
+
+Do **not** refactor the application code. Do **not** create empty placeholder files. Do **not** loop on editing application source files. Focus exclusively on the infrastructure and containerization layer.
+
+---
+
+## WHAT I NEED YOU TO BUILD
+
+Produce the following files:
+
+1. `Dockerfile.frontend` — builds the frontend (detect framework from repo; likely Angular/Node-based)
+2. `Dockerfile.backend` — builds the backend API server (detect framework from repo)
+3. `docker-compose.yml` — orchestrates all three services (frontend, backend, database) and is **directly uploadable to CasaOS**
+4. A `README-casaos.md` with clear step-by-step deployment instructions for CasaOS
+
+---
+
+## STACK REQUIREMENTS
+
+### Database
+- Use **PostgreSQL** (official `postgres` Docker image, latest stable)
+- Data must be persisted via a named Docker volume (do not use bind mounts)
+- The DB must be on an **internal Docker network only** — never expose port 5432 to the host
+- Use environment variables for all credentials (no hardcoded passwords)
+- Include a health check so backend waits for DB to be ready before starting (`depends_on` with `condition: service_healthy`)
+
+### Backend
+- Must connect to Postgres using environment variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+- Must expose its API on a configurable port (default: `3000` or whatever the app uses)
+- Must support **multi-user, concurrent access** — ensure the server runs in a mode suitable for production (not dev mode, not single-threaded watch mode)
+- If the backend uses any ORM (e.g. TypeORM, Prisma, Sequelize), migrations must run automatically on container startup, not manually
+
+### Frontend
+- Must be built as a **static production build** (e.g. `ng build --configuration production` for Angular)
+- Serve the static files using **nginx** (use `nginx:alpine` as the final stage in a multi-stage build)
+- The nginx config must proxy `/api` (or whatever the API path is) to the backend container by service name — do not hardcode IPs
+- Must work correctly behind CasaOS's reverse proxy (set `proxy_set_header` correctly)
+
+### Private GitHub Repository
+- The Dockerfiles must use `ARG` or build secrets to support cloning from a **private repo** if building from source
+- Alternatively, document how to use a pre-built image from GitHub Container Registry (GHCR) or Docker Hub as a drop-in for CasaOS
+- Clearly flag this in the README: private repos cannot be auto-pulled by CasaOS — explain the workaround (pre-build and push image, or build locally and load)
+
+---
+
+## CASAOS-SPECIFIC REQUIREMENTS
+
+CasaOS uses Docker Compose v2 syntax. The `docker-compose.yml` must:
+
+- Use `version: "3.8"` or higher (or omit version for Compose v2 compatibility)
+- Include CasaOS UI metadata as labels on the main service so it appears correctly in the CasaOS dashboard:
+  ```yaml
+  labels:
+    casaos.name: "To Do Less"
+    casaos.icon: "https://cdn.jsdelivr.net/npm/@exampleicons/todolist.svg"  # replace with real icon URL
+    casaos.description: "Self-hosted multi-user task manager"
+    casaos.category: "Productivity"
+    casaos.port.map: "80:80"  # adjust to actual port
+  ```
+- All user-facing ports must be mapped on the **host** so CasaOS can route to them
+- All sensitive values (passwords, secrets) must use `.env` file references — provide a `.env.example` file with placeholder values
+- Named volumes must be declared at the bottom of the compose file under `volumes:`
+- All services must share a custom bridge network declared under `networks:`
+
+---
+
+## MULTI-USER & CONCURRENCY REQUIREMENTS
+
+This app will be used by **multiple users simultaneously**. Ensure:
+
+- The backend is **stateless** between requests (session state in DB or JWT, not in-memory)
+- If the app uses WebSockets or real-time sync (e.g. Socket.io, SSE), document how to configure nginx to support this (`proxy_http_version 1.1`, `Upgrade`, `Connection` headers)
+- Database connection pooling is enabled and configured (e.g. pool size of 10–20 connections)
+- The backend container can be **horizontally scaled** (i.e. no local file state, no single-file SQLite — Postgres handles this)
+
+---
+
+## WHAT NOT TO DO
+
+- ❌ Do not touch or refactor any application source code
+- ❌ Do not create empty files as placeholders
+- ❌ Do not use SQLite — Postgres only
+- ❌ Do not expose the database port to the host network
+- ❌ Do not run the app in development/watch mode inside Docker
+- ❌ Do not hardcode secrets, passwords, or IPs anywhere
+- ❌ Do not suggest the user install Node/npm on the CasaOS host — everything runs inside containers
+
+---
+
+## DELIVERABLES CHECKLIST
+
+When done, confirm you have produced all of the following:
+
+- [ ] `Dockerfile.frontend` (multi-stage: build → nginx:alpine serve)
+- [ ] `Dockerfile.backend` (production mode, runs migrations on start)
+- [ ] `docker-compose.yml` (CasaOS-compatible, all three services, volumes, networks, labels)
+- [ ] `.env.example` (all required environment variables with placeholder values)
+- [ ] `nginx.conf` (frontend nginx config with API proxy pass)
+- [ ] `README-casaos.md` including:
+  - How to handle the private GitHub repo limitation on CasaOS
+  - How to build and push images to GHCR or Docker Hub
+  - How to upload the compose file in the CasaOS UI
+  - How to update the app when a new version is released
+  - How to back up and restore the Postgres volume
+
+---
+
+## REFERENCE: HOW PAPERLESS-NGX DOES IT
+
+Model the deployment pattern after **Paperless-NGX** (`paperless-ngx/paperless-ngx` on GitHub), which is a well-known self-hosted app with excellent CasaOS compatibility. Key patterns to mirror:
+
+- Postgres + Redis (or just Postgres for simpler apps) as separate services
+- Backend waits for DB via health checks
+- Frontend/webserver as a separate nginx-served container
+- All config via environment variables with sane defaults
+- Named volumes for all persistent data
+- Works out-of-the-box when the compose file is uploaded to CasaOS
+
+---
+
+*End of prompt. Paste this in full into your AI coding assistant along with access to your repository.*
