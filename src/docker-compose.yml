@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   db:
-    build:
-      context: .
-      dockerfile: Dockerfile.db
+    image: postgres:15-alpine
     container_name: todoless-db
     restart: unless-stopped
     environment:
@@ -77,6 +75,7 @@ services:
       VITE_SUPABASE_URL: http://localhost:3001
       VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvZG9sZXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.dummykey
       VITE_AUTH_URL: http://localhost:9999
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless123}
     ports:
       - "3000:3000"
     networks:
