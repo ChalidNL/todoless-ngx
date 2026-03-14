@@ -1,0 +1,221 @@
+📦 TODOLESS - COMPLETE FILE STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+todoless/
+│
+├── 📱 FRONTEND APPLICATION
+│   ├── App.tsx                           Main application component
+│   ├── index.html                        HTML entry point
+│   ├── main.tsx                          React entry point
+│   │
+│   ├── components/                       React Components
+│   │   ├── ApiIntegrations.tsx          API settings
+│   │   ├── Calendar.tsx                 Calendar view
+│   │   ├── InboxBacklog.tsx             Inbox/Backlog view
+│   │   ├── InboxDashboard.tsx           Dashboard view
+│   │   ├── InviteManager.tsx            Invite code management
+│   │   ├── ItemOverview.tsx             Shopping items
+│   │   ├── Login.tsx                    Login form
+│   │   ├── Notes.tsx                    Notes view
+│   │   ├── Onboarding.tsx               First-time setup
+│   │   ├── Register.tsx                 Registration
+│   │   ├── Settings.tsx                 App settings
+│   │   ├── TasksView.tsx                Tasks overview
+│   │   │
+│   │   ├── shared/                      Shared Components
+│   │   │   ├── AppLogo.tsx             App logo
+│   │   │   ├── BulkImport.tsx          Bulk data import
+│   │   │   ├── BulkImporter.tsx        Import modal
+│   │   │   ├── CompactItemCard.tsx     Item card
+│   │   │   ├── CompactTaskCard.tsx     Task card
+│   │   │   ├── DueDateNotifications.tsx Notifications
+│   │   │   ├── EditableText.tsx        Inline editing
+│   │   │   ├── FilterBuilder.tsx       Advanced filters
+│   │   │   ├── FilterPanel.tsx         Filter UI
+│   │   │   ├── LabelBadge.tsx          Label display
+│   │   │   ├── LabelSelector.tsx       Label picker
+│   │   │   ├── NewGlobalHeader.tsx     Header component
+│   │   │   ├── SprintCreator.tsx       Sprint creation
+│   │   │   └── TopBar.tsx              Top navigation
+│   │   │
+│   │   ├── ui/                          UI Library (shadcn)
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   └── ... (30+ components)
+│   │   │
+│   │   └── figma/
+│   │       └── ImageWithFallback.tsx    Image component
+│   │
+│   ├── context/                         State Management
+│   │   ├── AppContext.tsx              Active context (localStorage)
+│   │   ├── AppContext.supabase.tsx     Supabase version (ready!)
+│   │   └── LanguageContext.tsx         i18n context
+│   │
+│   ├── lib/                             Libraries
+│   │   ├── supabase.ts                 Supabase client
+│   │   └── supabase-helpers.ts         Helper functions
+│   │
+│   ├── i18n/                            Internationalization
+│   │   └── translations.ts             EN, FR, NL, DE
+│   │
+│   ├── styles/                          Styling
+│   │   └── globals.css                 Tailwind CSS
+│   │
+│   ├── types/                           TypeScript Types
+│   │   └── index.ts                    Type definitions
+│   │
+│   └── utils/                           Utilities
+│       └── dateUtils.ts                Date formatting
+│
+├── 🗄️ BACKEND (SUPABASE)
+│   ├── docker-compose.yml              Main compose (11 services) ⭐
+│   ├── docker-compose.supabase.yml     Alternative (identical)
+│   │
+│   ├── supabase/                       Supabase Configuration
+│   │   ├── migrations/
+│   │   │   └── 001_initial_schema.sql  Database schema
+│   │   └── kong.yml                    API gateway config
+│   │
+│   └── .env.example                    Environment template
+│
+├── 🐳 DOCKER & BUILD
+│   ├── Dockerfile                      Production image
+│   ├── Makefile                        Quick commands ⭐
+│   ├── package.json                    NPM dependencies
+│   ├── vite.config.ts                  Vite config
+│   ├── tsconfig.json                   TypeScript config
+│   ├── tailwind.config.js              Tailwind config
+│   └── postcss.config.js               PostCSS config
+│
+├── 🔧 SCRIPTS
+│   ├── setup.sh                        Automated first-time setup ⭐
+│   ├── migrate.sh                      Run database migrations
+│   ├── git-prepare.sh                  Pre-git-push checks ⭐
+│   ├── generate-jwt.js                 Generate JWT tokens
+│   └── import-localstorage.js          Import old localStorage data
+│
+├── 📚 DOCUMENTATION (14 FILES!)
+│   ├── START_HERE.md                   ⭐ Begin hier!
+│   ├── COMPLETE_SETUP_SUMMARY.md       ⭐ Complete overview
+│   │
+│   ├── Quick Start:
+│   │   ├── QUICKSTART.md               5-minute automated setup
+│   │   └── PUSH_TO_GIT.txt             ASCII art instructions
+│   │
+│   ├── Deployment:
+│   │   ├── CASAOS_GUIDE.md             Complete CasaOS guide (4000+ words)
+│   │   ├── README_DOCKER.md            Docker deployment
+│   │   └── SETUP_CHECKLIST.md          Production checklist
+│   │
+│   ├── Git & Migration:
+│   │   ├── GIT_PUSH.md                 Git push guide
+│   │   ├── TODO_BEFORE_PUSH.md         Pre-push checklist
+│   │   └── MIGRATION_GUIDE.md          localStorage → Supabase
+│   │
+│   ├── Reference:
+│   │   ├── README.md                   Main project README
+│   │   ├── README_SUPABASE.md          Complete Supabase docs
+│   │   ├── COMMANDS.md                 All commands
+│   │   ├── ACCESS.md                   URLs & credentials
+│   │   └── STATUS.md                   Project status
+│   │
+│   └── Other:
+│       ├── Attributions.md             Credits
+│       ├── guidelines/Guidelines.md     Development guidelines
+│       └── FILE_STRUCTURE.txt          This file!
+│
+├── 🔒 SECURITY & GIT
+│   ├── .gitignore                      Protects secrets ⭐
+│   └── .env.example                    Safe template ⭐
+│
+└── 🌐 PUBLIC ASSETS
+    └── (generated at build time)
+
+
+═══════════════════════════════════════════════════════════════
+📊 STATISTICS
+═══════════════════════════════════════════════════════════════
+
+Total Files:           100+
+React Components:      25+
+UI Components:         30+
+Documentation:         14 guides
+Scripts:               5 automation scripts
+Docker Services:       11 containers (10 Supabase + 1 app)
+Migrations:            1 complete schema
+Languages:             4 (EN, FR, NL, DE)
+Lines of Code:         5000+
+
+═══════════════════════════════════════════════════════════════
+🎯 QUICK ACCESS
+═══════════════════════════════════════════════════════════════
+
+Getting Started:
+  1. START_HERE.md                  Complete workflow
+  2. COMPLETE_SETUP_SUMMARY.md      Overview
+  3. QUICKSTART.md                  5-minute setup
+
+Deployment:
+  1. CASAOS_GUIDE.md                CasaOS deployment
+  2. docker-compose.yml             All services
+  3. scripts/setup.sh               Automated setup
+
+Git:
+  1. TODO_BEFORE_PUSH.md            Pre-push checklist
+  2. scripts/git-prepare.sh         Preparation script
+  3. GIT_PUSH.md                    Push instructions
+
+Reference:
+  1. COMMANDS.md                    All commands
+  2. README_SUPABASE.md             Supabase docs
+  3. ACCESS.md                      URLs & credentials
+
+═══════════════════════════════════════════════════════════════
+⭐ MARKED FILES = MOST IMPORTANT
+═══════════════════════════════════════════════════════════════
+
+Must Read:
+  ⭐ START_HERE.md
+  ⭐ COMPLETE_SETUP_SUMMARY.md
+  ⭐ TODO_BEFORE_PUSH.md
+
+Must Use:
+  ⭐ docker-compose.yml
+  ⭐ scripts/setup.sh
+  ⭐ scripts/git-prepare.sh
+  ⭐ Makefile
+  ⭐ .gitignore
+  ⭐ .env.example
+
+═══════════════════════════════════════════════════════════════
+🚀 NEXT STEPS
+═══════════════════════════════════════════════════════════════
+
+1. chmod +x scripts/*.sh
+2. ./scripts/git-prepare.sh
+3. git push
+4. Clone on CasaOS
+5. ./scripts/setup.sh
+6. Open http://your-casaos-ip:3000
+
+═══════════════════════════════════════════════════════════════

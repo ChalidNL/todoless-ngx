@@ -11,6 +11,9 @@ Complete guide voor het deployen van Todoless in CasaOS.
 
 ## 🚀 Methode 1: Import via Docker Compose (Aanbevolen)
 
+> **Nieuw:** De hoofd `docker-compose.yml` bevat nu alle Supabase services!
+> Je kunt kiezen tussen `docker-compose.yml` (volledig) of `docker-compose.supabase.yml` (identiek).
+
 ### Stap 1: Clone Repository
 
 ```bash

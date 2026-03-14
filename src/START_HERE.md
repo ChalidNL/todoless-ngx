@@ -80,6 +80,15 @@ chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
+**Of gebruik docker-compose direct:**
+```bash
+# Met de hoofd docker-compose.yml (bevat alle services!)
+docker-compose up -d
+
+# Of met de supabase variant (identiek)
+docker-compose -f docker-compose.supabase.yml up -d
+```
+
 ### Stap 4️⃣: Verificatie
 
 ```bash

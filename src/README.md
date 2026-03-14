@@ -49,6 +49,8 @@ That's it! The setup script handles everything:
 - Runs database migrations
 - Builds and starts the frontend
 
+> **Note:** Both `docker-compose.yml` and `docker-compose.supabase.yml` contain the full Supabase stack (10 services + frontend). Use either one!
+
 ### Option 2: Manual Setup
 
 ```bash
@@ -59,8 +61,9 @@ cp .env.example .env
 node scripts/generate-jwt.js $(openssl rand -base64 32)
 # Copy output to .env
 
-# 3. Start services
-docker-compose -f docker-compose.supabase.yml up -d
+# 3. Start services (choose one)
+docker-compose up -d                               # Main compose file
+docker-compose -f docker-compose.supabase.yml up -d  # Or this one (identical)
 
 # 4. Run migrations
 ./scripts/migrate.sh
