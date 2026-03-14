@@ -1,436 +1,327 @@
-# Todoless - Supabase Self-Hosted Setup
+# Supabase Setup - Todoless
 
-Complete guide voor het opzetten van Todoless met een self-hosted Supabase backend.
+## What is Supabase?
 
-## Wat is Supabase?
+Open-source Firebase alternative with:
+- **PostgreSQL** - Database with real-time
+- **GoTrue** - Authentication
+- **PostgREST** - Auto-generated REST API
+- **Realtime** - WebSocket server
+- **Storage** - S3-compatible storage
+- **Studio** - Database UI
 
-Supabase is een open-source Firebase alternatief dat bestaat uit:
-- **PostgreSQL Database** - Relationele database met real-time functionaliteit
-- **GoTrue** - Gebruikersauthenticatie en autorisatie
-- **PostgREST** - Automatische REST API voor je database
-- **Realtime** - WebSocket server voor live updates
-- **Storage** - Object storage (S3-compatibel)
-- **Studio** - Web UI voor database management
-
-## Architectuur
+## Architecture
 
 ```
-┌─────────────┐
-│   Todoless  │ ──┐
-│   Frontend  │   │
-└─────────────┘   │
-                  ▼
-┌─────────────────────────────────┐
-│         Kong (API Gateway)       │ ← Port 8000
-└─────────────────────────────────┘
-         │      │      │      │
-    ┌────┘      │      │      └────┐
-    ▼           ▼      ▼           ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│ GoTrue │ │PostgRES│ │Realtime│ │Storage │
-│ (Auth) │ │  (API) │ │ (WSS)  │ │ (S3)   │
-└────────┘ └────────┘ └────────┘ └────────┘
-    │          │          │          │
-    └──────────┴──────────┴──────────┘
-                  ▼
-          ┌──────────────┐
-          │  PostgreSQL  │ ← Port 5432
-          │   Database   │
-          └──────────────┘
+Frontend (3000)
+     ↓
+Kong Gateway (8000)
+     ↓
+Auth + REST + Realtime + Storage
+     ↓
+PostgreSQL (5432)
 ```
 
-## Quick Start
+All included in `docker-compose.yml`!
 
-### 1. Voorbereidingen
+---
+
+## Setup
+
+### 1. Environment
 
 ```bash
-# Kopieer de environment variabelen
 cp .env.example .env
-
-# Bewerk .env en wijzig MINIMAAL deze waarden:
-# - POSTGRES_PASSWORD (gebruik een sterk wachtwoord)
-# - JWT_SECRET (minimaal 32 karakters, gebruik: openssl rand -base64 32)
-nano .env
 ```
 
-### 2. Start Supabase Stack
+### 2. Generate Tokens
 
 ```bash
-# Start alle Supabase services
-docker-compose -f docker-compose.supabase.yml up -d
-
-# Bekijk logs
-docker-compose -f docker-compose.supabase.yml logs -f
-
-# Check status
-docker-compose -f docker-compose.supabase.yml ps
+node scripts/generate-jwt.js $(openssl rand -base64 32)
 ```
 
-### 3. Toegang tot Services
+Copy to `.env`:
+- `JWT_SECRET`
+- `ANON_KEY`
+- `SERVICE_ROLE_KEY`
 
-- **Todoless App**: http://localhost:3000
-- **Supabase Studio**: http://localhost:3010
-- **Supabase API**: http://localhost:8000
-- **PostgreSQL**: localhost:5432
-
-### 4. Database Migraties
-
-De initiële schema wordt automatisch uitgevoerd bij de eerste start via `/supabase/migrations/001_initial_schema.sql`.
-
-Om handmatig migraties uit te voeren:
+### 3. Set Password
 
 ```bash
-# Verbind met de database
+POSTGRES_PASSWORD=your-strong-password
+```
+
+### 4. Start
+
+```bash
+docker-compose up -d
+```
+
+---
+
+## Services
+
+All run automatically:
+
+| Service | Purpose |
+|---------|---------|
+| **db** | PostgreSQL 15 |
+| **studio** | Database UI (port 3010) |
+| **kong** | API Gateway (port 8000) |
+| **auth** | User authentication |
+| **rest** | REST API |
+| **realtime** | WebSocket server |
+| **storage** | File storage |
+| **imgproxy** | Image optimization |
+| **meta** | Database metadata |
+
+---
+
+## Database
+
+### Schema
+
+Complete schema in: `supabase/migrations/001_initial_schema.sql`
+
+Tables:
+- `users` - User accounts
+- `tasks` - Task management
+- `items` - Shopping items
+- `notes` - Rich notes
+- `labels` - Smart labels
+- `sprints` - Sprint planning
+- `invite_codes` - Invite system
+
+### Access
+
+**Via Studio:**
+```
+http://localhost:3010
+```
+
+**Via CLI:**
+```bash
 docker exec -it supabase-db psql -U postgres -d todoless
-
-# Voer SQL commando's uit
-\dt  # Toon alle tabellen
-\d users  # Toon users table structure
 ```
 
-## Environment Variabelen
-
-### Essentieel (MOET wijzigen voor productie)
+### Migrations
 
 ```bash
-# Database wachtwoord
-POSTGRES_PASSWORD=your-super-secret-and-long-postgres-password
-
-# JWT secret voor authenticatie (genereer met: openssl rand -base64 32)
-JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
-
-# API keys (genereer nieuwe met https://supabase.com/docs/guides/api/api-keys)
-ANON_KEY=eyJhbGc...
-SERVICE_ROLE_KEY=eyJhbGc...
+./scripts/migrate.sh
 ```
 
-### Optioneel
-
+Or manually:
 ```bash
-# Email configuratie (voor wachtwoord reset, etc.)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_SENDER_NAME=Todoless
-
-# Site URL
-SITE_URL=http://localhost:3000
-
-# Disable signup (true = alleen via invite)
-DISABLE_SIGNUP=false
+docker exec -i supabase-db psql -U postgres -d todoless < supabase/migrations/001_initial_schema.sql
 ```
 
-## Database Schema
+---
 
-Het database schema bevat de volgende tabellen:
+## API Usage
 
-### Core Tables
+### Base URL
+```
+http://localhost:8000
+```
 
-- **users** - Gebruikersaccounts met rollen (admin/user/child)
-- **tasks** - Taken met status, prioriteit, horizon, sprint assignment
-- **items** - Shopping list items
-- **notes** - Notities met bullet points
-- **labels** - Labels met private/public optie
-- **shops** - Winkels voor items
-- **sprints** - Sprint management (1-4 weken)
-- **invite_codes** - 6-cijferige invite codes
-- **app_settings** - Per-user instellingen
-- **calendar_events** - Kalender events
+### Authentication
+
+**Register:**
+```bash
+curl http://localhost:8000/auth/v1/signup \
+  -H "apikey: $ANON_KEY" \
+  -d '{"email":"user@example.com","password":"password"}'
+```
+
+**Login:**
+```bash
+curl http://localhost:8000/auth/v1/token?grant_type=password \
+  -H "apikey: $ANON_KEY" \
+  -d '{"email":"user@example.com","password":"password"}'
+```
+
+### REST API
+
+**Get tasks:**
+```bash
+curl http://localhost:8000/rest/v1/tasks \
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $USER_TOKEN"
+```
+
+**Create task:**
+```bash
+curl -X POST http://localhost:8000/rest/v1/tasks \
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New task","status":"inbox"}'
+```
+
+### Realtime
+
+**Subscribe to changes:**
+```javascript
+const supabase = createClient(SUPABASE_URL, ANON_KEY);
+
+supabase
+  .channel('tasks')
+  .on('postgres_changes', 
+    { event: '*', schema: 'public', table: 'tasks' },
+    (payload) => console.log(payload)
+  )
+  .subscribe();
+```
+
+---
+
+## Security
 
 ### Row Level Security (RLS)
 
-Alle tabellen hebben RLS enabled:
+All tables have RLS enabled:
 
-- **Private items** - Alleen zichtbaar voor creator
-- **Public items** - Zichtbaar voor alle users
-- **Labels** - Private labels alleen voor creator
-- **Settings** - Per user gescheiden
+```sql
+-- Users can only see their own tasks
+CREATE POLICY "Users can view own tasks"
+  ON tasks FOR SELECT
+  USING (auth.uid() = user_id);
 
-## Supabase Studio
-
-De Supabase Studio web interface is beschikbaar op http://localhost:3010
-
-### Features
-
-- **Table Editor** - Browse en edit data
-- **SQL Editor** - Voer custom queries uit
-- **Auth** - Beheer gebruikers
-- **Policies** - Configureer RLS policies
-- **API Docs** - Automatisch gegenereerde API documentatie
-
-### Eerste Login
-
-1. Ga naar http://localhost:3010
-2. De standaard credentials zijn gedefinieerd in `.env`
-3. Verander deze voor productie gebruik!
-
-## API Endpoints
-
-Supabase genereert automatisch een REST API via PostgREST.
-
-### Base URL
-
-```
-http://localhost:8000/rest/v1
+-- Private labels
+CREATE POLICY "Private labels hidden"
+  ON tasks FOR SELECT
+  USING (
+    NOT EXISTS (
+      SELECT 1 FROM labels 
+      WHERE labels.id = ANY(tasks.label_ids) 
+      AND labels.is_private = true 
+      AND labels.created_by != auth.uid()
+    )
+  );
 ```
 
-### Authentication Headers
+### API Keys
 
-```bash
-# Anonieme requests (read-only voor publieke data)
-apikey: <ANON_KEY>
+**ANON_KEY:**
+- Used by frontend
+- Limited permissions
+- Safe to expose
 
-# Service role (full access, gebruik alleen server-side!)
-apikey: <SERVICE_ROLE_KEY>
-Authorization: Bearer <SERVICE_ROLE_KEY>
-```
+**SERVICE_ROLE_KEY:**
+- Admin access
+- Bypasses RLS
+- Keep secret!
 
-### Voorbeelden
-
-```bash
-# Haal alle users op
-curl http://localhost:8000/rest/v1/users \
-  -H "apikey: <ANON_KEY>"
-
-# Maak een nieuwe task
-curl -X POST http://localhost:8000/rest/v1/tasks \
-  -H "apikey: <ANON_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Test task",
-    "status": "todo",
-    "priority": "normal"
-  }'
-
-# Update een task
-curl -X PATCH http://localhost:8000/rest/v1/tasks?id=eq.<task-id> \
-  -H "apikey: <ANON_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "done"}'
-
-# Delete een task
-curl -X DELETE http://localhost:8000/rest/v1/tasks?id=eq.<task-id> \
-  -H "apikey: <ANON_KEY>"
-```
-
-## Backup & Restore
-
-### Database Backup
-
-```bash
-# Maak backup van de database
-docker exec supabase-db pg_dump -U postgres todoless > backup-$(date +%Y%m%d).sql
-
-# Of gebruik pg_dumpall voor alle databases
-docker exec supabase-db pg_dumpall -U postgres > backup-all-$(date +%Y%m%d).sql
-```
-
-### Database Restore
-
-```bash
-# Stop de services
-docker-compose -f docker-compose.supabase.yml down
-
-# Verwijder oude data
-docker volume rm todoless-network_supabase-db
-
-# Start opnieuw
-docker-compose -f docker-compose.supabase.yml up -d db
-
-# Wacht tot database ready is
-sleep 10
-
-# Restore de backup
-cat backup-20240314.sql | docker exec -i supabase-db psql -U postgres todoless
-
-# Start alle services
-docker-compose -f docker-compose.supabase.yml up -d
-```
-
-### Automated Backups
-
-Voeg toe aan crontab voor dagelijkse backups:
-
-```bash
-# Crontab entry (run daily at 2 AM)
-0 2 * * * docker exec supabase-db pg_dump -U postgres todoless | gzip > /backups/todoless-$(date +\%Y\%m\%d).sql.gz
-```
-
-## Monitoring
-
-### Container Logs
-
-```bash
-# Alle logs
-docker-compose -f docker-compose.supabase.yml logs -f
-
-# Specifieke service
-docker-compose -f docker-compose.supabase.yml logs -f db
-docker-compose -f docker-compose.supabase.yml logs -f auth
-docker-compose -f docker-compose.supabase.yml logs -f rest
-```
-
-### Database Monitoring
-
-```bash
-# Verbind met database
-docker exec -it supabase-db psql -U postgres todoless
-
-# Check active connections
-SELECT * FROM pg_stat_activity;
-
-# Check database size
-SELECT pg_size_pretty(pg_database_size('todoless'));
-
-# Check table sizes
-SELECT 
-  schemaname,
-  tablename,
-  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
-FROM pg_tables
-WHERE schemaname = 'public'
-ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
-```
+---
 
 ## Troubleshooting
 
-### Database verbinding mislukt
+### Services won't start
 
 ```bash
-# Check of de database container draait
-docker ps | grep supabase-db
+docker-compose logs
+```
 
-# Check database logs
+Common issues:
+- Port conflicts (change in docker-compose.yml)
+- Missing .env file
+- Invalid JWT tokens
+
+### Database connection failed
+
+```bash
+# Check database
+docker exec supabase-db pg_isready -U postgres
+
+# View logs
 docker logs supabase-db
 
-# Test verbinding
-docker exec supabase-db pg_isready -U postgres
+# Restart
+docker restart supabase-db
 ```
 
-### Kong gateway errors
+### API returns 401
+
+Check:
+- `ANON_KEY` in frontend matches `.env`
+- User is authenticated
+- RLS policies allow access
+
+### Reset everything
 
 ```bash
-# Check Kong configuratie
-docker exec supabase-kong kong config parse /home/kong/kong.yml
-
-# Reload Kong
-docker exec supabase-kong kong reload
+docker-compose down -v
+docker-compose up -d
+./scripts/migrate.sh
 ```
 
-### Migraties falen
+---
+
+## Backup & Restore
+
+### Backup
 
 ```bash
-# Handmatig migraties uitvoeren
-docker exec -i supabase-db psql -U postgres todoless < supabase/migrations/001_initial_schema.sql
+# Full backup
+docker exec supabase-db pg_dump -U postgres todoless > backup.sql
+
+# Compressed
+docker exec supabase-db pg_dump -U postgres todoless | gzip > backup.sql.gz
 ```
 
-### Reset alles
+### Restore
 
 ```bash
-# WAARSCHUWING: Dit verwijdert ALLE data!
-docker-compose -f docker-compose.supabase.yml down -v
-docker-compose -f docker-compose.supabase.yml up -d
+# From SQL
+docker exec -i supabase-db psql -U postgres todoless < backup.sql
+
+# From compressed
+gunzip -c backup.sql.gz | docker exec -i supabase-db psql -U postgres todoless
 ```
 
-## Productie Deployment
+---
 
-### Checklist
+## Advanced
 
-- [ ] Wijzig `POSTGRES_PASSWORD` naar sterk wachtwoord
-- [ ] Genereer nieuwe `JWT_SECRET` (minimaal 32 chars)
-- [ ] Genereer nieuwe `ANON_KEY` en `SERVICE_ROLE_KEY` via https://supabase.com/docs/guides/api/api-keys
-- [ ] Configureer SMTP voor email functionaliteit
-- [ ] Enable SSL/TLS voor database verbindingen
-- [ ] Setup automated backups
-- [ ] Configureer monitoring en alerting
-- [ ] Setup reverse proxy (nginx/traefik) met SSL
-- [ ] Limiteer database toegang tot specifieke IPs
-- [ ] Review en versterk RLS policies
-
-### Reverse Proxy (Nginx)
-
-Voorbeeld nginx configuratie:
-
-```nginx
-server {
-    listen 80;
-    server_name todoless.example.com;
-    
-    # Redirect to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name todoless.example.com;
-    
-    ssl_certificate /etc/letsencrypt/live/todoless.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/todoless.example.com/privkey.pem;
-    
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-    
-    # Supabase API
-    location /api/ {
-        proxy_pass http://localhost:8000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-## Development vs Production
-
-### Development
+### Custom SQL
 
 ```bash
-# Start met hot reload
-docker-compose -f docker-compose.supabase.yml up
+# Run query
+docker exec supabase-db psql -U postgres -d todoless -c "SELECT COUNT(*) FROM tasks;"
 
-# Frontend development server
-npm run dev
+# Run file
+docker exec -i supabase-db psql -U postgres -d todoless < custom.sql
 ```
 
-### Production
+### Extensions
+
+PostgreSQL extensions available:
+- `uuid-ossp` - UUID generation
+- `pgcrypto` - Encryption
+- `pg_stat_statements` - Query stats
+
+Enable:
+```sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+```
+
+### Performance
 
 ```bash
-# Build en start
-docker-compose -f docker-compose.supabase.yml up -d
+# Database stats
+docker exec supabase-db psql -U postgres -d todoless -c "\
+  SELECT schemaname, tablename, 
+         pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+  FROM pg_tables 
+  WHERE schemaname = 'public';"
 
-# Check status
-docker-compose -f docker-compose.supabase.yml ps
+# Active connections
+docker exec supabase-db psql -U postgres -d todoless -c "\
+  SELECT count(*) FROM pg_stat_activity;"
 ```
 
-## Migratie van localStorage
+---
 
-Als je data hebt in de oude localStorage versie:
+**That's it!** 🚀
 
-1. Export data via browser console:
-```javascript
-// Export tasks
-console.log(JSON.stringify(JSON.parse(localStorage.getItem('todoless_tasks'))));
-```
-
-2. Import via Supabase Studio of API:
-```bash
-# Via API
-curl -X POST http://localhost:8000/rest/v1/tasks \
-  -H "apikey: <SERVICE_ROLE_KEY>" \
-  -H "Content-Type: application/json" \
-  -d @tasks-export.json
-```
-
-## Support & Documentatie
-
-- **Supabase Docs**: https://supabase.com/docs
-- **PostgREST Docs**: https://postgrest.org/en/stable/
-- **PostgreSQL Docs**: https://www.postgresql.org/docs/
-
-## License
-
-Private use only.
+Everything you need is in `docker-compose.yml`
