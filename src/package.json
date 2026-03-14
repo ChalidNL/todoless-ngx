@@ -1,5 +1,5 @@
 {
-  "name": "todoless",
+  "name": "todoless-ngx",
   "version": "2.0.0",
   "description": "Compact task management app with multi-user support",
   "private": true,
@@ -18,8 +18,7 @@
     "react-hook-form": "^7.55.0",
     "recharts": "^2.5.0",
     "sonner": "^2.0.3",
-    "date-fns": "^3.0.0",
-    "@supabase/supabase-js": "^2.39.0"
+    "date-fns": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",

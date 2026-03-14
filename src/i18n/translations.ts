@@ -1,4 +1,4 @@
-// Translation system for Todoless app
+// Translation system for todoless-ngx app
 // Add new languages by adding a new key to the translations object
 
 export type Language = 'en' | 'nl' | 'fr' | 'de';
@@ -6,7 +6,7 @@ export type Language = 'en' | 'nl' | 'fr' | 'de';
 export const translations = {
   en: {
     // App Name
-    appName: 'Todoless',
+    appName: 'todoless-ngx',
     
     // Navigation
     inbox: 'Inbox',
@@ -195,7 +195,7 @@ export const translations = {
   },
   nl: {
     // App Name
-    appName: 'Todoless',
+    appName: 'todoless-ngx',
     
     // Navigation
     inbox: 'Inbox',
@@ -384,7 +384,7 @@ export const translations = {
   },
   fr: {
     // App Name
-    appName: 'Todoless',
+    appName: 'todoless-ngx',
     
     // Navigation
     inbox: 'Boîte de réception',
@@ -573,7 +573,7 @@ export const translations = {
   },
   de: {
     // App Name
-    appName: 'Todoless',
+    appName: 'todoless-ngx',
     
     // Navigation
     inbox: 'Posteingang',

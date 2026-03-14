@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Inbox, Calendar, Check, Eye, EyeOff } from 'lucide-react';
+import { Brain, Inbox, Calendar, Check, Eye, EyeOff, ShoppingCart, StickyNote, UserPlus, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AppLogo } from './shared/AppLogo';
 
@@ -21,8 +21,8 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
 
   const steps = [
     {
-      icon: <Brain className="w-16 h-16 text-neutral-900" />,
-      title: 'Welcome to Todoless',
+      icon: <Sparkles className="w-16 h-16 text-neutral-900" />,
+      title: 'Welcome to todoless-ngx',
       description: 'Your daily assistant for quick, simple productivity without overwhelm.',
     },
     {
@@ -41,12 +41,12 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       description: 'Completed items and tasks automatically move to "Checked Out" sections. Check them back in or use "Check In All" to restore.',
     },
     {
-      icon: <Check className="w-16 h-16 text-neutral-900" />,
+      icon: <ShoppingCart className="w-16 h-16 text-neutral-900" />,
       title: 'Items & Shopping',
       description: 'Track groceries with quantities and stores. Convert tasks to items instantly when needed.',
     },
     {
-      icon: <Brain className="w-16 h-16 text-neutral-900" />,
+      icon: <StickyNote className="w-16 h-16 text-neutral-900" />,
       title: 'Notes & Knowledge',
       description: 'Create standalone notes or pin important notes at the top. Link notes to tasks for context.',
     },
@@ -55,7 +55,7 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
   // Add admin creation step if first-time setup
   if (isFirstTimeSetup) {
     steps.push({
-      icon: <Check className="w-16 h-16 text-neutral-900" />,
+      icon: <UserPlus className="w-16 h-16 text-neutral-900" />,
       title: 'Create Admin Account',
       description: 'Set up your administrator account to get started.',
     });

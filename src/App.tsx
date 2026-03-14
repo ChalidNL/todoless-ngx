@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider, useApp } from './context/AppContext.api'; // Changed to API version
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider, useAuth } from './components/AuthProvider';
 import { Onboarding } from './components/Onboarding';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
@@ -61,38 +62,21 @@ class ErrorBoundary extends React.Component<
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('inbox');
-  const { completionMessage, appSettings, updateAppSettings, users } = useApp();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+  const { completionMessage } = useApp();
+  const { user, loading } = useAuth();
 
-  // Check if we need onboarding (no users exist)
-  const needsOnboarding = users.length === 0;
-
-  // Sync login state with appSettings on mount only
-  useEffect(() => {
-    setIsLoggedIn(!!appSettings.currentUserId);
-  }, []); // Only run once on mount
-
-  const handleOnboardingComplete = () => {
-    // After onboarding, user is automatically logged in
-    setIsLoggedIn(true);
-  };
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-  };
-
-  // Show onboarding if no users exist (first time setup)
-  if (needsOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <RefreshCw className="w-8 h-8 text-neutral-400 animate-spin" />
+      </div>
+    );
   }
 
-  // Show login if not logged in
-  if (!isLoggedIn) {
-    if (authScreen === 'register') {
-      return <Register onRegister={handleLogin} />;
-    }
-    return <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthScreen('register')} />;
+  // Show login if not authenticated
+  if (!user) {
+    return <Login onLogin={() => {}} />;
   }
 
   const renderScreen = () => {
@@ -163,7 +147,9 @@ export default function App() {
     <AppProvider>
       <ErrorBoundary>
         <LanguageProvider>
-          <AppContent />
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
         </LanguageProvider>
       </ErrorBoundary>
     </AppProvider>

@@ -27,7 +27,7 @@ export const InviteManager = () => {
   };
 
   const handleWhatsAppShare = () => {
-    const message = `Hey! You got an invite to Todoless!\n\nCode: ${currentInviteCode}\n\nClick here to join: ${currentInviteUrl}`;
+    const message = `Hey! You got an invite to todoless-ngx!\n\nCode: ${currentInviteCode}\n\nClick here to join: ${currentInviteUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };

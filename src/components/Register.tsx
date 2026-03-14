@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
+import { useAuth } from './AuthProvider';
 import { AppLogo } from './shared/AppLogo';
-import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface RegisterProps {
   onRegister: () => void;
 }
 
 export const Register = ({ onRegister }: RegisterProps) => {
-  const { validateInviteCode, useInviteCode, addUser, updateAppSettings } = useApp();
+  const { signUp } = useAuth();
   const [step, setStep] = useState<'validate' | 'create'>('validate');
   const [inviteCode, setInviteCode] = useState('');
   const [name, setName] = useState('');
@@ -18,7 +18,7 @@ export const Register = ({ onRegister }: RegisterProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [validatedInvite, setValidatedInvite] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Check for invite code in URL
   useEffect(() => {
@@ -26,34 +26,21 @@ export const Register = ({ onRegister }: RegisterProps) => {
     const code = params.get('invite');
     if (code) {
       setInviteCode(code);
-      handleValidateInvite(code);
+      setStep('create'); // Skip validation if code is in URL
     }
   }, []);
 
-  const handleValidateInvite = (code?: string) => {
-    const codeToValidate = code || inviteCode;
-    if (!codeToValidate || codeToValidate.length !== 6) {
-      setError('Please enter a valid 6-digit invite code');
+  const handleValidateInvite = () => {
+    if (!inviteCode || inviteCode.length < 6) {
+      setError('Please enter a valid invite code');
       return;
     }
 
-    const invite = validateInviteCode(codeToValidate);
-    if (!invite) {
-      setError('Invalid or expired invite code');
-      return;
-    }
-
-    if (invite.used) {
-      setError('This invite code has already been used');
-      return;
-    }
-
-    setValidatedInvite(invite);
     setStep('create');
     setError('');
   };
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     // Validation
     if (!name || !email || !password || !confirmPassword) {
       setError('All fields are required');
@@ -77,22 +64,17 @@ export const Register = ({ onRegister }: RegisterProps) => {
       return;
     }
 
-    // Create user
-    const newUser = {
-      id: Math.random().toString(36).substring(2, 11),
-      email,
-      name,
-      password, // In production, this should be hashed
-      role: 'user' as const,
-    };
+    setIsLoading(true);
+    setError('');
 
-    addUser(newUser);
+    const { error: signUpError } = await signUp(email, password, name, inviteCode);
 
-    // Mark invite as used
-    useInviteCode(inviteCode, newUser.id);
+    setIsLoading(false);
 
-    // Auto login
-    updateAppSettings({ currentUserId: newUser.id });
+    if (signUpError) {
+      setError(signUpError.message || 'Registration failed');
+      return;
+    }
 
     // Complete registration
     onRegister();
@@ -106,7 +88,7 @@ export const Register = ({ onRegister }: RegisterProps) => {
             <AppLogo size="lg" showText={true} variant="dark" />
           </div>
           
-          <h1 className="text-2xl font-bold text-center mb-2">Join Todoless</h1>
+          <h1 className="text-2xl font-bold text-center mb-2">join todoless-ngx</h1>
           <p className="text-neutral-600 text-center mb-8 text-sm">
             Enter your 6-digit invite code to get started
           </p>
@@ -240,7 +222,7 @@ export const Register = ({ onRegister }: RegisterProps) => {
             onClick={handleCreateAccount}
             className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
           >
-            Create Account
+            {isLoading ? <Loader2 className="animate-spin" size={16} /> : 'Create Account'}
           </button>
 
           <div className="text-center pt-4 border-t border-neutral-100">

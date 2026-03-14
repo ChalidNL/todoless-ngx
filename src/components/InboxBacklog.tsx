@@ -99,15 +99,24 @@ export const InboxBacklog = () => {
                   handleTaskSelect(task.id);
                 }}
               >
-                <div className={`${selectedTasks.includes(task.id) ? 'ring-2 ring-blue-500 rounded-lg' : ''}`}>
-                  <CompactTaskCard task={task} showCheckbox={false} />
-                </div>
-                
+                {/* Selection indicator - blue circle top right (click to deselect) */}
                 {selectedTasks.includes(task.id) && (
-                  <div className="absolute top-2 left-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center z-10">
-                    <span className="text-white text-xs font-bold">✓</span>
+                  <div 
+                    className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-blue-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTaskSelect(task.id);
+                    }}
+                  >
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                 )}
+                
+                <div className={`${selectedTasks.includes(task.id) ? 'ring-2 ring-blue-500 rounded-lg' : ''}`}>
+                  <CompactTaskCard task={task} showCheckbox={true} />
+                </div>
               </div>
             ))}
           </div>

@@ -82,19 +82,19 @@ export const useApp = () => {
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 const STORAGE_KEYS = {
-  items: 'todoless_items',
-  tasks: 'todoless_tasks',
-  notes: 'todoless_notes',
-  labels: 'todoless_labels',
-  shops: 'todoless_shops',
-  calendarEvents: 'todoless_calendarEvents',
-  filters: 'todoless_filters',
-  filterViews: 'todoless_filterViews',
-  sprints: 'todoless_sprints',
-  users: 'todoless_users',
-  inviteCodes: 'todoless_inviteCodes',
-  appSettings: 'todoless_appSettings',
-  progressStats: 'todoless_progressStats',
+  items: 'todoless_ngx_items',
+  tasks: 'todoless_ngx_tasks',
+  notes: 'todoless_ngx_notes',
+  labels: 'todoless_ngx_labels',
+  shops: 'todoless_ngx_shops',
+  calendarEvents: 'todoless_ngx_calendarEvents',
+  filters: 'todoless_ngx_filters',
+  filterViews: 'todoless_ngx_filterViews',
+  sprints: 'todoless_ngx_sprints',
+  users: 'todoless_ngx_users',
+  inviteCodes: 'todoless_ngx_inviteCodes',
+  appSettings: 'todoless_ngx_appSettings',
+  progressStats: 'todoless_ngx_progressStats',
 };
 
 const getWeekStart = () => {

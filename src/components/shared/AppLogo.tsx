@@ -29,7 +29,7 @@ export const AppLogo = ({ size = 'md', showText = true, variant = 'dark' }: AppL
       </div>
       {showText && (
         <span className={`font-semibold ${colorClass} ${textSizes[size]}`}>
-          Todoless
+          todoless-ngx
         </span>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useAuth } from './AuthProvider';
 import { AppLogo } from './shared/AppLogo';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -9,20 +9,31 @@ interface LoginProps {
 }
 
 export const Login = ({ onLogin, onSwitchToRegister }: LoginProps) => {
-  const { users, updateAppSettings } = useApp();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    const user = users.find(u => u.email === email);
-    if (!user) {
-      setError('User not found. Please contact your administrator for an invite.');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter email and password');
       return;
     }
-    
-    updateAppSettings({ currentUserId: user.id });
+
+    setIsLoading(true);
+    setError('');
+
+    const { error: signInError } = await signIn(email, password);
+
+    setIsLoading(false);
+
+    if (signInError) {
+      setError(signInError.message || 'Invalid email or password');
+      return;
+    }
+
     onLogin();
   };
 
@@ -35,7 +46,7 @@ export const Login = ({ onLogin, onSwitchToRegister }: LoginProps) => {
         
         <h1 className="text-2xl font-bold text-center mb-2">Welcome back</h1>
         <p className="text-neutral-600 text-center mb-8 text-sm">
-          Sign in to your Todoless account
+          Sign in to your todoless-ngx account
         </p>
 
         <div className="space-y-4">
@@ -80,7 +91,7 @@ export const Login = ({ onLogin, onSwitchToRegister }: LoginProps) => {
             onClick={handleLogin}
             className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
           >
-            Log In
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : 'Log In'}
           </button>
 
           <div className="text-center pt-4 border-t border-neutral-100">

@@ -322,7 +322,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Todoless server running on port ${PORT}`);
+  console.log(`🚀 Todoless-ngx server running on port ${PORT}`);
   console.log(`📁 Data directory: ${DATA_DIR}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
 });

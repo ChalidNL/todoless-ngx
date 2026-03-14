@@ -78,37 +78,147 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
 
   return (
     <div 
-      className={`relative rounded-lg border transition-all ${
-        isExpanded ? 'p-4 border-neutral-300' : 'p-3 border-neutral-200'
-      } ${task.blocked ? 'bg-red-50 border-red-300' : 'bg-white'} ${
-        task.status === 'done' ? 'opacity-60' : ''
-      }`}
+      className={`rounded-lg p-2.5 hover:border-neutral-300 transition-all bg-white border-2 border-neutral-200 ${
+        task.blocked ? 'bg-red-50 border-red-300' : ''
+      } ${task.status === 'done' ? 'opacity-60' : ''}`}
     >
-      {/* Checkbox - Top Right Corner */}
-      <label className="absolute -top-2 -right-2 z-10 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={task.status === 'done'}
-          onChange={handleToggleComplete}
-          className="sr-only peer"
-        />
-        <div className="w-6 h-6 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center shadow-md peer-checked:bg-blue-600 transition-all hover:scale-110">
-          {task.status === 'done' && (
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </div>
-      </label>
-
       <div className="flex items-start gap-2">
-        {/* Task Title */}
-        <div className="flex-1 min-w-0">
-          <EditableText
-            value={task.title}
-            onChange={(value) => updateTask(task.id, { title: value })}
-            completed={task.status === 'done'}
+        {/* Checkbox */}
+        {showCheckbox && (
+          <input
+            type="checkbox"
+            checked={task.status === 'done'}
+            onChange={handleToggleComplete}
+            className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer flex-shrink-0 accent-blue-600"
           />
+        )}
+        
+        {/* Task content */}
+        <div className="flex-1 min-w-0">
+          {/* Task Title */}
+          <div className="mb-2">
+            <EditableText
+              value={task.title}
+              onChange={(value) => updateTask(task.id, { title: value })}
+              completed={task.status === 'done'}
+            />
+          </div>
+
+          {/* Icon toolbar - only visible when menu is open */}
+          {showMenu && (
+            <div className="flex items-center gap-1 pt-2 border-t border-neutral-100">
+              {/* Clock - Due Date/Repeat */}
+              <button 
+                onClick={() => {
+                  closeAllPanels();
+                  setShowDueDatePicker(!showDueDatePicker);
+                }}
+                className={`p-1.5 rounded transition-colors ${showDueDatePicker ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Due date / Repeat"
+              >
+                <Clock className={`w-4 h-4 ${showDueDatePicker ? 'text-white' : task.dueDate ? 'text-blue-500' : 'text-neutral-400'}`} />
+              </button>
+              
+              {/* Tag - Labels */}
+              <button 
+                onClick={() => {
+                  closeAllPanels();
+                  setShowLabelSelector(!showLabelSelector);
+                }}
+                className={`p-1.5 rounded transition-colors ${showLabelSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Labels"
+              >
+                <Tag className={`w-4 h-4 ${showLabelSelector ? 'text-white' : task.labels.length > 0 ? 'text-blue-500' : 'text-neutral-400'}`} />
+              </button>
+              
+              {/* User - Assignee */}
+              <button 
+                onClick={() => {
+                  closeAllPanels();
+                  setShowAssigneeSelector(!showAssigneeSelector);
+                }}
+                className={`p-1.5 rounded transition-colors ${showAssigneeSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Assignee"
+              >
+                <User className={`w-4 h-4 ${showAssigneeSelector ? 'text-white' : task.assignedTo ? 'text-blue-500' : 'text-neutral-400'}`} />
+              </button>
+              
+              {/* AlertCircle - Priority */}
+              <button
+                onClick={() => {
+                  closeAllPanels();
+                  setShowPrioritySelector(!showPrioritySelector);
+                }}
+                className={`p-1.5 rounded transition-colors ${showPrioritySelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Priority"
+              >
+                <AlertCircle className={`w-4 h-4 ${showPrioritySelector ? 'text-white' : getPriorityColor()}`} />
+              </button>
+              
+              {/* Flag - Blocker (red) */}
+              <button
+                onClick={() => {
+                  if (task.blocked) {
+                    // Unblock
+                    updateTask(task.id, { blocked: false, blockedComment: undefined });
+                    setShowBlockerInput(false);
+                  } else {
+                    // Block
+                    updateTask(task.id, { blocked: true });
+                    setShowBlockerInput(true); // Show comment input
+                  }
+                }}
+                className={`p-1.5 rounded transition-colors ${showBlockerInput ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Blocker"
+              >
+                <Flag className={`w-4 h-4 ${showBlockerInput ? 'text-white' : task.blocked ? 'text-red-500' : 'text-neutral-400'}`} />
+              </button>
+              
+              {/* Zap - Sprint */}
+              <button
+                onClick={() => {
+                  closeAllPanels();
+                  setShowSprintSelector(!showSprintSelector);
+                }}
+                className={`p-1.5 rounded transition-colors ${showSprintSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
+                title="Sprint"
+              >
+                <Zap className={`w-4 h-4 ${showSprintSelector ? 'text-white' : task.sprintId ? 'text-green-500' : 'text-neutral-400'}`} />
+              </button>
+              
+              {/* Lock/Unlock - Privacy */}
+              <button
+                onClick={() => updateTask(task.id, { isPrivate: !task.isPrivate })}
+                className="p-1.5 rounded transition-colors hover:bg-neutral-100"
+                title={task.isPrivate ? 'Private (only you)' : 'Shared with team'}
+              >
+                {task.isPrivate ? (
+                  <Lock className="w-4 h-4 text-purple-500" />
+                ) : (
+                  <Unlock className="w-4 h-4 text-neutral-400" />
+                )}
+              </button>
+              
+              {/* Toggle Task/Item */}
+              <button
+                onClick={() => convertTaskToItem(task.id)}
+                className="p-1.5 rounded transition-colors hover:bg-neutral-100"
+                title="Convert to Item"
+              >
+                <ToggleRight className="w-4 h-4 text-neutral-400" />
+              </button>
+              
+              <div className="flex-1" />
+              
+              <button
+                onClick={() => setShowActions(!showActions)}
+                className="p-1.5 hover:bg-neutral-100 rounded transition-colors"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4 text-neutral-400" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Hamburger Menu Button - Right aligned */}
@@ -126,122 +236,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           )}
         </button>
       </div>
-
-      {/* Icon toolbar - only visible when menu is open */}
-      {showMenu && (
-        <div className="flex items-center gap-1 pt-2 border-t border-neutral-100">
-          {/* Clock - Due Date/Repeat */}
-          <button 
-            onClick={() => {
-              closeAllPanels();
-              setShowDueDatePicker(!showDueDatePicker);
-            }}
-            className={`p-1.5 rounded transition-colors ${showDueDatePicker ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Due date / Repeat"
-          >
-            <Clock className={`w-4 h-4 ${showDueDatePicker ? 'text-white' : task.dueDate ? 'text-blue-500' : 'text-neutral-400'}`} />
-          </button>
-          
-          {/* Tag - Labels */}
-          <button 
-            onClick={() => {
-              closeAllPanels();
-              setShowLabelSelector(!showLabelSelector);
-            }}
-            className={`p-1.5 rounded transition-colors ${showLabelSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Labels"
-          >
-            <Tag className={`w-4 h-4 ${showLabelSelector ? 'text-white' : task.labels.length > 0 ? 'text-blue-500' : 'text-neutral-400'}`} />
-          </button>
-          
-          {/* User - Assignee */}
-          <button 
-            onClick={() => {
-              closeAllPanels();
-              setShowAssigneeSelector(!showAssigneeSelector);
-            }}
-            className={`p-1.5 rounded transition-colors ${showAssigneeSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Assignee"
-          >
-            <User className={`w-4 h-4 ${showAssigneeSelector ? 'text-white' : task.assignedTo ? 'text-blue-500' : 'text-neutral-400'}`} />
-          </button>
-          
-          {/* AlertCircle - Priority */}
-          <button
-            onClick={() => {
-              closeAllPanels();
-              setShowPrioritySelector(!showPrioritySelector);
-            }}
-            className={`p-1.5 rounded transition-colors ${showPrioritySelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Priority"
-          >
-            <AlertCircle className={`w-4 h-4 ${showPrioritySelector ? 'text-white' : getPriorityColor()}`} />
-          </button>
-          
-          {/* Flag - Blocker (red) */}
-          <button
-            onClick={() => {
-              if (task.blocked) {
-                // Unblock
-                updateTask(task.id, { blocked: false, blockedComment: undefined });
-                setShowBlockerInput(false);
-              } else {
-                // Block
-                updateTask(task.id, { blocked: true });
-                setShowBlockerInput(true); // Show comment input
-              }
-            }}
-            className={`p-1.5 rounded transition-colors ${showBlockerInput ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Blocker"
-          >
-            <Flag className={`w-4 h-4 ${showBlockerInput ? 'text-white' : task.blocked ? 'text-red-500' : 'text-neutral-400'}`} />
-          </button>
-          
-          {/* Zap - Sprint */}
-          <button
-            onClick={() => {
-              closeAllPanels();
-              setShowSprintSelector(!showSprintSelector);
-            }}
-            className={`p-1.5 rounded transition-colors ${showSprintSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
-            title="Sprint"
-          >
-            <Zap className={`w-4 h-4 ${showSprintSelector ? 'text-white' : task.sprintId ? 'text-green-500' : 'text-neutral-400'}`} />
-          </button>
-          
-          {/* Lock/Unlock - Privacy */}
-          <button
-            onClick={() => updateTask(task.id, { isPrivate: !task.isPrivate })}
-            className="p-1.5 rounded transition-colors hover:bg-neutral-100"
-            title={task.isPrivate ? 'Private (only you)' : 'Shared with team'}
-          >
-            {task.isPrivate ? (
-              <Lock className="w-4 h-4 text-purple-500" />
-            ) : (
-              <Unlock className="w-4 h-4 text-neutral-400" />
-            )}
-          </button>
-          
-          {/* Toggle Task/Item */}
-          <button
-            onClick={() => convertTaskToItem(task.id)}
-            className="p-1.5 rounded transition-colors hover:bg-neutral-100"
-            title="Convert to Item"
-          >
-            <ToggleRight className="w-4 h-4 text-neutral-400" />
-          </button>
-          
-          <div className="flex-1" />
-          
-          <button
-            onClick={() => setShowActions(!showActions)}
-            className="p-1.5 hover:bg-neutral-100 rounded transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4 text-neutral-400" />
-          </button>
-        </div>
-      )}
 
       {/* Due Date Picker */}
       {showDueDatePicker && (

@@ -2,8 +2,8 @@ export interface Label {
   id: string;
   name: string;
   color: string;
-  isPrivate?: boolean;
-  createdBy?: string; // User ID who created this label
+  is_private?: boolean; // PostgreSQL uses snake_case
+  created_by?: string; // User ID who created this label
 }
 
 export interface Shop {
@@ -21,138 +21,123 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  avatarUrl?: string;
-  role?: 'admin' | 'user' | 'child';
-  password?: string;
+  avatar_url?: string; // PostgreSQL uses snake_case
+  role?: 'admin' | 'user';
 }
 
 export interface InviteCode {
   id: string;
   code: string;
-  createdBy: string;
-  createdAt: number;
-  expiresAt: number; // 1 hour from creation
-  used?: boolean;
-  usedBy?: string;
-  usedAt?: number;
+  created_by?: string;
+  created_at?: string; // ISO string from PostgreSQL
+  expires_at?: string | null; // ISO string from PostgreSQL
+  used_by?: string | null;
+  used_at?: string | null;
+  max_uses?: number;
+  current_uses?: number;
 }
 
 export interface Item {
   id: string;
   title: string;
+  description?: string;
   quantity?: number;
-  category?: string;
-  location?: string;
-  minimumStock?: number;
-  completed: boolean;
-  labels: string[];
-  shopId?: string;
-  isPrivate?: boolean;
-  createdAt: number;
+  shop_id?: string;
+  status?: string;
+  priority?: Priority;
+  assigned_to?: string;
+  due_date?: string | null;
+  completed_at?: string | null;
+  archived_at?: string | null;
+  labels?: string[];
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Task {
   id: string;
   title: string;
-  status: 'backlog' | 'todo' | 'done';
-  priority?: 'urgent' | 'normal' | 'low';
-  horizon?: 'week' | 'month' | '3months' | '6months' | 'year';
+  description?: string;
+  status: TaskStatus;
+  priority?: Priority;
+  horizon?: Horizon;
+  assigned_to?: string;
+  sprint_id?: string;
+  parent_task_id?: string;
+  due_date?: string | null;
   blocked?: boolean;
-  blockedComment?: string;
-  sprintId?: string;
-  assignedTo?: string;
-  dueDate?: number;
-  repeatInterval?: 'week' | 'month' | 'year';
+  block_reason?: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  completed_at?: string | null;
+  archived_at?: string | null;
   labels?: string[];
-  isPrivate?: boolean;
-  archived?: boolean;
-  archivedAt?: number;
-  createdAt: number;
-  completedAt?: number;
-}
-
-export interface ArchivedTask extends Task {
-  archived: true;
-  archivedAt: number;
-  deleteAfter?: number; // timestamp when to auto-delete
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Note {
   id: string;
+  title?: string;
   content: string;
-  linkedTo?: string;
-  linkedType?: 'task' | 'item';
-  labels: string[];
   pinned?: boolean;
-  isPrivate?: boolean;
-  createdAt: number;
+  archived?: boolean;
+  labels?: string[];
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Sprint {
   id: string;
   name: string;
-  startDate: number;
-  endDate: number;
+  start_date: string;
+  end_date: string;
   duration: SprintDuration;
-  weekNumber?: number; // ISO week number when sprint started
-  year?: number; // Year when sprint started
+  is_active?: boolean;
+  created_by?: string;
+  created_at?: string;
 }
 
 export interface CalendarEvent {
   id: string;
   title: string;
-  startDate: number;
-  endDate?: number;
-  assignedTo?: string; // User ID
-  priority?: Priority;
-  horizon?: Horizon;
-  blocked: boolean;
-  blockedComment?: string;
-  dueDate?: number;
-  repeatInterval?: 'week' | 'month' | 'year';
-  labels: string[];
-  isPrivate?: boolean;
-  createdAt: number;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  all_day?: boolean;
+  task_id?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Filter {
   id: string;
   name: string;
-  type?: 'task' | 'item' | 'note';
-  labelIds?: string[];
-  showCompleted?: boolean;
-  // Task specific
-  status?: TaskStatus[];
-  priority?: Priority[];
-  horizon?: Horizon[];
-  assignedTo?: string[];
-  hasSprintId?: boolean;
-  blocked?: boolean;
-  // Item specific
-  category?: string[];
-  location?: string[];
-  belowMinimumStock?: boolean;
-  // Note specific
-  linkedType?: ('task' | 'item')[];
-  // Common
-  isPrivate?: boolean;
+  query: string;
+  type: 'task' | 'item' | 'note';
 }
 
 export interface FilterView {
   id: string;
   name: string;
-  filterId: string;
+  filters: string[];
 }
 
 export interface AppSettings {
-  hasCompletedOnboarding: boolean;
-  sprintDuration: SprintDuration;
+  hasCompletedOnboarding?: boolean;
+  sprintDuration?: SprintDuration;
   currentUserId?: string;
-  archiveRetention?: number; // days: 30, 60, 90, or 0 (unlimited)
-  theme?: 'light' | 'dark' | 'auto';
+  language?: string;
+  archiveRetention?: number; // days
+  autoCleanup?: boolean;
+  theme?: 'light' | 'dark';
 }
 
 export interface ProgressStats {
   tasksCompletedThisWeek: number;
-  lastWeekReset: number;
+  lastWeekReset: number | string;
 }
