@@ -33,7 +33,7 @@ services:
             en_US: Database migration scripts
 
   frontend:
-    image: YOUR_FRONTEND_IMAGE:TAG
+    image: ghcr.io/chalidnl/todoless-ngx:latest
     container_name: todoless-frontend
     restart: unless-stopped
     environment:
