@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: todoless
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless123}
+      POSTGRES_PASSWORD: todoless123
     volumes:
       - todoless_db:/var/lib/postgresql/data
     ports:
@@ -32,10 +32,10 @@ services:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-todoless123}@db:5432/todoless
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:todoless123@db:5432/todoless
       GOTRUE_SITE_URL: http://localhost:3000
       GOTRUE_DISABLE_SIGNUP: false
-      GOTRUE_JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_EXTERNAL_EMAIL_ENABLED: true
@@ -54,10 +54,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-todoless123}@db:5432/todoless
+      PGRST_DB_URI: postgres://postgres:todoless123@db:5432/todoless
       PGRST_DB_SCHEMAS: public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
       PGRST_DB_USE_LEGACY_GUCS: "false"
     ports:
       - "3001:3000"
@@ -65,7 +65,9 @@ services:
       - todoless
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile/main.tsx
     container_name: todoless-app
     restart: unless-stopped
     depends_on:
@@ -75,7 +77,7 @@ services:
       VITE_SUPABASE_URL: http://localhost:3001
       VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvZG9sZXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.dummykey
       VITE_AUTH_URL: http://localhost:9999
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todoless123}
+      POSTGRES_PASSWORD: todoless123
     ports:
       - "3000:3000"
     networks:
