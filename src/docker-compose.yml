@@ -13,6 +13,7 @@ services:
       resources:
         limits:
           memory: 2048M
+    image: ghcr.io/chalidnl/todoless-ngx-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,6 +46,7 @@ services:
       resources:
         limits:
           memory: 2048M
+    image: ghcr.io/chalidnl/todoless-ngx-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
