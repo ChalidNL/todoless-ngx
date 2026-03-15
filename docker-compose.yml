@@ -1,21 +1,6 @@
 name: todoless-ngx
 
 services:
-  pb-migrations-init:
-    image: alpine:3.20
-    container_name: todoless-ngx-pb-migrations-init
-    restart: "no"
-    command:
-      [
-        "sh",
-        "-c",
-        "mkdir -p /pb_migrations && if [ ! -f /pb_migrations/001_initial_schema.js ]; then wget -qO /pb_migrations/001_initial_schema.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/001_initial_schema.js; fi"
-      ]
-    volumes:
-      - /DATA/AppData/$AppID/pb_migrations:/pb_migrations
-    networks:
-      - todoless-net
-
   todoless-ngx:
     image: ghcr.io/chalidnl/todoless-ngx:latest
     pull_policy: always
@@ -49,12 +34,10 @@ services:
             en_US: Web UI
 
   pocketbase:
-    image: ghcr.io/muchobien/pocketbase:0.34.2
+    image: ghcr.io/chalidnl/todoless-ngx-pocketbase:latest
+    pull_policy: always
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
-    depends_on:
-      pb-migrations-init:
-        condition: service_completed_successfully
     command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--automigrate"]
     environment:
       TZ: $TZ
@@ -78,7 +61,7 @@ services:
             en_US: PocketBase data — database and uploads
         - container: /pb_migrations
           description:
-            en_US: PocketBase migration scripts
+            en_US: PocketBase migration scripts (auto-seeded from image on first install)
 
 networks:
   todoless-net:
