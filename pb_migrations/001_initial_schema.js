@@ -1,5 +1,5 @@
 migrate(
-  (db) => {
+  (app) => {
     const baseRules = {
       listRule: 'user = @request.auth.id',
       viewRule: 'user = @request.auth.id',
@@ -9,8 +9,7 @@ migrate(
     };
 
     const createCollection = (collection) => {
-      const dao = new Dao(db);
-      return dao.saveCollection(collection);
+      return app.save(collection);
     };
 
     createCollection(
@@ -170,30 +169,35 @@ migrate(
       }),
     );
 
-    const usersCollection = new Dao(db).findCollectionByNameOrId('_pb_users_auth_');
-    usersCollection.schema.addField(
-      new SchemaField({
-        name: 'name',
-        type: 'text',
-        required: true,
-      }),
-    );
-    usersCollection.schema.addField(
-      new SchemaField({
-        name: 'role',
-        type: 'select',
-        options: { values: ['admin', 'user', 'child'], maxSelect: 1 },
-      }),
-    );
-    new Dao(db).saveCollection(usersCollection);
+    const usersCollection = app.findCollectionByNameOrId('_pb_users_auth_');
+
+    if (!usersCollection.fields.getByName('name')) {
+      usersCollection.fields.add(
+        new TextField({
+          name: 'name',
+          required: true,
+        }),
+      );
+    }
+
+    if (!usersCollection.fields.getByName('role')) {
+      usersCollection.fields.add(
+        new SelectField({
+          name: 'role',
+          values: ['admin', 'user', 'child'],
+          maxSelect: 1,
+        }),
+      );
+    }
+
+    app.save(usersCollection);
   },
-  (db) => {
-    const dao = new Dao(db);
+  (app) => {
     ['app_settings', 'invite_codes', 'calendar_events', 'sprints', 'shops', 'labels', 'notes', 'items', 'tasks'].forEach((name) => {
-      const collection = dao.findCollectionByNameOrId(name);
-      if (collection) {
-        dao.deleteCollection(collection);
-      }
+      try {
+        const collection = app.findCollectionByNameOrId(name);
+        app.delete(collection);
+      } catch {}
     });
   },
 );
