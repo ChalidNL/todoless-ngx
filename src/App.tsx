@@ -72,8 +72,9 @@ function AppContent() {
     const checkFirstRun = async () => {
       if (loading) return;
 
+      const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
+
       try {
-        const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
         const usersResult = await pb.collection('users').getList(1, 1);
         const path = window.location.pathname.toLowerCase();
 
@@ -99,6 +100,11 @@ function AppContent() {
 
         setAppScreen('app');
       } catch {
+        if (!hasCompletedOnboarding) {
+          setAppScreen('onboarding');
+          return;
+        }
+
         setAppScreen('login');
       }
     };

@@ -3,6 +3,7 @@ name: todoless-ngx
 services:
   todoless-ngx:
     image: ghcr.io/chalidnl/todoless-ngx:latest
+    pull_policy: always
     container_name: todoless-ngx
     restart: unless-stopped
     environment:
