@@ -30,7 +30,7 @@ services:
             en_US: PocketBase migration scripts
 
   frontend:
-    image: ghcr.io/chalidnl/todoless-frontend:1.0.0
+    image: ghcr.io/chalidnl/todoless-frontend:latest
     container_name: todoless-frontend
     restart: unless-stopped
     environment:
