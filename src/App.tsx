@@ -16,6 +16,7 @@ import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as Se
 
 type Screen = 'inbox' | 'tasks' | 'items' | 'notes' | 'calendar' | 'settings';
 type AppScreen = 'checking' | 'onboarding' | 'login' | 'register' | 'app';
+const ONBOARDING_SEEN_KEY = 'todoless_onboarding_completed';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -72,10 +73,16 @@ function AppContent() {
       if (loading) return;
 
       try {
+        const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
         const usersResult = await pb.collection('users').getList(1, 1);
         const path = window.location.pathname.toLowerCase();
 
         if (usersResult.totalItems === 0) {
+          setAppScreen('onboarding');
+          return;
+        }
+
+        if (!hasCompletedOnboarding) {
           setAppScreen('onboarding');
           return;
         }
@@ -111,6 +118,7 @@ function AppContent() {
     return (
       <Onboarding
         onComplete={() => {
+          localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
           setAppScreen('app');
         }}
       />
