@@ -1,3 +1,4 @@
+# Frontend Dockerfile with Nginx
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -9,7 +10,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build (API URL will be empty = same host via nginx proxy)
+# Build with empty API URL (nginx proxy)
 ENV VITE_API_URL=
 RUN npm run build
 
@@ -19,9 +20,11 @@ FROM nginx:alpine
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Expose port 80
 EXPOSE 80
 
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

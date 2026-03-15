@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext'; // Use localStorage version for demo
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider } from './components/AuthProvider';
 import { Onboarding } from './components/Onboarding';
 import { InboxBacklog } from './components/InboxBacklog';
 import { TasksView } from './components/TasksView';
@@ -173,12 +174,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <ErrorBoundary>
-        <LanguageProvider>
-          <AppContent />
-        </LanguageProvider>
-      </ErrorBoundary>
-    </AppProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </AppProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

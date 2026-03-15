@@ -82,14 +82,14 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
         task.blocked ? 'bg-red-50 border-red-300' : ''
       } ${task.status === 'done' ? 'opacity-60' : ''}`}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2">
         {/* Checkbox */}
         {showCheckbox && (
           <input
             type="checkbox"
             checked={task.status === 'done'}
             onChange={handleToggleComplete}
-            className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer flex-shrink-0 accent-blue-600"
+            className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer flex-shrink-0 accent-blue-600"
           />
         )}
         

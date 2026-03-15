@@ -64,29 +64,21 @@ export const ApiIntegrations = () => {
   const selectedType = integrationTypes.find(t => t.value === newIntegration.type);
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">API Integrations</h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-3 py-1.5 bg-neutral-900 text-white rounded text-sm flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Integration
-        </button>
-      </div>
+    <div>
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
+      >
+        <Plus className="w-4 h-4" />
+        Add Integration
+      </button>
 
-      {integrations.length === 0 ? (
-        <div className="text-center py-8 text-neutral-500">
-          <p className="text-sm">No integrations configured</p>
-          <p className="text-xs mt-1">Connect to Home Assistant, Paperless, Actual Budget and more</p>
-        </div>
-      ) : (
+      {integrations.length > 0 && (
         <div className="space-y-3">
           {integrations.map(integration => (
             <div
               key={integration.id}
-              className="flex items-center gap-3 p-3 border border-neutral-200 rounded"
+              className="flex items-center gap-3 p-3 border border-neutral-200 rounded bg-white"
             >
               <div className="flex-1">
                 <p className="font-medium text-sm">{integration.name}</p>

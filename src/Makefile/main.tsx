@@ -1,168 +1,88 @@
-# todoless-ngx Makefile
-# Quick commands for development and deployment
+.PHONY: help start stop restart logs build clean admin invite health backup restore
 
-.PHONY: help setup start stop restart logs status db backup restore clean migrate
-
-# Default target
-help:
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  📋 todoless-ngx - Available Commands"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+help: ## Show this help message
+	@echo "Todoless-ngx - Make commands"
 	@echo ""
-	@echo "  🚀 Quick Start:"
-	@echo "    make setup      - First time setup (creates .env, starts services)"
-	@echo "    make start      - Start all services"
-	@echo "    make stop       - Stop all services"
-	@echo ""
-	@echo "  🔧 Development:"
-	@echo "    make restart    - Restart all services"
-	@echo "    make logs       - Show logs (follow mode)"
-	@echo "    make status     - Show service status"
-	@echo "    make db         - Open database console"
-	@echo ""
-	@echo "  💾 Data Management:"
-	@echo "    make backup     - Create database backup"
-	@echo "    make restore    - Restore from backup (requires BACKUP_FILE=...)"
-	@echo "    make migrate    - Run database migrations"
-	@echo "    make import     - Import localStorage data (requires BACKUP_FILE=...)"
-	@echo ""
-	@echo "  🧹 Maintenance:"
-	@echo "    make clean      - Remove containers (keeps data)"
-	@echo "    make reset      - ⚠️  Reset everything (deletes all data!)"
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-# First time setup
-setup:
-	@echo "🚀 Running first-time setup..."
-	@chmod +x scripts/setup.sh
-	@./scripts/setup.sh
+start: ## Start all services
+	docker-compose up -d
+	@echo "✅ Services started. Run 'make logs' to view output."
+	@echo "🌐 Frontend: http://localhost:3000"
+	@echo "🔌 Backend: http://localhost:4000"
 
-# Start all services
-start:
-	@echo "🚀 Starting todoless-ngx services..."
-	@docker-compose -f docker-compose.supabase.yml up -d
-	@echo ""
-	@echo "✅ Services started!"
-	@echo "   📱 App:    http://localhost:3000"
-	@echo "   🎨 Studio: http://localhost:3010"
-	@echo "   🔌 API:    http://localhost:8000"
-	@echo ""
+stop: ## Stop all services
+	docker-compose down
 
-# Stop all services
-stop:
-	@echo "🛑 Stopping todoless-ngx services..."
-	@docker-compose -f docker-compose.supabase.yml down
-	@echo "✅ Services stopped"
+restart: ## Restart all services
+	docker-compose restart
 
-# Restart all services
-restart:
-	@echo "🔄 Restarting todoless-ngx services..."
-	@docker-compose -f docker-compose.supabase.yml restart
-	@echo "✅ Services restarted"
+logs: ## View logs from all services
+	docker-compose logs -f
 
-# Show logs
-logs:
-	@docker-compose -f docker-compose.supabase.yml logs -f
+build: ## Build containers from scratch
+	docker-compose build --no-cache
 
-# Show service status
-status:
-	@echo "📊 Service Status:"
-	@docker-compose -f docker-compose.supabase.yml ps
+clean: ## Stop and remove all containers, networks (keeps data)
+	docker-compose down
 
-# Open database console
-db:
-	@echo "🗄️  Opening database console..."
-	@docker exec -it supabase-db psql -U postgres -d todoless
+clean-all: ## ⚠️  Stop and remove everything including data
+	@echo "⚠️  WARNING: This will delete all data!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker-compose down -v; \
+		echo "✅ All data removed."; \
+	fi
 
-# Create backup
-backup:
-	@echo "💾 Creating database backup..."
+admin: ## Create admin user (usage: make admin EMAIL=admin@local PASSWORD=admin123 NAME=Admin)
+	@chmod +x scripts/create-admin.sh
+	./scripts/create-admin.sh $(EMAIL) $(PASSWORD) $(NAME)
+
+invite: ## Create invite code (usage: make invite USES=1 DAYS=30)
+	@chmod +x scripts/create-invite.sh
+	./scripts/create-invite.sh $(USES) $(DAYS)
+
+health: ## Check health of all services
+	@chmod +x scripts/health-check.sh
+	./scripts/health-check.sh
+
+backup: ## Backup PostgreSQL database to backups/backup-YYYYMMDD.sql.gz
 	@mkdir -p backups
-	@docker exec supabase-db pg_dump -U postgres todoless | gzip > backups/todoless-$(shell date +%Y%m%d-%H%M%S).sql.gz
-	@echo "✅ Backup created in backups/"
-	@ls -lh backups/ | tail -1
+	docker exec todoless-ngx-db pg_dump -U todoless todoless | gzip > backups/backup-$$(date +%Y%m%d-%H%M%S).sql.gz
+	@echo "✅ Backup saved to: backups/backup-$$(date +%Y%m%d-%H%M%S).sql.gz"
 
-# Restore from backup
-restore:
-ifndef BACKUP_FILE
-	@echo "❌ Error: Please specify BACKUP_FILE"
-	@echo "   Usage: make restore BACKUP_FILE=backups/todoless-20260314.sql.gz"
-else
-	@echo "📥 Restoring from $(BACKUP_FILE)..."
-	@gunzip -c $(BACKUP_FILE) | docker exec -i supabase-db psql -U postgres todoless
-	@echo "✅ Restore completed"
-endif
+restore: ## Restore from backup (usage: make restore FILE=backups/backup-20260314.sql.gz)
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ Error: Please specify FILE=path/to/backup.sql.gz"; \
+		exit 1; \
+	fi
+	@echo "⚠️  WARNING: This will replace current database!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		gunzip -c $(FILE) | docker exec -i todoless-ngx-db psql -U todoless -d todoless; \
+		echo "✅ Database restored from $(FILE)"; \
+	fi
 
-# Run migrations
-migrate:
-	@echo "📦 Running database migrations..."
-	@chmod +x scripts/migrate.sh
-	@./scripts/migrate.sh
+shell-db: ## Open PostgreSQL shell
+	docker exec -it todoless-ngx-db psql -U todoless -d todoless
 
-# Import localStorage data
-import:
-ifndef BACKUP_FILE
-	@echo "❌ Error: Please specify BACKUP_FILE"
-	@echo "   Usage: make import BACKUP_FILE=backup.json"
-else
-	@echo "📥 Importing data from $(BACKUP_FILE)..."
-	@node scripts/import-localstorage.js $(BACKUP_FILE)
-endif
+shell-backend: ## Open backend container shell
+	docker exec -it todoless-ngx-backend sh
 
-# Clean containers (keep data)
-clean:
-	@echo "🧹 Cleaning up containers..."
-	@docker-compose -f docker-compose.supabase.yml down
-	@docker system prune -f
-	@echo "✅ Cleanup completed"
+shell-frontend: ## Open frontend container shell
+	docker exec -it todoless-ngx-frontend sh
 
-# Reset everything (⚠️ deletes all data!)
-reset:
-	@echo "⚠️  WARNING: This will delete ALL data!"
-	@read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
-	@echo "🗑️  Resetting everything..."
-	@docker-compose -f docker-compose.supabase.yml down -v
-	@rm -rf .supabase
-	@echo "✅ Reset completed. Run 'make setup' to start fresh."
+update: ## Update to latest version (preserves data)
+	git pull
+	docker-compose down
+	docker-compose up -d --build
+	@echo "✅ Updated to latest version"
 
-# Development helpers
-dev:
-	@echo "💻 Starting development mode..."
-	@npm run dev
-
-build:
-	@echo "🏗️  Building frontend..."
-	@npm run build
-
-# Install dependencies
-install:
-	@echo "📦 Installing dependencies..."
-	@npm install
-
-# Health check
-health:
-	@echo "🏥 Checking service health..."
-	@curl -s http://localhost:8000/health || echo "❌ API not responding"
-	@curl -s http://localhost:3000 > /dev/null && echo "✅ Frontend is up" || echo "❌ Frontend not responding"
-	@docker exec supabase-db pg_isready -U postgres && echo "✅ Database is up" || echo "❌ Database not responding"
-
-# View stats
-stats:
-	@echo "📊 Database Statistics:"
-	@docker exec supabase-db psql -U postgres -d todoless -c "\
-		SELECT 'Tasks' as table, COUNT(*) as count FROM tasks UNION ALL \
-		SELECT 'Items', COUNT(*) FROM items UNION ALL \
-		SELECT 'Notes', COUNT(*) FROM notes UNION ALL \
-		SELECT 'Users', COUNT(*) FROM users UNION ALL \
-		SELECT 'Labels', COUNT(*) FROM labels UNION ALL \
-		SELECT 'Sprints', COUNT(*) FROM sprints;"
-
-# Tail logs
-tail:
-	@docker-compose -f docker-compose.supabase.yml logs --tail=100
-
-# Generate new JWT tokens
-jwt:
-	@echo "🔐 Generating new JWT tokens..."
-	@node scripts/generate-jwt.js $(shell openssl rand -base64 32)
+dev: ## Start development environment
+	@echo "Starting PostgreSQL..."
+	docker-compose up -d todoless-ngx-db
+	@echo "✅ Database ready at localhost:5432"
+	@echo "📝 Run 'cd backend && npm run dev' to start backend"
+	@echo "📝 Run 'npm run dev' to start frontend"

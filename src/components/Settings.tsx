@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from './AuthProvider';
 import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Lock, Eye, EyeOff, Upload, Archive, Share2, Copy } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { LabelBadge } from './shared/LabelBadge';
@@ -11,6 +12,7 @@ import { InviteManager } from './InviteManager';
 
 export const Settings = () => {
   const { users, appSettings, addUser, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, sprints, createNewSprint, currentSprint, deleteSprint, tasks, archiveCompletedSprintTasks, archiveAllDoneTasks, deleteArchivedTasks, showCompletionMessage } = useApp();
+  const { signOut } = useAuth();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -76,7 +78,7 @@ export const Settings = () => {
   };
 
   const handleLogout = () => {
-    updateAppSettings({ currentUserId: undefined });
+    signOut();
     window.location.reload();
   };
 
@@ -515,16 +517,39 @@ export const Settings = () => {
             <>
               <button
                 onClick={createNewSprint}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 mb-4"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
               >
                 <Plus className="w-4 h-4" />
                 New Sprint
               </button>
+
+              {/* Sprint Start Day Setting */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Sprint Start Day
+                </label>
+                <select
+                  value={appSettings.sprintStartDay ?? 1}
+                  onChange={(e) => updateAppSettings({ sprintStartDay: Number(e.target.value) as 0 | 1 | 2 | 3 | 4 | 5 | 6 })}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded"
+                >
+                  <option value="0">Sunday</option>
+                  <option value="1">Monday</option>
+                  <option value="2">Tuesday</option>
+                  <option value="3">Wednesday</option>
+                  <option value="4">Thursday</option>
+                  <option value="5">Friday</option>
+                  <option value="6">Saturday</option>
+                </select>
+                <p className="text-xs text-neutral-500 mt-1">
+                  New sprints will automatically start on the next {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][appSettings.sprintStartDay ?? 1]}
+                </p>
+              </div>
               
               {/* Current Sprint */}
-              <div className="mb-4">
-                <p className="text-xs font-medium text-neutral-700 mb-2">Current Sprint</p>
-                {currentSprint ? (
+              {currentSprint && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-neutral-700 mb-2">Current Sprint</p>
                   <div className="p-3 bg-green-50 border border-green-200 rounded">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-semibold text-sm text-green-900">{currentSprint.name}</p>
@@ -549,12 +574,8 @@ export const Settings = () => {
                       {tasks.filter(t => t.sprintId === currentSprint.id && t.status === 'done').length} completed tasks ready to archive
                     </p>
                   </div>
-                ) : (
-                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded text-sm text-neutral-600">
-                    No active sprint. Create one to assign tasks.
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
               
               {/* All Sprints */}
               {sprints.length > 0 && (

@@ -7,14 +7,11 @@ services:
     container_name: todoless-pocketbase
     restart: unless-stopped
     environment:
-      TZ: $TZ
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@todoless.local}
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
-    expose:
-      - "8090"
     volumes:
-      - /DATA/AppData/$AppID/pb_data:/pb_data
-      - /DATA/AppData/$AppID/pb_migrations:/pb_migrations
+      - pb_data:/pb_data
+      - ./pb_migrations:/pb_migrations
     networks:
       - todoless-net
     healthcheck:
@@ -23,57 +20,24 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    x-casaos:
-      volumes:
-        - container: /pb_data
-          description:
-            en_US: PocketBase database and uploaded files
-        - container: /pb_migrations
-          description:
-            en_US: Database migration scripts
 
   frontend:
-    image: ghcr.io/chalidnl/todoless-ngx:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: todoless-frontend
     restart: unless-stopped
-    environment:
-      TZ: $TZ
     ports:
-      - target: 80
-        published: ${WEBUI_PORT:-7070}
-        protocol: tcp
+      - "${WEBUI_PORT:-7070}:80"
     depends_on:
       pocketbase:
         condition: service_healthy
     networks:
       - todoless-net
-    x-casaos:
-      envs:
-        - container: TZ
-          description:
-            en_US: Timezone
-      ports:
-        - container: "80"
-          description:
-            en_US: Web UI port
 
 networks:
   todoless-net:
     driver: bridge
 
-x-casaos:
-  architectures:
-    - amd64
-    - arm64
-  main: frontend
-  author: self-hosted
-  category: Productivity
-  description:
-    en_US: To Do Less — self-hosted multi-user task manager with real-time sync. Includes tasks, notes, calendar, brain dumps, and settings. Powered by PocketBase. No external services. Completely free.
-  tagline:
-    en_US: Self-hosted productivity, zero cost
-  title:
-    en_US: To Do Less
-  port_map: ${WEBUI_PORT:-7070}
-  scheme: http
-  index: /
+volumes:
+  pb_data:

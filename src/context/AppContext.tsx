@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { Item, Task, Note, Label, Shop, CalendarEvent, Filter, FilterView, AppSettings, ProgressStats, Sprint, User, SprintDuration, InviteCode } from '../types';
 import { getISOWeek } from '../utils/dateUtils';
 
@@ -297,7 +297,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     cleanup(); // Run immediately on mount
     const interval = setInterval(cleanup, 60 * 60 * 1000); // Every hour
     return () => clearInterval(interval);
-  }, [appSettings.archiveRetention]);
+  }, []); // Empty dependency array - only run once on mount
 
   const addItem = (item: Omit<Item, 'id' | 'createdAt'>) => {
     setItems(prev => [...prev, { ...item, id: generateId(), createdAt: Date.now() }]);
@@ -527,6 +527,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const now = Date.now();
     const nowDate = new Date(now);
     const duration = appSettings.sprintDuration;
+    const startDay = appSettings.sprintStartDay ?? 1; // Default to Monday (1)
     let durationDays = 14; // default 2 weeks
     
     if (duration === '1week') durationDays = 7;
@@ -534,13 +535,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     else if (duration === '3weeks') durationDays = 21;
     else if (duration === '1month') durationDays = 30;
 
+    // Calculate next occurrence of the target start day
+    const currentDay = nowDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    let daysUntilStart = startDay - currentDay;
+    
+    // If target day is today or has passed this week, schedule for next week
+    if (daysUntilStart <= 0) {
+      daysUntilStart += 7;
+    }
+    
+    // Calculate start date
+    const startDate = new Date(nowDate);
+    startDate.setDate(startDate.getDate() + daysUntilStart);
+    startDate.setHours(0, 0, 0, 0); // Set to midnight
+    
+    const startTimestamp = startDate.getTime();
+    const endTimestamp = startTimestamp + (durationDays * 24 * 60 * 60 * 1000);
+
     const newSprint: Omit<Sprint, 'id'> = {
       name: `Sprint ${sprints.length + 1}`,
-      startDate: now,
-      endDate: now + (durationDays * 24 * 60 * 60 * 1000),
+      startDate: startTimestamp,
+      endDate: endTimestamp,
       duration: duration,
-      weekNumber: getISOWeek(nowDate),
-      year: nowDate.getFullYear(),
+      weekNumber: getISOWeek(startDate),
+      year: startDate.getFullYear(),
     };
     const sprint = { ...newSprint, id: generateId() };
     setSprints(prev => [...prev, sprint]);
@@ -696,7 +714,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     toggleLabelFilter,
     clearLabelFilters,
     showCompletionMessage,
-    incrementClarified,
     moveTaskToStatus,
     createNewSprint,
     convertTaskToItem,

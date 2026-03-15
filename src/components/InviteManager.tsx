@@ -34,17 +34,15 @@ export const InviteManager = () => {
 
   return (
     <>
-      <div className="mb-4">
-        <button
-          onClick={handleGenerateInvite}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          Genereer Invite Code
-        </button>
-      </div>
+      <button
+        onClick={handleGenerateInvite}
+        className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
+      >
+        <Plus className="w-4 h-4" />
+        Genereer Invite Code
+      </button>
 
-      {inviteCodes.length > 0 ? (
+      {inviteCodes.length > 0 && (
         <div className="space-y-3">
           {inviteCodes.map((invite) => {
             const isExpired = invite.expiresAt < Date.now();
@@ -96,10 +94,6 @@ export const InviteManager = () => {
               </div>
             );
           })}
-        </div>
-      ) : (
-        <div className="p-4 bg-neutral-50 border border-neutral-200 rounded text-sm text-neutral-600">
-          Geen actieve invite codes. Klik op "Genereer Invite Code" om een nieuwe te maken.
         </div>
       )}
 

@@ -64,13 +64,13 @@ export const CompactItemCard = ({ item }: CompactItemCardProps) => {
     <div className={`rounded-lg p-2.5 hover:border-neutral-300 transition-all bg-white border-2 border-neutral-200 ${
       isExpanded ? 'shadow-lg' : ''
     }`}>
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2">
         {/* Checkbox */}
         <input
           type="checkbox"
           checked={item.completed}
           onChange={handleToggle}
-          className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer flex-shrink-0 accent-blue-600"
+          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer flex-shrink-0 accent-blue-600"
         />
         
         {/* Item content */}

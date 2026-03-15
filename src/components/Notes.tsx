@@ -95,10 +95,10 @@ export const Notes = () => {
                     isExpanded ? 'p-4 border-neutral-300' : 'p-3 border-neutral-200'
                   } ${note.pinned ? 'border-yellow-300 bg-yellow-50' : ''}`}
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-center gap-2">
                     {/* Pin indicator */}
                     {note.pinned && (
-                      <Pin className="w-4 h-4 text-yellow-600 fill-yellow-600 flex-shrink-0 mt-0.5" />
+                      <Pin className="w-4 h-4 text-yellow-600 fill-yellow-600 flex-shrink-0" />
                     )}
 
                     {/* Note Content (clickable to open detail modal) */}

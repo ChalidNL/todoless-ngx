@@ -24,14 +24,11 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:4000',
+      '/pb': {
+        target: 'http://localhost:8090',
         changeOrigin: true,
-      },
-      '/ws': {
-        target: 'http://localhost:4000',
+        rewrite: (path) => path.replace(/^\/pb/, ''),
         ws: true,
-        changeOrigin: true,
       },
     },
   },

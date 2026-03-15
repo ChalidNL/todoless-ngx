@@ -176,7 +176,7 @@ export const TasksView = () => {
                 <CompactTaskCard 
                   key={task.id} 
                   task={task} 
-                  showCheckbox={task.status === 'done'}
+                  showCheckbox={true}
                 />
               ))}
             </div>
