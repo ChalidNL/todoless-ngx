@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { CalendarEvent } from '../types';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { TopBar } from './shared/TopBar';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
 import { CompactTaskCard } from './shared/CompactTaskCard';
 
 type CalendarView = 'list' | 'day' | 'week' | 'month' | 'year';
@@ -211,24 +211,167 @@ export const Calendar = () => {
   };
 
   const renderDayView = () => {
-    const todayTasks = getTodayTasks();
-    const today = new Date();
+    const dayTasks = getTasksForDate(currentDate);
+    const hours = Array.from({ length: 24 }, (_, i) => i);
     
+    const getTasksForSlot = (hour: number, isHalf: boolean) => {
+      const slotMinute = isHalf ? 30 : 0;
+      return dayTasks.filter(task => {
+        if (!task.dueDate) return false;
+        const d = new Date(task.dueDate);
+        const taskHour = d.getHours();
+        const taskMinute = d.getMinutes();
+        if (isHalf) {
+          return taskHour === hour && taskMinute >= 30;
+        } else {
+          return taskHour === hour && taskMinute < 30;
+        }
+      });
+    };
+
+    const allDayTasks = dayTasks.filter(task => {
+      if (!task.dueDate) return false;
+      const d = new Date(task.dueDate);
+      return d.getHours() === 0 && d.getMinutes() === 0;
+    });
+
+    const handleSlotClick = (hour: number, isHalf: boolean) => {
+      const date = new Date(currentDate);
+      date.setHours(hour, isHalf ? 30 : 0, 0, 0);
+      const dateStr = date.toISOString().split('T')[0];
+      const timeStr = `${String(hour).padStart(2, '0')}:${isHalf ? '30' : '00'}`;
+      setNewEventDate(dateStr);
+      setNewEventTime(timeStr);
+      setShowAddModal(true);
+    };
+
+    const nowHour = new Date().getHours();
+    const nowMinute = new Date().getMinutes();
+    const isCurrentDay = new Date().toDateString() === currentDate.toDateString();
+
     return (
-      <div className="max-w-2xl mx-auto px-4 py-4">
-        <h2 className="text-lg font-semibold mb-4">
-          {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <h2 className="text-lg mb-4">
+          {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
         </h2>
-        <div className="space-y-2">
-          {todayTasks.length === 0 ? (
-            <div className="text-center py-12 text-neutral-500">
-              <p>No tasks for today</p>
+
+        {/* All-day section */}
+        {allDayTasks.length > 0 && (
+          <div className="flex border-b border-neutral-200 mb-1">
+            <div className="w-16 shrink-0 py-2 pr-2 text-right text-xs text-neutral-400">
+              All day
             </div>
-          ) : (
-            todayTasks.map(task => (
-              <CompactTaskCard key={task.id} task={task} />
-            ))
+            <div className="flex-1 py-2 pl-3 space-y-1">
+              {allDayTasks.map(task => (
+                <div
+                  key={task.id}
+                  className={`text-xs px-2 py-1 rounded ${
+                    task.status === 'done'
+                      ? 'bg-neutral-100 text-neutral-500 line-through'
+                      : task.priority === 'urgent'
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}
+                >
+                  {task.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hour timeline */}
+        <div className="border border-neutral-200 rounded-lg bg-white overflow-hidden relative">
+          {/* Current time indicator */}
+          {isCurrentDay && (
+            <div
+              className="absolute left-16 right-0 z-10 pointer-events-none"
+              style={{ top: `${(nowHour * 80) + (nowMinute / 60) * 80}px` }}
+            >
+              <div className="flex items-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.5" />
+                <div className="flex-1 h-[2px] bg-red-500" />
+              </div>
+            </div>
           )}
+
+          {hours.map(hour => {
+            const topHalfTasks = getTasksForSlot(hour, false);
+            const bottomHalfTasks = getTasksForSlot(hour, true);
+            const formattedHour = `${String(hour).padStart(2, '0')}:00`;
+
+            return (
+              <div key={hour} className="flex" style={{ height: '80px' }}>
+                {/* Hour label */}
+                <div className="w-16 shrink-0 border-r border-neutral-200 flex items-start justify-end pr-2 -mt-2">
+                  <span className="text-xs text-neutral-400">{formattedHour}</span>
+                </div>
+
+                {/* Half-hour slots */}
+                <div className="flex-1 flex flex-col">
+                  {/* First half: :00 - :29 */}
+                  <div
+                    className="flex-1 border-b border-neutral-100 px-2 py-0.5 cursor-pointer hover:bg-blue-50/30 transition-colors group relative"
+                    onClick={() => handleSlotClick(hour, false)}
+                  >
+                    <div className="flex flex-wrap gap-1">
+                      {topHalfTasks.map(task => (
+                        <div
+                          key={task.id}
+                          className={`text-xs px-2 py-1 rounded truncate max-w-xs ${
+                            task.status === 'done'
+                              ? 'bg-neutral-100 text-neutral-500 line-through'
+                              : task.priority === 'urgent'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : task.priority === 'low'
+                              ? 'bg-neutral-50 text-neutral-600 border border-neutral-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                          title={task.title}
+                        >
+                          {task.title}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Plus className="w-3.5 h-3.5 text-neutral-400" />
+                    </div>
+                  </div>
+
+                  {/* Second half: :30 - :59 */}
+                  <div
+                    className="flex-1 border-b border-neutral-200 px-2 py-0.5 cursor-pointer hover:bg-blue-50/30 transition-colors group relative"
+                    onClick={() => handleSlotClick(hour, true)}
+                  >
+                    <div className="flex flex-wrap gap-1">
+                      {bottomHalfTasks.map(task => (
+                        <div
+                          key={task.id}
+                          className={`text-xs px-2 py-1 rounded truncate max-w-xs ${
+                            task.status === 'done'
+                              ? 'bg-neutral-100 text-neutral-500 line-through'
+                              : task.priority === 'urgent'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : task.priority === 'low'
+                              ? 'bg-neutral-50 text-neutral-600 border border-neutral-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                          title={task.title}
+                        >
+                          {task.title}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Plus className="w-3.5 h-3.5 text-neutral-400" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
