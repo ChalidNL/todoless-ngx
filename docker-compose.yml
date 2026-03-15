@@ -1,9 +1,34 @@
-name: todoless
+name: todoless-ngx
 
 services:
+  todoless-ngx:
+    image: ghcr.io/chalidnl/todoless-frontend:latest
+    container_name: todoless-ngx
+    restart: unless-stopped
+    environment:
+      TZ: $TZ
+    ports:
+      - target: 80
+        published: 7070
+        protocol: tcp
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+    networks:
+      - todoless-net
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_US: Timezone
+      ports:
+        - container: "80"
+          description:
+            en_US: Web UI
+
   pocketbase:
     image: ghcr.io/muchobien/pocketbase:0.34.2
-    container_name: todoless-pocketbase
+    container_name: todoless-ngx-pocketbase
     restart: unless-stopped
     environment:
       TZ: $TZ
@@ -29,31 +54,6 @@ services:
           description:
             en_US: PocketBase migration scripts
 
-  frontend:
-    image: ghcr.io/chalidnl/todoless-frontend:latest
-    container_name: todoless-frontend
-    restart: unless-stopped
-    environment:
-      TZ: $TZ
-    ports:
-      - target: 80
-        published: ${WEBUI_PORT:-7070}
-        protocol: tcp
-    depends_on:
-      pocketbase:
-        condition: service_healthy
-    networks:
-      - todoless-net
-    x-casaos:
-      envs:
-        - container: TZ
-          description:
-            en_US: Timezone
-      ports:
-        - container: "80"
-          description:
-            en_US: Web UI
-
 networks:
   todoless-net:
     driver: bridge
@@ -62,15 +62,16 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: frontend
+  main: todoless-ngx
   author: self-hosted
   category: Productivity
   description:
     en_US: todoless-ngx — self-hosted multi-user task manager. Tasks, notes, calendar, brain dumps, real-time sync. Free forever.
+  icon: https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/src/public/icon.png
   tagline:
     en_US: Self-hosted productivity app
   title:
     en_US: todoless-ngx
-  port_map: ${WEBUI_PORT:-7070}
+  port_map: "7070"
   scheme: http
   index: /
