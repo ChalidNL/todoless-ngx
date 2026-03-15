@@ -17,7 +17,7 @@ migrate(
         name: 'tasks',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'title', type: 'text', required: true },
           { name: 'status', type: 'select', required: true, options: { values: ['backlog', 'todo', 'done'], maxSelect: 1 } },
           { name: 'blocked', type: 'bool' },
@@ -44,7 +44,7 @@ migrate(
         name: 'items',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'title', type: 'text', required: true },
           { name: 'completed', type: 'bool' },
           { name: 'shop_id', type: 'relation', options: { collectionId: 'shops', cascadeDelete: false, maxSelect: 1 } },
@@ -63,7 +63,7 @@ migrate(
         name: 'notes',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'title', type: 'text' },
           { name: 'content', type: 'text', required: true },
           { name: 'pinned', type: 'bool' },
@@ -80,7 +80,7 @@ migrate(
         name: 'labels',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'name', type: 'text', required: true },
           { name: 'color', type: 'text', required: true },
           { name: 'is_private', type: 'bool' },
@@ -94,7 +94,7 @@ migrate(
         name: 'shops',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'name', type: 'text', required: true },
           { name: 'color', type: 'text', required: true },
           { name: 'user', type: 'relation', required: true, options: { collectionId: '_pb_users_auth_', cascadeDelete: true, maxSelect: 1 } },
@@ -107,7 +107,7 @@ migrate(
         name: 'calendar_events',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'title', type: 'text', required: true },
           { name: 'description', type: 'text' },
           { name: 'start_time', type: 'date', required: true },
@@ -124,7 +124,7 @@ migrate(
         name: 'sprints',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'name', type: 'text', required: true },
           { name: 'start_date', type: 'date', required: true },
           { name: 'end_date', type: 'date', required: true },
@@ -141,7 +141,7 @@ migrate(
         name: 'invite_codes',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'code', type: 'text', required: true },
           { name: 'expires_at', type: 'date', required: true },
           { name: 'used', type: 'bool' },
@@ -157,7 +157,7 @@ migrate(
         name: 'app_settings',
         type: 'base',
         ...baseRules,
-        schema: [
+        fields: [
           { name: 'theme', type: 'select', options: { values: ['light', 'dark'], maxSelect: 1 } },
           { name: 'language', type: 'text' },
           { name: 'sprint_duration', type: 'select', options: { values: ['1week', '2weeks', '3weeks', '1month'], maxSelect: 1 } },
