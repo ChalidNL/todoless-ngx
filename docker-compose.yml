@@ -1,6 +1,21 @@
 name: todoless-ngx
 
 services:
+  pb-migrations-init:
+    image: alpine:3.20
+    container_name: todoless-ngx-pb-migrations-init
+    restart: "no"
+    command:
+      [
+        "sh",
+        "-c",
+        "mkdir -p /pb_migrations && if [ ! -f /pb_migrations/001_initial_schema.js ]; then wget -qO /pb_migrations/001_initial_schema.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/001_initial_schema.js; fi"
+      ]
+    volumes:
+      - /DATA/AppData/$AppID/pb_migrations:/pb_migrations
+    networks:
+      - todoless-net
+
   todoless-ngx:
     image: ghcr.io/chalidnl/todoless-ngx:latest
     pull_policy: always
@@ -14,7 +29,7 @@ services:
         protocol: tcp
     depends_on:
       pocketbase:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1"]
       interval: 15s
@@ -37,10 +52,20 @@ services:
     image: ghcr.io/muchobien/pocketbase:0.34.2
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
+    depends_on:
+      pb-migrations-init:
+        condition: service_completed_successfully
+    command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--automigrate"]
     environment:
       TZ: $TZ
     expose:
       - "8090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8090/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     volumes:
       - /DATA/AppData/$AppID/pb_data:/pb_data
       - /DATA/AppData/$AppID/pb_migrations:/pb_migrations
