@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Brain, Inbox, Calendar, Check, Eye, EyeOff, ShoppingCart, StickyNote, UserPlus, Sparkles } from 'lucide-react';
-import { useApp } from '../context/AppContext'; // Use localStorage version
+import { useApp } from '../context/AppContext';
+import { useAuth } from './AuthProvider';
 import { AppLogo } from './shared/AppLogo';
 
 interface OnboardingProps {
@@ -8,7 +9,8 @@ interface OnboardingProps {
 }
 
 export const Onboarding = ({ onComplete }: OnboardingProps) => {
-  const { users, addUser, updateAppSettings } = useApp();
+  const { users, updateAppSettings } = useApp();
+  const { signUp } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,7 +82,7 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
     }
   };
 
-  const handleCreateAdmin = () => {
+  const handleCreateAdmin = async () => {
     if (!email || !password || !name) {
       setError('All fields are required');
       return;
@@ -91,25 +93,13 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       return;
     }
 
-    // Create admin user in localStorage
-    const newUser = {
-      id: Math.random().toString(36).substring(2, 11),
-      email,
-      name,
-      role: 'admin' as const,
-    };
+    const { error: signUpError } = await signUp(email, password, name, '');
+    if (signUpError) {
+      setError(signUpError.message || 'Failed to create admin account');
+      return;
+    }
 
-    console.log('🔐 Creating first admin user:', newUser.email);
-
-    addUser(newUser);
-    updateAppSettings({ 
-      currentUserId: newUser.id,
-      hasCompletedOnboarding: true 
-    });
-
-    console.log('✅ Admin user created successfully');
-
-    // Complete onboarding
+    updateAppSettings({ hasCompletedOnboarding: true });
     onComplete();
   };
 

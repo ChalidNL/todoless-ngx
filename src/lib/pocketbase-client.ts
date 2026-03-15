@@ -1,79 +1,178 @@
-/**
- * PocketBase Client Wrapper for To Do Less
- * This replaces the old api-client.ts with PocketBase SDK calls
- */
-
 import { pb } from './pocketbase';
-import type { 
-  User, 
-  Task, 
-  Item, 
-  Note, 
-  Label, 
-  Shop, 
-  Sprint, 
-  CalendarEvent, 
-  InviteCode, 
-  AppSettings 
-} from './pocketbase';
+import type {
+  AppSettings,
+  CalendarEvent,
+  InviteCode,
+  Item,
+  Label,
+  Note,
+  Shop,
+  Sprint,
+  Task,
+  User,
+} from '../types';
+
+const toTimestamp = (value?: string | null) => (value ? new Date(value).getTime() : undefined);
+
+const normalizeUser = (record: any): User => ({
+  id: record.id,
+  email: record.email,
+  name: record.name || record.email,
+  avatarUrl: record.avatar,
+  role: (record.role || 'user') as User['role'],
+});
+
+const normalizeTask = (record: any): Task => ({
+  id: record.id,
+  title: record.title,
+  status: record.status || 'todo',
+  blocked: !!record.blocked,
+  blockedComment: record.blocked_comment || undefined,
+  priority: record.priority || undefined,
+  horizon: record.horizon || undefined,
+  assignedTo: record.assigned_to || undefined,
+  sprintId: record.sprint_id || undefined,
+  dueDate: toTimestamp(record.due_date),
+  repeatInterval: record.repeat_interval || undefined,
+  completedAt: toTimestamp(record.completed_at),
+  archived: !!record.archived,
+  archivedAt: toTimestamp(record.archived_at),
+  deleteAfter: toTimestamp(record.delete_after),
+  isPrivate: !!record.is_private,
+  labels: Array.isArray(record.labels) ? record.labels : [],
+  createdAt: toTimestamp(record.created) || Date.now(),
+  createdBy: record.user,
+});
+
+const normalizeItem = (record: any): Item => ({
+  id: record.id,
+  title: record.title,
+  completed: !!record.completed,
+  shopId: record.shop_id || undefined,
+  quantity: record.quantity || undefined,
+  priority: record.priority || undefined,
+  assignedTo: record.assigned_to || undefined,
+  dueDate: toTimestamp(record.due_date),
+  labels: Array.isArray(record.labels) ? record.labels : [],
+  createdAt: toTimestamp(record.created) || Date.now(),
+  createdBy: record.user,
+});
+
+const normalizeNote = (record: any): Note => ({
+  id: record.id,
+  title: record.title || undefined,
+  content: record.content || '',
+  pinned: !!record.pinned,
+  linkedType: record.linked_type || undefined,
+  linkedTo: record.linked_to || undefined,
+  labels: Array.isArray(record.labels) ? record.labels : [],
+  createdAt: toTimestamp(record.created) || Date.now(),
+  createdBy: record.user,
+});
+
+const normalizeLabel = (record: any): Label => ({
+  id: record.id,
+  name: record.name,
+  color: record.color,
+  isPrivate: !!record.is_private,
+  createdBy: record.user,
+});
+
+const normalizeShop = (record: any): Shop => ({
+  id: record.id,
+  name: record.name,
+  color: record.color,
+});
+
+const normalizeSprint = (record: any): Sprint => ({
+  id: record.id,
+  name: record.name,
+  startDate: toTimestamp(record.start_date) || Date.now(),
+  endDate: toTimestamp(record.end_date) || Date.now(),
+  duration: record.duration || '2weeks',
+  weekNumber: record.week_number || 1,
+  year: record.year || new Date().getFullYear(),
+  createdBy: record.user,
+});
+
+const normalizeCalendarEvent = (record: any): CalendarEvent => ({
+  id: record.id,
+  title: record.title,
+  description: record.description || undefined,
+  startTime: toTimestamp(record.start_time) || Date.now(),
+  endTime: toTimestamp(record.end_time) || Date.now(),
+  allDay: !!record.all_day,
+  taskId: record.task_id || undefined,
+  createdAt: toTimestamp(record.created) || Date.now(),
+  createdBy: record.user,
+});
+
+const normalizeInvite = (record: any): InviteCode => ({
+  id: record.id,
+  code: record.code,
+  createdBy: record.user,
+  createdAt: toTimestamp(record.created),
+  expiresAt: toTimestamp(record.expires_at),
+  used: !!record.used,
+  usedBy: record.used_by || undefined,
+  usedAt: toTimestamp(record.used_at),
+});
+
+const normalizeSettings = (record: any): AppSettings => ({
+  hasCompletedOnboarding: true,
+  sprintDuration: record.sprint_duration || '2weeks',
+  sprintStartDay: record.sprint_start_day ?? 1,
+  currentUserId: record.user,
+  language: record.language || 'en',
+  archiveRetention: record.archive_retention_days ?? 30,
+  autoCleanup: record.auto_cleanup ?? true,
+  theme: record.theme || 'light',
+});
 
 class PocketBaseClient {
-  // ==================== AUTH ====================
-  
   async login(email: string, password: string) {
     const authData = await pb.collection('users').authWithPassword(email, password);
-    return {
-      token: pb.authStore.token,
-      user: {
-        id: authData.record.id,
-        email: authData.record.email,
-        name: authData.record.name,
-        role: authData.record.role,
-        avatar_url: authData.record.avatar,
-      },
-    };
+    return { token: pb.authStore.token, user: normalizeUser(authData.record) };
   }
 
-  async register(email: string, password: string, name: string, inviteCode: string) {
-    // First verify the invite code
-    const invites = await pb.collection('invite_codes').getFullList({
-      filter: `code = "${inviteCode}" && used = false && expires_at > "${new Date().toISOString()}"`,
-    });
+  async register(email: string, password: string, name: string, inviteCode?: string) {
+    const userCount = await pb.collection('users').getList(1, 1);
+    const isFirstUser = userCount.totalItems === 0;
 
-    if (invites.length === 0) {
-      throw new Error('Invalid or expired invite code');
+    if (!isFirstUser) {
+      if (!inviteCode) {
+        throw new Error('Invite code is required');
+      }
+
+      const invites = await pb.collection('invite_codes').getFullList({
+        filter: `code = "${inviteCode}" && used = false && expires_at > "${new Date().toISOString()}"`,
+      });
+
+      if (!invites.length) {
+        throw new Error('Invalid or expired invite code');
+      }
     }
 
-    // Create the user
-    const userData = await pb.collection('users').create({
+    const created = await pb.collection('users').create({
       email,
       password,
       passwordConfirm: password,
       name,
-      username: email.split('@')[0], // Use email prefix as username
-      role: 'user',
+      username: email.split('@')[0],
+      role: isFirstUser ? 'admin' : 'user',
     });
 
-    // Mark invite as used
-    await pb.collection('invite_codes').update(invites[0].id, {
-      used: true,
-      used_by: userData.id,
-      used_at: new Date().toISOString(),
-    });
+    if (!isFirstUser && inviteCode) {
+      const invite = await pb.collection('invite_codes').getFirstListItem(`code = "${inviteCode}"`);
+      await pb.collection('invite_codes').update(invite.id, {
+        used: true,
+        used_by: created.id,
+        used_at: new Date().toISOString(),
+      });
+    }
 
-    // Auto-login after registration
-    const authData = await pb.collection('users').authWithPassword(email, password);
-    
-    return {
-      token: pb.authStore.token,
-      user: {
-        id: authData.record.id,
-        email: authData.record.email,
-        name: authData.record.name,
-        role: authData.record.role,
-        avatar_url: authData.record.avatar,
-      },
-    };
+    await pb.collection('users').authWithPassword(email, password);
+    return { token: pb.authStore.token, user: normalizeUser(pb.authStore.record) };
   }
 
   async logout() {
@@ -84,319 +183,300 @@ class PocketBaseClient {
     if (!pb.authStore.isValid || !pb.authStore.record) {
       throw new Error('Not authenticated');
     }
-    return {
-      user: {
-        id: pb.authStore.record.id,
-        email: pb.authStore.record.email,
-        name: pb.authStore.record.name,
-        role: pb.authStore.record.role,
-        avatar_url: pb.authStore.record.avatar,
-      },
-    };
+    return { user: normalizeUser(pb.authStore.record) };
   }
 
-  // ==================== TASKS ====================
-  
-  async getTasks() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getTasks(): Promise<Task[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('tasks').getFullList({
-      filter: `user = "${userId}"`,
-      sort: '-created',
-    });
-    return records;
+    const list = await pb.collection('tasks').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
+    return list.map(normalizeTask);
   }
 
-  async createTask(task: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
+  async createTask(task: Partial<Task>) {
     const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('tasks').create({
-      ...task,
-      user: userId,
-      status: task.status || 'backlog',
+    return pb.collection('tasks').create({
+      title: task.title,
+      status: task.status || 'todo',
       blocked: task.blocked || false,
+      blocked_comment: task.blockedComment,
+      priority: task.priority,
+      horizon: task.horizon,
+      assigned_to: task.assignedTo,
+      sprint_id: task.sprintId,
+      due_date: task.dueDate ? new Date(task.dueDate).toISOString() : null,
+      repeat_interval: task.repeatInterval,
+      labels: task.labels || [],
       is_private: task.isPrivate || false,
       archived: task.archived || false,
-      labels: task.labels || [],
+      archived_at: task.archivedAt ? new Date(task.archivedAt).toISOString() : null,
+      delete_after: task.deleteAfter ? new Date(task.deleteAfter).toISOString() : null,
+      completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+      user: userId,
     });
   }
 
-  async updateTask(id: string, updates: any) {
-    return await pb.collection('tasks').update(id, updates);
+  async updateTask(id: string, updates: Partial<Task>) {
+    return pb.collection('tasks').update(id, {
+      ...updates,
+      blocked_comment: updates.blockedComment,
+      sprint_id: updates.sprintId,
+      assigned_to: updates.assignedTo,
+      due_date: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
+      repeat_interval: updates.repeatInterval,
+      is_private: updates.isPrivate,
+      archived_at: updates.archivedAt ? new Date(updates.archivedAt).toISOString() : undefined,
+      delete_after: updates.deleteAfter ? new Date(updates.deleteAfter).toISOString() : undefined,
+      completed_at: updates.completedAt ? new Date(updates.completedAt).toISOString() : undefined,
+    });
   }
 
   async deleteTask(id: string) {
     await pb.collection('tasks').delete(id);
   }
 
-  // ==================== ITEMS ====================
-  
-  async getItems() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getItems(): Promise<Item[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('items').getFullList({
-      filter: `user = "${userId}"`,
-      sort: '-created',
-    });
-    return records;
+    const list = await pb.collection('items').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
+    return list.map(normalizeItem);
   }
 
-  async createItem(item: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('items').create({
-      ...item,
-      user: userId,
+  async createItem(item: Partial<Item>) {
+    return pb.collection('items').create({
+      title: item.title,
       completed: item.completed || false,
-      is_private: item.isPrivate || false,
+      shop_id: item.shopId,
+      quantity: item.quantity,
+      priority: item.priority,
+      assigned_to: item.assignedTo,
+      due_date: item.dueDate ? new Date(item.dueDate).toISOString() : null,
       labels: item.labels || [],
+      user: pb.authStore.record?.id,
     });
   }
 
-  async updateItem(id: string, updates: any) {
-    return await pb.collection('items').update(id, updates);
+  async updateItem(id: string, updates: Partial<Item>) {
+    return pb.collection('items').update(id, {
+      ...updates,
+      shop_id: updates.shopId,
+      assigned_to: updates.assignedTo,
+      due_date: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
+    });
   }
 
   async deleteItem(id: string) {
     await pb.collection('items').delete(id);
   }
 
-  // ==================== NOTES ====================
-  
-  async getNotes() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getNotes(): Promise<Note[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('notes').getFullList({
-      filter: `user = "${userId}"`,
-      sort: '-created',
-    });
-    return records;
+    const list = await pb.collection('notes').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
+    return list.map(normalizeNote);
   }
 
-  async createNote(note: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('notes').create({
-      ...note,
-      user: userId,
+  async createNote(note: Partial<Note>) {
+    return pb.collection('notes').create({
+      title: note.title,
+      content: note.content,
       pinned: note.pinned || false,
-      is_private: note.isPrivate || false,
+      linked_type: note.linkedType,
+      linked_to: note.linkedTo,
       labels: note.labels || [],
+      user: pb.authStore.record?.id,
     });
   }
 
-  async updateNote(id: string, updates: any) {
-    return await pb.collection('notes').update(id, updates);
+  async updateNote(id: string, updates: Partial<Note>) {
+    return pb.collection('notes').update(id, {
+      ...updates,
+      linked_type: updates.linkedType,
+      linked_to: updates.linkedTo,
+    });
   }
 
   async deleteNote(id: string) {
     await pb.collection('notes').delete(id);
   }
 
-  // ==================== LABELS ====================
-  
-  async getLabels() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getLabels(): Promise<Label[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    // Get all public labels + user's private labels
-    const records = await pb.collection('labels').getFullList({
-      filter: `is_private = false || created_by = "${userId}"`,
-      sort: 'name',
-    });
-    return records;
+    const list = await pb.collection('labels').getFullList({ filter: `user = "${userId}"`, sort: 'name' });
+    return list.map(normalizeLabel);
   }
 
-  async createLabel(label: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('labels').create({
-      ...label,
-      created_by: userId,
+  async createLabel(label: Partial<Label>) {
+    return pb.collection('labels').create({
+      name: label.name,
+      color: label.color,
       is_private: label.isPrivate || false,
+      user: pb.authStore.record?.id,
     });
   }
 
-  async updateLabel(id: string, updates: any) {
-    return await pb.collection('labels').update(id, updates);
+  async updateLabel(id: string, updates: Partial<Label>) {
+    return pb.collection('labels').update(id, {
+      name: updates.name,
+      color: updates.color,
+      is_private: updates.isPrivate,
+    });
   }
 
   async deleteLabel(id: string) {
     await pb.collection('labels').delete(id);
   }
 
-  // ==================== SHOPS ====================
-  
-  async getShops() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getShops(): Promise<Shop[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('shops').getFullList({
-      filter: `user = "${userId}"`,
-      sort: 'name',
-    });
-    return records;
+    const list = await pb.collection('shops').getFullList({ filter: `user = "${userId}"`, sort: 'name' });
+    return list.map(normalizeShop);
   }
 
-  async createShop(shop: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('shops').create({
-      ...shop,
-      user: userId,
-    });
+  async createShop(shop: Partial<Shop>) {
+    return pb.collection('shops').create({ name: shop.name, color: shop.color, user: pb.authStore.record?.id });
   }
 
-  async updateShop(id: string, updates: any) {
-    return await pb.collection('shops').update(id, updates);
+  async updateShop(id: string, updates: Partial<Shop>) {
+    return pb.collection('shops').update(id, updates);
   }
 
   async deleteShop(id: string) {
     await pb.collection('shops').delete(id);
   }
 
-  // ==================== SPRINTS ====================
-  
-  async getSprints() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getSprints(): Promise<Sprint[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('sprints').getFullList({
-      filter: `user = "${userId}"`,
-      sort: '-start_date',
-    });
-    return records;
+    const list = await pb.collection('sprints').getFullList({ filter: `user = "${userId}"`, sort: '-start_date' });
+    return list.map(normalizeSprint);
   }
 
-  async createSprint(sprint: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('sprints').create({
-      ...sprint,
-      user: userId,
+  async createSprint(sprint: Partial<Sprint>) {
+    return pb.collection('sprints').create({
+      name: sprint.name,
+      start_date: sprint.startDate ? new Date(sprint.startDate).toISOString() : null,
+      end_date: sprint.endDate ? new Date(sprint.endDate).toISOString() : null,
+      duration: sprint.duration,
+      week_number: sprint.weekNumber,
+      year: sprint.year,
+      user: pb.authStore.record?.id,
     });
   }
 
-  async updateSprint(id: string, updates: any) {
-    return await pb.collection('sprints').update(id, updates);
+  async updateSprint(id: string, updates: Partial<Sprint>) {
+    return pb.collection('sprints').update(id, {
+      ...updates,
+      start_date: updates.startDate ? new Date(updates.startDate).toISOString() : undefined,
+      end_date: updates.endDate ? new Date(updates.endDate).toISOString() : undefined,
+    });
   }
 
   async deleteSprint(id: string) {
     await pb.collection('sprints').delete(id);
   }
 
-  // ==================== CALENDAR ====================
-  
-  async getCalendarEvents() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
+  async getCalendarEvents(): Promise<CalendarEvent[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const records = await pb.collection('calendar_events').getFullList({
-      filter: `user = "${userId}"`,
-      sort: 'start_date',
-    });
-    return records;
+    const list = await pb.collection('calendar_events').getFullList({ filter: `user = "${userId}"`, sort: 'start_time' });
+    return list.map(normalizeCalendarEvent);
   }
 
-  async createCalendarEvent(event: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
-    const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('calendar_events').create({
-      ...event,
-      user: userId,
-      blocked: event.blocked || false,
-      is_private: event.isPrivate || false,
-      labels: event.labels || [],
+  async createCalendarEvent(event: Partial<CalendarEvent>) {
+    return pb.collection('calendar_events').create({
+      title: event.title,
+      description: event.description,
+      start_time: event.startTime ? new Date(event.startTime).toISOString() : null,
+      end_time: event.endTime ? new Date(event.endTime).toISOString() : null,
+      all_day: event.allDay || false,
+      task_id: event.taskId,
+      user: pb.authStore.record?.id,
     });
   }
 
-  async updateCalendarEvent(id: string, updates: any) {
-    return await pb.collection('calendar_events').update(id, updates);
+  async updateCalendarEvent(id: string, updates: Partial<CalendarEvent>) {
+    return pb.collection('calendar_events').update(id, {
+      ...updates,
+      start_time: updates.startTime ? new Date(updates.startTime).toISOString() : undefined,
+      end_time: updates.endTime ? new Date(updates.endTime).toISOString() : undefined,
+      all_day: updates.allDay,
+      task_id: updates.taskId,
+    });
   }
 
   async deleteCalendarEvent(id: string) {
     await pb.collection('calendar_events').delete(id);
   }
 
-  // ==================== SETTINGS ====================
-  
-  async getSettings() {
+  async getSettings(): Promise<AppSettings> {
     if (!pb.authStore.isValid) {
-      // Return default settings if not authenticated
       return {
         hasCompletedOnboarding: false,
         sprintDuration: '2weeks',
-        theme: 'light',
+        sprintStartDay: 1,
         language: 'en',
         archiveRetention: 30,
         autoCleanup: true,
+        theme: 'light',
       };
     }
-    
-    const userId = pb.authStore.record?.id;
-    
-    // Get user's settings
-    const records = await pb.collection('app_settings').getFullList({
-      filter: `user = "${userId}"`,
-    });
 
-    if (records.length === 0) {
-      // Create default settings if none exist
-      return await pb.collection('app_settings').create({
+    const userId = pb.authStore.record?.id;
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+
+    if (!list.length) {
+      const created = await pb.collection('app_settings').create({
         user: userId,
-        theme: 'light',
+        sprint_duration: '2weeks',
+        sprint_start_day: 1,
         language: 'en',
         archive_retention_days: 30,
         auto_cleanup: true,
-        preferences: {},
+        theme: 'light',
       });
+      return normalizeSettings(created);
     }
 
-    return records[0];
+    return normalizeSettings(list[0]);
   }
 
-  async updateSettings(updates: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
+  async updateSettings(updates: Partial<AppSettings>) {
     const userId = pb.authStore.record?.id;
-    
-    // Get existing settings
-    const records = await pb.collection('app_settings').getFullList({
-      filter: `user = "${userId}"`,
-    });
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+    const payload = {
+      sprint_duration: updates.sprintDuration,
+      sprint_start_day: updates.sprintStartDay,
+      language: updates.language,
+      archive_retention_days: updates.archiveRetention,
+      auto_cleanup: updates.autoCleanup,
+      theme: updates.theme,
+    };
 
-    if (records.length > 0) {
-      return await pb.collection('app_settings').update(records[0].id, updates);
-    } else {
-      // Create if doesn't exist
-      return await pb.collection('app_settings').create({
-        user: userId,
-        ...updates,
-      });
+    if (list.length) {
+      const updated = await pb.collection('app_settings').update(list[0].id, payload);
+      return normalizeSettings(updated);
     }
+
+    const created = await pb.collection('app_settings').create({ user: userId, ...payload });
+    return normalizeSettings(created);
   }
 
-  // ==================== INVITES ====================
-  
-  async getInvites() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
-    const records = await pb.collection('invite_codes').getFullList({
-      sort: '-created',
-    });
-    return records;
-  }
-
-  async createInvite(data: any) {
-    if (!pb.authStore.isValid) throw new Error('Not authenticated');
+  async getInvites(): Promise<InviteCode[]> {
+    if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    
-    return await pb.collection('invite_codes').create({
+    const list = await pb.collection('invite_codes').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
+    return list.map(normalizeInvite);
+  }
+
+  async createInvite(data: { code: string; expiresAt: number }) {
+    return pb.collection('invite_codes').create({
       code: data.code,
-      created_by: userId,
-      expires_at: data.expires_at,
+      expires_at: new Date(data.expiresAt).toISOString(),
       used: false,
+      user: pb.authStore.record?.id,
     });
   }
 
@@ -404,20 +484,20 @@ class PocketBaseClient {
     await pb.collection('invite_codes').delete(id);
   }
 
-  // ==================== USERS ====================
-  
-  async getUsers() {
-    if (!pb.authStore.isValid) return []; // Return empty array instead of throwing
-    const records = await pb.collection('users').getFullList({
-      sort: 'name',
-    });
-    return records;
+  async getUsers(): Promise<User[]> {
+    if (!pb.authStore.isValid) return [];
+    const list = await pb.collection('users').getFullList({ sort: 'name' });
+    return list.map(normalizeUser);
   }
 
   async updateUser(id: string, updates: any) {
-    return await pb.collection('users').update(id, updates);
+    return pb.collection('users').update(id, {
+      name: updates.name,
+      role: updates.role,
+      password: updates.password,
+      passwordConfirm: updates.password,
+    });
   }
 }
 
-// Export a single instance
 export const api = new PocketBaseClient();

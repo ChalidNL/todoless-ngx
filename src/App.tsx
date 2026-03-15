@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { AppProvider, useApp } from './context/AppContext'; // Use localStorage version for demo
+import { AppProvider, useApp } from './context/AppContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { AuthProvider } from './components/AuthProvider';
+import { AuthProvider, useAuth } from './components/AuthProvider';
 import { Onboarding } from './components/Onboarding';
+import { Login } from './components/Login';
+import { Register } from './components/Register';
 import { InboxBacklog } from './components/InboxBacklog';
 import { TasksView } from './components/TasksView';
 import { ItemOverview } from './components/ItemOverview';
 import { Notes } from './components/Notes';
 import { Settings } from './components/Settings';
 import { Calendar } from './components/Calendar';
-import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw, AlertCircle } from 'lucide-react';
+import { pb } from './lib/pocketbase';
+import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw } from 'lucide-react';
 
 type Screen = 'inbox' | 'tasks' | 'items' | 'notes' | 'calendar' | 'settings';
-type AppScreen = 'onboarding' | 'app';
+type AppScreen = 'checking' | 'onboarding' | 'login' | 'register' | 'app';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -60,33 +63,43 @@ class ErrorBoundary extends React.Component<
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('inbox');
-  const [appScreen, setAppScreen] = useState<AppScreen | null>(null); // null = checking
-  const [checkingFirstRun, setCheckingFirstRun] = useState(true);
-  const { completionMessage, appSettings, users } = useApp();
+  const [appScreen, setAppScreen] = useState<AppScreen>('checking');
+  const { completionMessage } = useApp();
+  const { user, loading } = useAuth();
 
-  // FIRST-RUN DETECTION: Check if onboarding was completed
   useEffect(() => {
-    const checkFirstRun = () => {
-      // Check if onboarding was already completed
-      const onboardingComplete = localStorage.getItem('onboarding_complete');
-      const hasCompletedOnboarding = appSettings.hasCompletedOnboarding;
-      
-      if (onboardingComplete === 'true' || hasCompletedOnboarding || users.length > 0) {
-        console.log('✅ Onboarding already completed');
+    const checkFirstRun = async () => {
+      if (loading) return;
+
+      try {
+        const usersResult = await pb.collection('users').getList(1, 1);
+        const path = window.location.pathname.toLowerCase();
+
+        if (usersResult.totalItems === 0) {
+          setAppScreen('onboarding');
+          return;
+        }
+
+        if (path === '/register') {
+          setAppScreen('register');
+          return;
+        }
+
+        if (!pb.authStore.isValid || !user) {
+          setAppScreen('login');
+          return;
+        }
+
         setAppScreen('app');
-      } else {
-        console.log('🆕 First run detected → Showing onboarding');
-        setAppScreen('onboarding');
+      } catch {
+        setAppScreen('login');
       }
-      
-      setCheckingFirstRun(false);
     };
 
-    checkFirstRun();
-  }, [appSettings, users]);
+    void checkFirstRun();
+  }, [loading, user]);
 
-  // Show loading while checking for first run
-  if (checkingFirstRun) {
+  if (appScreen === 'checking') {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <RefreshCw className="w-8 h-8 text-neutral-400 animate-spin" />
@@ -94,21 +107,28 @@ function AppContent() {
     );
   }
 
-  // If we determined this is onboarding, show it
   if (appScreen === 'onboarding') {
     return (
       <Onboarding
         onComplete={() => {
-          console.log('✅ Onboarding completed');
-          localStorage.setItem('onboarding_complete', 'true');
           setAppScreen('app');
-          // Note: User is already logged in from onboarding registration
         }}
       />
     );
   }
 
-  // User is authenticated → show main app
+  if (appScreen === 'register') {
+    return <Register onRegister={() => setAppScreen('app')} />;
+  }
+
+  if (appScreen === 'login') {
+    return <Login onLogin={() => setAppScreen('app')} onSwitchToRegister={() => setAppScreen('register')} />;
+  }
+
+  if (!pb.authStore.isValid) {
+    return <Login onLogin={() => setAppScreen('app')} onSwitchToRegister={() => setAppScreen('register')} />;
+  }
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'inbox':

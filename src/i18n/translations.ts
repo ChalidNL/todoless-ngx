@@ -93,7 +93,7 @@ export const translations: Record<Language, TranslationStructure> = {
       loading: 'Loading...',
     },
     onboarding: {
-      welcome: 'Welcome to Todoless-ngx',
+      welcome: 'Welcome to todoless-ngx',
       createAccount: 'Create Account',
       getStarted: 'Get Started',
     },
@@ -164,7 +164,7 @@ export const translations: Record<Language, TranslationStructure> = {
       loading: 'Chargement...',
     },
     onboarding: {
-      welcome: 'Bienvenue sur Todoless-ngx',
+      welcome: 'Bienvenue sur todoless-ngx',
       createAccount: 'Créer un compte',
       getStarted: 'Commencer',
     },
@@ -235,7 +235,7 @@ export const translations: Record<Language, TranslationStructure> = {
       loading: 'Laden...',
     },
     onboarding: {
-      welcome: 'Welkom bij Todoless-ngx',
+      welcome: 'Welkom bij todoless-ngx',
       createAccount: 'Account aanmaken',
       getStarted: 'Aan de slag',
     },
@@ -306,7 +306,7 @@ export const translations: Record<Language, TranslationStructure> = {
       loading: 'Laden...',
     },
     onboarding: {
-      welcome: 'Willkommen bei Todoless-ngx',
+      welcome: 'Willkommen bei todoless-ngx',
       createAccount: 'Konto erstellen',
       getStarted: 'Loslegen',
     },

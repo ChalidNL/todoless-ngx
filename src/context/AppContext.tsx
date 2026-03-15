@@ -1,8 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import { Item, Task, Note, Label, Shop, CalendarEvent, Filter, FilterView, AppSettings, ProgressStats, Sprint, User, SprintDuration, InviteCode } from '../types';
+import React, { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getISOWeek } from '../utils/dateUtils';
+import { api } from '../lib/pocketbase-client';
+import { pb } from '../lib/pocketbase';
+import type {
+  Item,
+  Task,
+  Note,
+  Label,
+  Shop,
+  CalendarEvent,
+  Filter,
+  FilterView,
+  AppSettings,
+  ProgressStats,
+  Sprint,
+  User,
+  SprintDuration,
+  InviteCode,
+} from '../types';
 
-// Context for managing app state
 interface AppContextType {
   items: Item[];
   tasks: Task[];
@@ -79,24 +95,6 @@ export const useApp = () => {
   return context;
 };
 
-const generateId = () => Math.random().toString(36).substring(2, 11);
-
-const STORAGE_KEYS = {
-  items: 'todoless_ngx_items',
-  tasks: 'todoless_ngx_tasks',
-  notes: 'todoless_ngx_notes',
-  labels: 'todoless_ngx_labels',
-  shops: 'todoless_ngx_shops',
-  calendarEvents: 'todoless_ngx_calendarEvents',
-  filters: 'todoless_ngx_filters',
-  filterViews: 'todoless_ngx_filterViews',
-  sprints: 'todoless_ngx_sprints',
-  users: 'todoless_ngx_users',
-  inviteCodes: 'todoless_ngx_inviteCodes',
-  appSettings: 'todoless_ngx_appSettings',
-  progressStats: 'todoless_ngx_progressStats',
-};
-
 const getWeekStart = () => {
   const now = new Date();
   const day = now.getDay();
@@ -104,177 +102,132 @@ const getWeekStart = () => {
   return new Date(now.setDate(diff)).setHours(0, 0, 0, 0);
 };
 
+const defaultSettings: AppSettings = {
+  hasCompletedOnboarding: false,
+  sprintDuration: '2weeks',
+  sprintStartDay: 1,
+  currentUserId: undefined,
+  language: 'en',
+  archiveRetention: 30,
+  autoCleanup: true,
+  theme: 'light',
+};
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<Item[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.items);
-    const parsed = saved ? JSON.parse(saved) : [];
-    // Migrate old data to ensure labels array exists
-    return parsed.map((item: any) => ({
-      ...item,
-      labels: item.labels || [],
-    }));
+  const [items, setItems] = useState<Item[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [filters, setFilters] = useState<Filter[]>([]);
+  const [filterViews, setFilterViews] = useState<FilterView[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSettings>(defaultSettings);
+  const [progressStats, setProgressStats] = useState<ProgressStats>({
+    tasksCompletedThisWeek: 0,
+    lastWeekReset: getWeekStart(),
   });
-
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.tasks);
-    const parsed = saved ? JSON.parse(saved) : [];
-    // Migrate old data to ensure labels array exists and status is set correctly
-    return parsed.map((task: any) => {
-      // Migrate from old 'completed' boolean to new 'status' property
-      let status = task.status;
-      if (!status) {
-        // If no status property exists, derive it from 'completed' or default to 'todo'
-        if (task.completed === true) {
-          status = 'done';
-        } else {
-          status = 'todo';
-        }
-      }
-      
-      return {
-        ...task,
-        labels: task.labels || [],
-        status: status,
-      };
-    });
-  });
-
-  const [notes, setNotes] = useState<Note[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.notes);
-    const parsed = saved ? JSON.parse(saved) : [];
-    // Migrate old data to ensure labels array and pinned exist
-    return parsed.map((note: any) => ({
-      ...note,
-      labels: note.labels || [],
-      pinned: note.pinned || false,
-    }));
-  });
-
-  const [labels, setLabels] = useState<Label[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.labels);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [shops, setShops] = useState<Shop[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.shops);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.calendarEvents);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [filters, setFilters] = useState<Filter[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.filters);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [filterViews, setFilterViews] = useState<FilterView[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.filterViews);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [sprints, setSprints] = useState<Sprint[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.sprints);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.users);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.inviteCodes);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.appSettings);
-    return saved ? JSON.parse(saved) : {
-      hasCompletedOnboarding: false,
-      sprintDuration: '2weeks',
-      currentUserId: undefined,
-    };
-  });
-
-  const [progressStats, setProgressStats] = useState<ProgressStats>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.progressStats);
-    const stats = saved ? JSON.parse(saved) : {
-      tasksCompletedThisWeek: 0,
-      lastWeekReset: getWeekStart(),
-    };
-
-    // Reset weekly counter if it's a new week
-    const currentWeekStart = getWeekStart();
-    if (stats.lastWeekReset < currentWeekStart) {
-      return {
-        tasksCompletedThisWeek: 0,
-        lastWeekReset: currentWeekStart,
-      };
-    }
-
-    return stats;
-  });
-
   const [activeLabelFilters, setActiveLabelFilters] = useState<string[]>([]);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [currentSprint, setCurrentSprint] = useState<Sprint | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.items, JSON.stringify(items));
-  }, [items]);
+  const refreshItems = async () => setItems(await api.getItems());
+  const refreshTasks = async () => setTasks(await api.getTasks());
+  const refreshNotes = async () => setNotes(await api.getNotes());
+  const refreshLabels = async () => setLabels(await api.getLabels());
+  const refreshShops = async () => setShops(await api.getShops());
+  const refreshCalendarEvents = async () => setCalendarEvents(await api.getCalendarEvents());
+  const refreshSprints = async () => setSprints(await api.getSprints());
+  const refreshUsers = async () => setUsers(await api.getUsers());
+  const refreshInvites = async () => setInviteCodes(await api.getInvites());
+
+  const refreshSettings = async () => {
+    const settings = await api.getSettings();
+    const currentUserId = pb.authStore.record?.id;
+    setAppSettings((prev) => ({
+      ...prev,
+      ...settings,
+      currentUserId,
+      hasCompletedOnboarding: true,
+    }));
+  };
+
+  const refreshAll = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.record) {
+      setItems([]);
+      setTasks([]);
+      setNotes([]);
+      setLabels([]);
+      setShops([]);
+      setCalendarEvents([]);
+      setSprints([]);
+      setUsers([]);
+      setInviteCodes([]);
+      setAppSettings(defaultSettings);
+      return;
+    }
+
+    await Promise.all([
+      refreshItems(),
+      refreshTasks(),
+      refreshNotes(),
+      refreshLabels(),
+      refreshShops(),
+      refreshCalendarEvents(),
+      refreshSprints(),
+      refreshUsers(),
+      refreshInvites(),
+      refreshSettings(),
+    ]);
+  };
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
-  }, [tasks]);
+    const onChangeUnsub = pb.authStore.onChange(() => {
+      void refreshAll();
+    });
+
+    void refreshAll();
+
+    return () => {
+      onChangeUnsub();
+    };
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(notes));
-  }, [notes]);
+    if (!pb.authStore.isValid) return;
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.labels, JSON.stringify(labels));
-  }, [labels]);
+    const subscribeAll = async () => {
+      await Promise.all([
+        pb.collection('tasks').subscribe('*', () => void refreshTasks()),
+        pb.collection('items').subscribe('*', () => void refreshItems()),
+        pb.collection('notes').subscribe('*', () => void refreshNotes()),
+        pb.collection('labels').subscribe('*', () => void refreshLabels()),
+        pb.collection('shops').subscribe('*', () => void refreshShops()),
+        pb.collection('calendar_events').subscribe('*', () => void refreshCalendarEvents()),
+        pb.collection('sprints').subscribe('*', () => void refreshSprints()),
+        pb.collection('invite_codes').subscribe('*', () => void refreshInvites()),
+        pb.collection('app_settings').subscribe('*', () => void refreshSettings()),
+      ]);
+    };
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.shops, JSON.stringify(shops));
-  }, [shops]);
+    void subscribeAll();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.calendarEvents, JSON.stringify(calendarEvents));
-  }, [calendarEvents]);
+    return () => {
+      pb.collection('tasks').unsubscribe();
+      pb.collection('items').unsubscribe();
+      pb.collection('notes').unsubscribe();
+      pb.collection('labels').unsubscribe();
+      pb.collection('shops').unsubscribe();
+      pb.collection('calendar_events').unsubscribe();
+      pb.collection('sprints').unsubscribe();
+      pb.collection('invite_codes').unsubscribe();
+      pb.collection('app_settings').unsubscribe();
+    };
+  }, [pb.authStore.isValid]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.filters, JSON.stringify(filters));
-  }, [filters]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.filterViews, JSON.stringify(filterViews));
-  }, [filterViews]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.sprints, JSON.stringify(sprints));
-  }, [sprints]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.inviteCodes, JSON.stringify(inviteCodes));
-  }, [inviteCodes]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.appSettings, JSON.stringify(appSettings));
-  }, [appSettings]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.progressStats, JSON.stringify(progressStats));
-  }, [progressStats]);
-
-  // Auto-clear completion message after 3 seconds
   useEffect(() => {
     if (completionMessage) {
       const timer = setTimeout(() => setCompletionMessage(null), 3000);
@@ -282,470 +235,423 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [completionMessage]);
 
-  // Auto-cleanup expired archives (runs every hour)
-  useEffect(() => {
-    const cleanup = () => {
-      const now = Date.now();
-      setTasks(prev => prev.filter(task => {
-        if (task.archived && task.deleteAfter && task.deleteAfter < now) {
-          return false; // Delete expired archives
-        }
-        return true;
-      }));
-    };
-    
-    cleanup(); // Run immediately on mount
-    const interval = setInterval(cleanup, 60 * 60 * 1000); // Every hour
-    return () => clearInterval(interval);
-  }, []); // Empty dependency array - only run once on mount
-
   const addItem = (item: Omit<Item, 'id' | 'createdAt'>) => {
-    setItems(prev => [...prev, { ...item, id: generateId(), createdAt: Date.now() }]);
+    void (async () => {
+      await api.createItem(item);
+      await refreshItems();
+    })();
   };
 
   const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>) => {
-    setTasks(prev => [...prev, { ...task, id: generateId(), createdAt: Date.now() }]);
+    void (async () => {
+      await api.createTask(task);
+      await refreshTasks();
+    })();
   };
 
   const addNote = (note: Omit<Note, 'id' | 'createdAt'>) => {
-    setNotes(prev => [...prev, { ...note, id: generateId(), createdAt: Date.now() }]);
+    void (async () => {
+      await api.createNote(note);
+      await refreshNotes();
+    })();
   };
 
   const addLabel = (label: Omit<Label, 'id'>) => {
-    setLabels(prev => [...prev, { ...label, id: generateId(), createdBy: appSettings.currentUserId }]);
+    void (async () => {
+      await api.createLabel(label);
+      await refreshLabels();
+    })();
   };
 
-  const createLabel = (label: Omit<Label, 'id'>) => {
-    setLabels(prev => [...prev, { ...label, id: generateId(), createdBy: appSettings.currentUserId }]);
-  };
+  const createLabel = addLabel;
 
   const addShop = (shop: Omit<Shop, 'id'>) => {
-    setShops(prev => [...prev, { ...shop, id: generateId() }]);
+    void (async () => {
+      await api.createShop(shop);
+      await refreshShops();
+    })();
   };
 
-  const createShop = (shop: Omit<Shop, 'id'>) => {
-    setShops(prev => [...prev, { ...shop, id: generateId() }]);
-  };
+  const createShop = addShop;
 
   const addCalendarEvent = (event: Omit<CalendarEvent, 'id' | 'createdAt'>) => {
-    setCalendarEvents(prev => [...prev, { ...event, id: generateId(), createdAt: Date.now() }]);
+    void (async () => {
+      await api.createCalendarEvent(event);
+      await refreshCalendarEvents();
+    })();
   };
 
   const addFilter = (filter: Omit<Filter, 'id'>) => {
-    setFilters(prev => [...prev, { ...filter, id: generateId() }]);
+    setFilters((prev) => [...prev, { ...filter, id: crypto.randomUUID() }]);
   };
 
   const addFilterView = (view: Omit<FilterView, 'id'>) => {
-    setFilterViews(prev => [...prev, { ...view, id: generateId() }]);
+    setFilterViews((prev) => [...prev, { ...view, id: crypto.randomUUID() }]);
   };
 
   const addSprint = (sprint: Omit<Sprint, 'id'>) => {
-    setSprints(prev => [...prev, { ...sprint, id: generateId() }]);
+    void (async () => {
+      await api.createSprint(sprint);
+      await refreshSprints();
+    })();
   };
 
   const addUser = (user: User) => {
-    setUsers(prev => [...prev, user]);
+    setUsers((prev) => [...prev, user]);
   };
 
   const updateItem = (id: string, updates: Partial<Item>) => {
-    setItems(prev => prev.map(item => (item.id === id ? { ...item, ...updates } : item)));
+    void (async () => {
+      await api.updateItem(id, updates);
+      await refreshItems();
+    })();
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task => (task.id === id ? { ...task, ...updates } : task)));
+    void (async () => {
+      await api.updateTask(id, updates);
+      await refreshTasks();
+    })();
   };
 
   const updateNote = (id: string, updates: Partial<Note>) => {
-    setNotes(prev => prev.map(note => (note.id === id ? { ...note, ...updates } : note)));
+    void (async () => {
+      await api.updateNote(id, updates);
+      await refreshNotes();
+    })();
   };
 
   const updateLabel = (id: string, updates: Partial<Label>) => {
-    setLabels(prev => prev.map(label => (label.id === id ? { ...label, ...updates } : label)));
+    void (async () => {
+      await api.updateLabel(id, updates);
+      await refreshLabels();
+    })();
   };
 
   const updateShop = (id: string, updates: Partial<Shop>) => {
-    setShops(prev => prev.map(shop => (shop.id === id ? { ...shop, ...updates } : shop)));
+    void (async () => {
+      await api.updateShop(id, updates);
+      await refreshShops();
+    })();
   };
 
   const updateCalendarEvent = (id: string, updates: Partial<CalendarEvent>) => {
-    setCalendarEvents(prev => prev.map(event => (event.id === id ? { ...event, ...updates } : event)));
+    void (async () => {
+      await api.updateCalendarEvent(id, updates);
+      await refreshCalendarEvents();
+    })();
   };
 
   const updateAppSettings = (settings: Partial<AppSettings>) => {
-    setAppSettings(prev => ({ ...prev, ...settings }));
+    setAppSettings((prev) => ({ ...prev, ...settings }));
+    void api.updateSettings(settings);
   };
 
   const updateUser = (id: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(user => (user.id === id ? { ...user, ...updates } : user)));
+    void (async () => {
+      await api.updateUser(id, updates);
+      await refreshUsers();
+    })();
   };
 
   const deleteItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    setNotes(prev => prev.filter(note => !(note.linkedType === 'item' && note.linkedTo === id)));
+    void (async () => {
+      await api.deleteItem(id);
+      await refreshItems();
+      await refreshNotes();
+    })();
   };
 
   const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-    setNotes(prev => prev.filter(note => !(note.linkedType === 'task' && note.linkedTo === id)));
+    void (async () => {
+      await api.deleteTask(id);
+      await refreshTasks();
+      await refreshNotes();
+    })();
   };
 
   const deleteNote = (id: string) => {
-    setNotes(prev => prev.filter(note => note.id !== id));
+    void (async () => {
+      await api.deleteNote(id);
+      await refreshNotes();
+    })();
   };
 
   const deleteLabel = (id: string) => {
-    setLabels(prev => prev.filter(label => label.id !== id));
-    setItems(prev => prev.map(item => ({
-      ...item,
-      labels: item.labels.filter(labelId => labelId !== id),
-    })));
-    setTasks(prev => prev.map(task => ({
-      ...task,
-      labels: task.labels.filter(labelId => labelId !== id),
-    })));
-    setNotes(prev => prev.map(note => ({
-      ...note,
-      labels: note.labels.filter(labelId => labelId !== id),
-    })));
+    void (async () => {
+      await api.deleteLabel(id);
+      await Promise.all([refreshLabels(), refreshTasks(), refreshItems(), refreshNotes()]);
+    })();
   };
 
   const deleteShop = (id: string) => {
-    setShops(prev => prev.filter(shop => shop.id !== id));
+    void (async () => {
+      await api.deleteShop(id);
+      await refreshShops();
+    })();
   };
 
   const deleteCalendarEvent = (id: string) => {
-    setCalendarEvents(prev => prev.filter(event => event.id !== id));
+    void (async () => {
+      await api.deleteCalendarEvent(id);
+      await refreshCalendarEvents();
+    })();
   };
 
   const deleteFilter = (id: string) => {
-    setFilters(prev => prev.filter(filter => filter.id !== id));
+    setFilters((prev) => prev.filter((filter) => filter.id !== id));
   };
 
   const deleteSprint = (id: string) => {
-    setSprints(prev => prev.filter(sprint => sprint.id !== id));
+    void (async () => {
+      await api.deleteSprint(id);
+      await refreshSprints();
+    })();
   };
 
   const archiveCompletedSprintTasks = (sprintId?: string) => {
     const now = Date.now();
     const retention = appSettings.archiveRetention || 0;
-    const deleteAfter = retention > 0 ? now + (retention * 24 * 60 * 60 * 1000) : undefined;
-    
-    const sprint = sprintId ? sprints.find(s => s.id === sprintId) : currentSprint;
-    if (sprint) {
-      setTasks(prev => prev.map(task => {
-        if (task.status === 'done' && task.sprintId === sprint.id) {
-          return { ...task, archived: true, archivedAt: now, deleteAfter };
-        }
-        return task;
-      }));
-    }
+    const deleteAfter = retention > 0 ? now + retention * 24 * 60 * 60 * 1000 : undefined;
+    const sprint = sprintId ? sprints.find((s) => s.id === sprintId) : currentSprint;
+    if (!sprint) return;
+
+    tasks
+      .filter((task) => task.status === 'done' && task.sprintId === sprint.id)
+      .forEach((task) => updateTask(task.id, { archived: true, archivedAt: now, deleteAfter }));
   };
 
   const archiveAllDoneTasks = () => {
     const now = Date.now();
     const retention = appSettings.archiveRetention || 0;
-    const deleteAfter = retention > 0 ? now + (retention * 24 * 60 * 60 * 1000) : undefined;
-    
-    setTasks(prev => prev.map(task => {
-      if (task.status === 'done' && !task.archived) {
-        return { ...task, archived: true, archivedAt: now, deleteAfter };
-      }
-      return task;
-    }));
+    const deleteAfter = retention > 0 ? now + retention * 24 * 60 * 60 * 1000 : undefined;
+
+    tasks.filter((task) => task.status === 'done' && !task.archived).forEach((task) => {
+      updateTask(task.id, { archived: true, archivedAt: now, deleteAfter });
+    });
   };
 
   const deleteArchivedTasks = () => {
-    setTasks(prev => prev.filter(task => !task.archived));
+    tasks.filter((task) => task.archived).forEach((task) => deleteTask(task.id));
   };
 
   const cleanupExpiredArchives = () => {
     const now = Date.now();
-    setTasks(prev => prev.filter(task => {
-      if (task.archived && task.deleteAfter && task.deleteAfter < now) {
-        return false; // Delete expired archives
-      }
-      return true;
-    }));
+    tasks.filter((task) => task.archived && task.deleteAfter && task.deleteAfter < now).forEach((task) => deleteTask(task.id));
   };
 
   const moveFilterUp = (id: string) => {
-    setFilters(prev => {
-      const index = prev.findIndex(filter => filter.id === id);
-      if (index > 0) {
-        const newFilters = [...prev];
-        const [removed] = newFilters.splice(index, 1);
-        newFilters.splice(index - 1, 0, removed);
-        return newFilters;
-      }
-      return prev;
+    setFilters((prev) => {
+      const index = prev.findIndex((f) => f.id === id);
+      if (index <= 0) return prev;
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(index - 1, 0, item);
+      return next;
     });
   };
 
   const moveFilterDown = (id: string) => {
-    setFilters(prev => {
-      const index = prev.findIndex(filter => filter.id === id);
-      if (index < prev.length - 1) {
-        const newFilters = [...prev];
-        const [removed] = newFilters.splice(index, 1);
-        newFilters.splice(index + 1, 0, removed);
-        return newFilters;
-      }
-      return prev;
+    setFilters((prev) => {
+      const index = prev.findIndex((f) => f.id === id);
+      if (index < 0 || index >= prev.length - 1) return prev;
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(index + 1, 0, item);
+      return next;
     });
   };
 
   const toggleLabelFilter = (labelId: string) => {
-    setActiveLabelFilters(prev => {
-      if (prev.includes(labelId)) {
-        return prev.filter(id => id !== labelId);
-      } else {
-        return [...prev, labelId];
-      }
-    });
+    setActiveLabelFilters((prev) => (prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]));
   };
 
-  const clearLabelFilters = () => {
-    setActiveLabelFilters([]);
-  };
+  const clearLabelFilters = () => setActiveLabelFilters([]);
 
-  const showCompletionMessage = (message: string) => {
-    setCompletionMessage(message);
-  };
-
-  const incrementClarified = () => {
-    setProgressStats(prev => ({
-      ...prev,
-      tasksCompletedThisWeek: prev.tasksCompletedThisWeek + 1,
-    }));
-  };
+  const showCompletionMessage = (message: string) => setCompletionMessage(message);
 
   const moveTaskToStatus = (taskId: string, status: 'backlog' | 'todo' | 'done') => {
-    setTasks(prev => prev.map(task => (task.id === taskId ? { ...task, status } : task)));
+    updateTask(taskId, { status });
   };
 
   const createNewSprint = () => {
-    const now = Date.now();
-    const nowDate = new Date(now);
-    const duration = appSettings.sprintDuration;
-    const startDay = appSettings.sprintStartDay ?? 1; // Default to Monday (1)
-    let durationDays = 14; // default 2 weeks
-    
+    const now = new Date();
+    const duration = appSettings.sprintDuration || '2weeks';
+    const startDay = appSettings.sprintStartDay ?? 1;
+    let durationDays = 14;
+
     if (duration === '1week') durationDays = 7;
-    else if (duration === '2weeks') durationDays = 14;
-    else if (duration === '3weeks') durationDays = 21;
-    else if (duration === '1month') durationDays = 30;
+    if (duration === '3weeks') durationDays = 21;
+    if (duration === '1month') durationDays = 30;
 
-    // Calculate next occurrence of the target start day
-    const currentDay = nowDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentDay = now.getDay();
     let daysUntilStart = startDay - currentDay;
-    
-    // If target day is today or has passed this week, schedule for next week
-    if (daysUntilStart <= 0) {
-      daysUntilStart += 7;
-    }
-    
-    // Calculate start date
-    const startDate = new Date(nowDate);
-    startDate.setDate(startDate.getDate() + daysUntilStart);
-    startDate.setHours(0, 0, 0, 0); // Set to midnight
-    
-    const startTimestamp = startDate.getTime();
-    const endTimestamp = startTimestamp + (durationDays * 24 * 60 * 60 * 1000);
+    if (daysUntilStart <= 0) daysUntilStart += 7;
 
-    const newSprint: Omit<Sprint, 'id'> = {
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() + daysUntilStart);
+    startDate.setHours(0, 0, 0, 0);
+
+    const sprint: Omit<Sprint, 'id'> = {
       name: `Sprint ${sprints.length + 1}`,
-      startDate: startTimestamp,
-      endDate: endTimestamp,
-      duration: duration,
+      startDate: startDate.getTime(),
+      endDate: startDate.getTime() + durationDays * 24 * 60 * 60 * 1000,
+      duration: duration as SprintDuration,
       weekNumber: getISOWeek(startDate),
       year: startDate.getFullYear(),
     };
-    const sprint = { ...newSprint, id: generateId() };
-    setSprints(prev => [...prev, sprint]);
-    setCurrentSprint(sprint);
+
+    addSprint(sprint);
   };
 
   const convertTaskToItem = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      addItem({ 
-        title: task.title, 
-        completed: false,
-        labels: task.labels 
-      });
-      deleteTask(taskId);
-    }
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    addItem({ title: task.title, completed: false, labels: task.labels });
+    deleteTask(taskId);
   };
 
   const convertItemToTask = (itemId: string) => {
-    const item = items.find(i => i.id === itemId);
-    if (item) {
-      addTask({ 
-        title: item.title, 
-        status: 'todo',
-        blocked: false,
-        labels: item.labels 
-      });
-      deleteItem(itemId);
-    }
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+    addTask({ title: item.title, status: 'todo', blocked: false, labels: item.labels });
+    deleteItem(itemId);
   };
 
   const generateInviteCode = (): InviteCode => {
-    // Generate a 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const now = Date.now();
-    const expiresAt = now + (60 * 60 * 1000); // 1 hour from now
-    
+    const expiresAt = now + 60 * 60 * 1000;
+
     const inviteCode: InviteCode = {
-      id: generateId(),
-      code: code,
-      createdBy: appSettings.currentUserId || '',
+      id: crypto.randomUUID(),
+      code,
+      createdBy: appSettings.currentUserId,
       createdAt: now,
-      expiresAt: expiresAt,
+      expiresAt,
+      used: false,
     };
-    setInviteCodes(prev => [...prev, inviteCode]);
+
+    void (async () => {
+      await api.createInvite({ code, expiresAt });
+      await refreshInvites();
+    })();
+
     return inviteCode;
   };
 
   const validateInviteCode = (code: string): InviteCode | null => {
-    const invite = inviteCodes.find(inviteCode => inviteCode.code === code);
+    const invite = inviteCodes.find((entry) => entry.code === code);
     if (!invite) return null;
-    
-    // Check if expired
-    if (invite.expiresAt < Date.now()) {
-      return null;
-    }
-    
-    // Check if already used
-    if (invite.used) {
-      return null;
-    }
-    
+    if (invite.expiresAt && invite.expiresAt < Date.now()) return null;
+    if (invite.used) return null;
     return invite;
   };
 
-  const useInviteCode = (code: string, userId: string): boolean => {
-    const inviteCode = validateInviteCode(code);
-    if (inviteCode) {
-      setInviteCodes(prev => prev.map(invite => 
-        invite.code === code 
-          ? { ...invite, used: true, usedBy: userId, usedAt: Date.now() }
-          : invite
-      ));
-      return true;
-    }
-    return false;
-  };
+  const useInviteCode = (_code: string, _userId: string): boolean => true;
 
   const deleteInviteCode = (id: string) => {
-    setInviteCodes(prev => prev.filter(inviteCode => inviteCode.id !== id));
+    void (async () => {
+      await api.deleteInvite(id);
+      await refreshInvites();
+    })();
   };
 
   const uncheckAllDoneTasks = () => {
-    setTasks(prev => prev.map(task => {
-      if (task.status === 'done') {
-        return { ...task, status: 'todo' as const, completedAt: undefined };
-      }
-      return task;
-    }));
+    tasks.filter((task) => task.status === 'done').forEach((task) => {
+      updateTask(task.id, { status: 'todo', completedAt: undefined });
+    });
   };
 
   const uncheckAllDoneItems = () => {
-    setItems(prev => prev.map(item => {
-      if (item.completed) {
-        return { ...item, completed: false };
-      }
-      return item;
-    }));
+    items.filter((item) => item.completed).forEach((item) => updateItem(item.id, { completed: false }));
   };
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
-    items,
-    tasks,
-    notes,
-    labels,
-    shops,
-    calendarEvents,
-    filters,
-    filterViews,
-    sprints,
-    users,
-    inviteCodes,
-    appSettings,
-    progressStats,
-    activeLabelFilters,
-    completionMessage,
-    currentSprint,
-    addItem,
-    addTask,
-    addNote,
-    addLabel,
-    createLabel,
-    addShop,
-    createShop,
-    addCalendarEvent,
-    addFilter,
-    addFilterView,
-    addSprint,
-    addUser,
-    updateItem,
-    updateTask,
-    updateNote,
-    updateLabel,
-    updateShop,
-    updateCalendarEvent,
-    updateAppSettings,
-    updateUser,
-    deleteItem,
-    deleteTask,
-    deleteNote,
-    deleteLabel,
-    deleteShop,
-    deleteCalendarEvent,
-    deleteFilter,
-    deleteSprint,
-    archiveCompletedSprintTasks,
-    archiveAllDoneTasks,
-    deleteArchivedTasks,
-    cleanupExpiredArchives,
-    moveFilterUp,
-    moveFilterDown,
-    toggleLabelFilter,
-    clearLabelFilters,
-    showCompletionMessage,
-    moveTaskToStatus,
-    createNewSprint,
-    convertTaskToItem,
-    convertItemToTask,
-    generateInviteCode,
-    validateInviteCode,
-    useInviteCode,
-    deleteInviteCode,
-    uncheckAllDoneTasks,
-    uncheckAllDoneItems,
-  }), [
-    items,
-    tasks,
-    notes,
-    labels,
-    shops,
-    calendarEvents,
-    filters,
-    filterViews,
-    sprints,
-    users,
-    inviteCodes,
-    appSettings,
-    progressStats,
-    activeLabelFilters,
-    completionMessage,
-    currentSprint,
-  ]);
-
-  return (
-    <AppContext.Provider value={contextValue}>
-      {children}
-    </AppContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      items,
+      tasks,
+      notes,
+      labels,
+      shops,
+      calendarEvents,
+      filters,
+      filterViews,
+      sprints,
+      users,
+      inviteCodes,
+      appSettings,
+      progressStats,
+      activeLabelFilters,
+      completionMessage,
+      currentSprint,
+      addItem,
+      addTask,
+      addNote,
+      addLabel,
+      createLabel,
+      addShop,
+      createShop,
+      addCalendarEvent,
+      addFilter,
+      addFilterView,
+      addSprint,
+      addUser,
+      updateItem,
+      updateTask,
+      updateNote,
+      updateLabel,
+      updateShop,
+      updateCalendarEvent,
+      updateAppSettings,
+      updateUser,
+      deleteItem,
+      deleteTask,
+      deleteNote,
+      deleteLabel,
+      deleteShop,
+      deleteCalendarEvent,
+      deleteFilter,
+      deleteSprint,
+      archiveCompletedSprintTasks,
+      archiveAllDoneTasks,
+      deleteArchivedTasks,
+      cleanupExpiredArchives,
+      moveFilterUp,
+      moveFilterDown,
+      toggleLabelFilter,
+      clearLabelFilters,
+      showCompletionMessage,
+      moveTaskToStatus,
+      createNewSprint,
+      convertTaskToItem,
+      convertItemToTask,
+      generateInviteCode,
+      validateInviteCode,
+      useInviteCode,
+      deleteInviteCode,
+      uncheckAllDoneTasks,
+      uncheckAllDoneItems,
+    }),
+    [
+      items,
+      tasks,
+      notes,
+      labels,
+      shops,
+      calendarEvents,
+      filters,
+      filterViews,
+      sprints,
+      users,
+      inviteCodes,
+      appSettings,
+      progressStats,
+      activeLabelFilters,
+      completionMessage,
+      currentSprint,
+    ],
   );
+
+  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 };

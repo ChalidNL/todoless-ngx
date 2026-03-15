@@ -1,0 +1,76 @@
+name: todoless
+
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.34.2
+    container_name: todoless-pocketbase
+    restart: unless-stopped
+    environment:
+      TZ: $TZ
+    expose:
+      - "8090"
+    volumes:
+      - /DATA/AppData/$AppID/pb_data:/pb_data
+      - /DATA/AppData/$AppID/pb_migrations:/pb_migrations
+    networks:
+      - todoless-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8090/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    x-casaos:
+      volumes:
+        - container: /pb_data
+          description:
+            en_US: PocketBase data — database and uploads
+        - container: /pb_migrations
+          description:
+            en_US: PocketBase migration scripts
+
+  frontend:
+    image: ghcr.io/chalidnl/todoless-frontend:1.0.0
+    container_name: todoless-frontend
+    restart: unless-stopped
+    environment:
+      TZ: $TZ
+    ports:
+      - target: 80
+        published: ${WEBUI_PORT:-7070}
+        protocol: tcp
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+    networks:
+      - todoless-net
+    x-casaos:
+      envs:
+        - container: TZ
+          description:
+            en_US: Timezone
+      ports:
+        - container: "80"
+          description:
+            en_US: Web UI
+
+networks:
+  todoless-net:
+    driver: bridge
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: frontend
+  author: self-hosted
+  category: Productivity
+  description:
+    en_US: todoless-ngx — self-hosted multi-user task manager. Tasks, notes, calendar, brain dumps, real-time sync. Free forever.
+  tagline:
+    en_US: Self-hosted productivity app
+  title:
+    en_US: todoless-ngx
+  port_map: ${WEBUI_PORT:-7070}
+  scheme: http
+  index: /

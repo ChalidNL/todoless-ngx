@@ -1,11 +1,27 @@
 
-  # Todoless Task Management App
+# todoless-ngx
 
-  This is a code bundle for Todoless Task Management App. The original project is available at https://www.figma.com/design/N3Fo0GOW8Y8Iuu9psvDGHc/Todoless-Task-Management-App.
+Self-hosted multi-user task manager. Built with React + Vite. Powered by PocketBase.
 
-  ## Running the code
+## Features
+- Login, first-run onboarding, and invite-based registration
+- Inbox/backlog, task board, and sprint-aware task workflow
+- Notes, item tracking, labels, shops, and user settings
+- Calendar scheduling from tasks and date-driven views
+- Realtime updates via PocketBase subscriptions
 
-  Run `npm i` to install the dependencies.
+## Local Development
+Use `docker-compose.local.yml`:
 
-  Run `npm run dev` to start the development server.
+```bash
+docker compose -f docker-compose.local.yml up --build
+```
+
+## Deploy to CasaOS
+See README-casaos.md
+
+## Tech Stack
+- Frontend: React 18 + Vite 6
+- Database / Backend: PocketBase 0.34.2
+- Container: Docker Compose
   
