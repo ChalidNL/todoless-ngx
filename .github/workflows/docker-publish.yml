@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/chalidnl/todoless-frontend
+  IMAGE_NAME: ghcr.io/chalidnl/todoless-ngx
 
 jobs:
   build-and-push:

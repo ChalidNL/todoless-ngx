@@ -2,7 +2,7 @@ name: todoless-ngx
 
 services:
   todoless-ngx:
-    image: ghcr.io/chalidnl/todoless-frontend:latest
+    image: ghcr.io/chalidnl/todoless-ngx:latest
     container_name: todoless-ngx
     restart: unless-stopped
     environment:
