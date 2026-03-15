@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
-ARG VITE_POCKETBASE_URL=http://pocketbase:8090
+ARG VITE_POCKETBASE_URL=
 ENV VITE_POCKETBASE_URL=$VITE_POCKETBASE_URL
 RUN npm run build
 
