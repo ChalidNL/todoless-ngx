@@ -1,0 +1,360 @@
+export type Language = 'en' | 'fr' | 'nl' | 'de';
+
+interface TranslationStructure {
+  common: {
+    inbox: string;
+    tasks: string;
+    items: string;
+    notes: string;
+    calendar: string;
+    settings: string;
+    save: string;
+    cancel: string;
+    delete: string;
+    edit: string;
+    add: string;
+    search: string;
+    filter: string;
+    archive: string;
+    logout: string;
+    loading: string;
+  };
+  onboarding: {
+    welcome: string;
+    createAccount: string;
+    getStarted: string;
+  };
+  tasks: {
+    title: string;
+    newTask: string;
+    dueDate: string;
+    assignee: string;
+    labels: string;
+    priority: string;
+    status: string;
+    completed: string;
+    inProgress: string;
+    todo: string;
+  };
+  items: {
+    title: string;
+    newItem: string;
+    quantity: string;
+    category: string;
+  };
+  notes: {
+    title: string;
+    newNote: string;
+    content: string;
+  };
+  settings: {
+    title: string;
+    language: string;
+    theme: string;
+    notifications: string;
+    account: string;
+    archiveSettings: string;
+    retentionPeriod: string;
+    days30: string;
+    days60: string;
+    days90: string;
+    unlimited: string;
+    autoCleanup: string;
+    sprintSettings: string;
+    sprintStartDay: string;
+    monday: string;
+    tuesday: string;
+    wednesday: string;
+    thursday: string;
+    friday: string;
+    saturday: string;
+    sunday: string;
+  };
+}
+
+export const translations: Record<Language, TranslationStructure> = {
+  en: {
+    common: {
+      inbox: 'Inbox',
+      tasks: 'Tasks',
+      items: 'Items',
+      notes: 'Notes',
+      calendar: 'Calendar',
+      settings: 'Settings',
+      save: 'Save',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      edit: 'Edit',
+      add: 'Add',
+      search: 'Search',
+      filter: 'Filter',
+      archive: 'Archive',
+      logout: 'Logout',
+      loading: 'Loading...',
+    },
+    onboarding: {
+      welcome: 'Welcome to todoless-ngx',
+      createAccount: 'Create Account',
+      getStarted: 'Get Started',
+    },
+    tasks: {
+      title: 'Tasks',
+      newTask: 'New Task',
+      dueDate: 'Due Date',
+      assignee: 'Assignee',
+      labels: 'Labels',
+      priority: 'Priority',
+      status: 'Status',
+      completed: 'Completed',
+      inProgress: 'In Progress',
+      todo: 'To Do',
+    },
+    items: {
+      title: 'Items',
+      newItem: 'New Item',
+      quantity: 'Quantity',
+      category: 'Category',
+    },
+    notes: {
+      title: 'Notes',
+      newNote: 'New Note',
+      content: 'Content',
+    },
+    settings: {
+      title: 'Settings',
+      language: 'Language',
+      theme: 'Theme',
+      notifications: 'Notifications',
+      account: 'Account',
+      archiveSettings: 'Archive Settings',
+      retentionPeriod: 'Retention Period',
+      days30: '30 days',
+      days60: '60 days',
+      days90: '90 days',
+      unlimited: 'Unlimited',
+      autoCleanup: 'Auto Cleanup',
+      sprintSettings: 'Sprint Settings',
+      sprintStartDay: 'Sprint Start Day',
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+      sunday: 'Sunday',
+    },
+  },
+  fr: {
+    common: {
+      inbox: 'Boîte de réception',
+      tasks: 'Tâches',
+      items: 'Articles',
+      notes: 'Notes',
+      calendar: 'Calendrier',
+      settings: 'Paramètres',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      delete: 'Supprimer',
+      edit: 'Modifier',
+      add: 'Ajouter',
+      search: 'Rechercher',
+      filter: 'Filtrer',
+      archive: 'Archiver',
+      logout: 'Déconnexion',
+      loading: 'Chargement...',
+    },
+    onboarding: {
+      welcome: 'Bienvenue sur todoless-ngx',
+      createAccount: 'Créer un compte',
+      getStarted: 'Commencer',
+    },
+    tasks: {
+      title: 'Tâches',
+      newTask: 'Nouvelle tâche',
+      dueDate: 'Date d\'échéance',
+      assignee: 'Assigné à',
+      labels: 'Étiquettes',
+      priority: 'Priorité',
+      status: 'Statut',
+      completed: 'Terminé',
+      inProgress: 'En cours',
+      todo: 'À faire',
+    },
+    items: {
+      title: 'Articles',
+      newItem: 'Nouvel article',
+      quantity: 'Quantité',
+      category: 'Catégorie',
+    },
+    notes: {
+      title: 'Notes',
+      newNote: 'Nouvelle note',
+      content: 'Contenu',
+    },
+    settings: {
+      title: 'Paramètres',
+      language: 'Langue',
+      theme: 'Thème',
+      notifications: 'Notifications',
+      account: 'Compte',
+      archiveSettings: 'Paramètres d\'archivage',
+      retentionPeriod: 'Période de conservation',
+      days30: '30 jours',
+      days60: '60 jours',
+      days90: '90 jours',
+      unlimited: 'Illimité',
+      autoCleanup: 'Nettoyage automatique',
+      sprintSettings: 'Paramètres de sprint',
+      sprintStartDay: 'Jour de début du sprint',
+      monday: 'Lundi',
+      tuesday: 'Mardi',
+      wednesday: 'Mercredi',
+      thursday: 'Jeudi',
+      friday: 'Vendredi',
+      saturday: 'Samedi',
+      sunday: 'Dimanche',
+    },
+  },
+  nl: {
+    common: {
+      inbox: 'Inbox',
+      tasks: 'Taken',
+      items: 'Items',
+      notes: 'Notities',
+      calendar: 'Kalender',
+      settings: 'Instellingen',
+      save: 'Opslaan',
+      cancel: 'Annuleren',
+      delete: 'Verwijderen',
+      edit: 'Bewerken',
+      add: 'Toevoegen',
+      search: 'Zoeken',
+      filter: 'Filteren',
+      archive: 'Archiveren',
+      logout: 'Uitloggen',
+      loading: 'Laden...',
+    },
+    onboarding: {
+      welcome: 'Welkom bij todoless-ngx',
+      createAccount: 'Account aanmaken',
+      getStarted: 'Aan de slag',
+    },
+    tasks: {
+      title: 'Taken',
+      newTask: 'Nieuwe taak',
+      dueDate: 'Verloopdatum',
+      assignee: 'Toegewezen aan',
+      labels: 'Labels',
+      priority: 'Prioriteit',
+      status: 'Status',
+      completed: 'Voltooid',
+      inProgress: 'Bezig',
+      todo: 'Te doen',
+    },
+    items: {
+      title: 'Items',
+      newItem: 'Nieuw item',
+      quantity: 'Hoeveelheid',
+      category: 'Categorie',
+    },
+    notes: {
+      title: 'Notities',
+      newNote: 'Nieuwe notitie',
+      content: 'Inhoud',
+    },
+    settings: {
+      title: 'Instellingen',
+      language: 'Taal',
+      theme: 'Thema',
+      notifications: 'Meldingen',
+      account: 'Account',
+      archiveSettings: 'Archief instellingen',
+      retentionPeriod: 'Bewaarperiode',
+      days30: '30 dagen',
+      days60: '60 dagen',
+      days90: '90 dagen',
+      unlimited: 'Onbeperkt',
+      autoCleanup: 'Automatisch opruimen',
+      sprintSettings: 'Sprint instellingen',
+      sprintStartDay: 'Sprint startdag',
+      monday: 'Maandag',
+      tuesday: 'Dinsdag',
+      wednesday: 'Woensdag',
+      thursday: 'Donderdag',
+      friday: 'Vrijdag',
+      saturday: 'Zaterdag',
+      sunday: 'Zondag',
+    },
+  },
+  de: {
+    common: {
+      inbox: 'Posteingang',
+      tasks: 'Aufgaben',
+      items: 'Artikel',
+      notes: 'Notizen',
+      calendar: 'Kalender',
+      settings: 'Einstellungen',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      delete: 'Löschen',
+      edit: 'Bearbeiten',
+      add: 'Hinzufügen',
+      search: 'Suchen',
+      filter: 'Filtern',
+      archive: 'Archivieren',
+      logout: 'Abmelden',
+      loading: 'Laden...',
+    },
+    onboarding: {
+      welcome: 'Willkommen bei todoless-ngx',
+      createAccount: 'Konto erstellen',
+      getStarted: 'Loslegen',
+    },
+    tasks: {
+      title: 'Aufgaben',
+      newTask: 'Neue Aufgabe',
+      dueDate: 'Fälligkeitsdatum',
+      assignee: 'Zugewiesen an',
+      labels: 'Etiketten',
+      priority: 'Priorität',
+      status: 'Status',
+      completed: 'Abgeschlossen',
+      inProgress: 'In Bearbeitung',
+      todo: 'Zu erledigen',
+    },
+    items: {
+      title: 'Artikel',
+      newItem: 'Neuer Artikel',
+      quantity: 'Menge',
+      category: 'Kategorie',
+    },
+    notes: {
+      title: 'Notizen',
+      newNote: 'Neue Notiz',
+      content: 'Inhalt',
+    },
+    settings: {
+      title: 'Einstellungen',
+      language: 'Sprache',
+      theme: 'Design',
+      notifications: 'Benachrichtigungen',
+      account: 'Konto',
+      archiveSettings: 'Archiveinstellungen',
+      retentionPeriod: 'Aufbewahrungsdauer',
+      days30: '30 Tage',
+      days60: '60 Tage',
+      days90: '90 Tage',
+      unlimited: 'Unbegrenzt',
+      autoCleanup: 'Automatische Bereinigung',
+      sprintSettings: 'Sprint-Einstellungen',
+      sprintStartDay: 'Sprint-Starttag',
+      monday: 'Montag',
+      tuesday: 'Dienstag',
+      wednesday: 'Mittwoch',
+      thursday: 'Donnerstag',
+      friday: 'Freitag',
+      saturday: 'Samstag',
+      sunday: 'Sonntag',
+    },
+  },
+};

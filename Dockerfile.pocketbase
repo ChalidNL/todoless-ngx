@@ -1,0 +1,12 @@
+FROM ghcr.io/muchobien/pocketbase:0.34.2
+
+# Copy migration files into the image so they are always present,
+# even on a fresh install with an empty pb_migrations volume.
+COPY pb_migrations/ /pb_migrations_bundled/
+
+# Entrypoint: seed pb_migrations from bundled files if the volume is empty,
+# then hand off to the real PocketBase binary.
+COPY pocketbase-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

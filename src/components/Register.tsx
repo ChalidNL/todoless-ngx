@@ -1,0 +1,240 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from './AuthProvider';
+import { AppLogo } from './shared/AppLogo';
+import { Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
+
+interface RegisterProps {
+  onRegister: () => void;
+}
+
+export const Register = ({ onRegister }: RegisterProps) => {
+  const { signUp } = useAuth();
+  const [step, setStep] = useState<'validate' | 'create'>('validate');
+  const [inviteCode, setInviteCode] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check for invite code in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('invite');
+    if (code) {
+      setInviteCode(code);
+      setStep('create'); // Skip validation if code is in URL
+    }
+  }, []);
+
+  const handleValidateInvite = () => {
+    if (!inviteCode || inviteCode.length < 6) {
+      setError('Please enter a valid invite code');
+      return;
+    }
+
+    setStep('create');
+    setError('');
+  };
+
+  const handleCreateAccount = async () => {
+    // Validation
+    if (!name || !email || !password || !confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    const { error: signUpError } = await signUp(email, password, name, inviteCode);
+
+    setIsLoading(false);
+
+    if (signUpError) {
+      setError(signUpError.message || 'Registration failed');
+      return;
+    }
+
+    // Complete registration
+    onRegister();
+  };
+
+  if (step === 'validate') {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+          <div className="flex items-center justify-center mb-8">
+            <AppLogo size="lg" showText={true} variant="dark" />
+          </div>
+          
+          <h1 className="text-2xl font-bold text-center mb-2">join todoless-ngx</h1>
+          <p className="text-neutral-600 text-center mb-8 text-sm">
+            Enter your 6-digit invite code to get started
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-neutral-600 mb-1">Invite Code</label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleValidateInvite()}
+                maxLength={6}
+                className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 text-center text-2xl font-mono tracking-widest"
+                placeholder="ABC123"
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-sm">{error}</p>
+            )}
+
+            <button
+              onClick={() => handleValidateInvite()}
+              className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
+            >
+              Validate Code
+            </button>
+
+            <div className="text-center pt-4 border-t border-neutral-100">
+              <p className="text-xs text-neutral-500">
+                Already have an account?{' '}
+                <a href="/" className="text-neutral-900 hover:underline font-medium">
+                  Log in
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+        <div className="flex items-center justify-center mb-6">
+          <AppLogo size="lg" showText={true} variant="dark" />
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mb-6 bg-green-50 border border-green-200 rounded-lg p-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
+          <p className="text-sm text-green-800 font-medium">Invite code validated!</p>
+        </div>
+        
+        <h1 className="text-2xl font-bold text-center mb-2">Create Your Account</h1>
+        <p className="text-neutral-600 text-center mb-8 text-sm">
+          Set up your profile to start organizing
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-neutral-600 mb-1">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-600 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-600 mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">Minimum 6 characters</p>
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-600 mb-1">Confirm Password</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateAccount()}
+                className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
+
+          <button
+            onClick={handleCreateAccount}
+            className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
+          >
+            {isLoading ? <Loader2 className="animate-spin" size={16} /> : 'Create Account'}
+          </button>
+
+          <div className="text-center pt-4 border-t border-neutral-100">
+            <p className="text-xs text-neutral-500">
+              Already have an account?{' '}
+              <a href="/" className="text-neutral-900 hover:underline font-medium">
+                Log in
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
