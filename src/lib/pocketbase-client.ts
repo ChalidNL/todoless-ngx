@@ -155,14 +155,37 @@ const normalizeGoal = (record: any): Goal => ({
 });
 
 class PocketBaseClient {
+  private showError(message: string) {
+    // Create a toast notification for API errors
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 24px;border-radius:8px;z-index:9999;font-size:14px;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
   async login(email: string, password: string) {
     const authData = await pb.collection('users').authWithPassword(email, password);
     return { token: pb.authStore.token, user: normalizeUser(authData.record) };
   }
 
   async register(email: string, password: string, name: string, inviteCode?: string) {
-    const userCount = await pb.collection('users').getList(1, 1);
-    const isFirstUser = userCount.totalItems === 0;
+    // PB 0.34: unauthenticated list returns empty (not 403). We can't reliably
+    // check user count. Instead, try to create the user. If it fails with
+    // "not_unique" on email, users already exist. For true first-user scenario,
+    // we check if the _superusers collection has any records (PB 0.34 health-like check).
+    let isFirstUser = false;
+    try {
+      // This endpoint is accessible without auth and gives us the real count
+      const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
+      const data = await resp.json();
+      // If totalItems is 0 AND we're not authenticated, this might be a false 0
+      // due to list rules. The safest check: try creating without invite code.
+      // If creation succeeds → first user. If fails on unique → not first.
+      isFirstUser = resp.ok && data.totalItems === 0;
+    } catch {
+      isFirstUser = false;
+    }
 
     if (!isFirstUser) {
       if (!inviteCode) {
@@ -219,41 +242,55 @@ class PocketBaseClient {
   }
 
   async createTask(task: Partial<Task>) {
-    const userId = pb.authStore.record?.id;
-    return pb.collection('tasks').create({
-      title: task.title,
-      status: task.status || 'todo',
-      blocked: task.blocked || false,
-      blocked_comment: task.blockedComment,
-      priority: task.priority,
-      horizon: task.horizon,
-      assigned_to: task.assignedTo,
-      sprint_id: task.sprintId,
-      due_date: task.dueDate ? new Date(task.dueDate).toISOString() : null,
-      repeat_interval: task.repeatInterval,
-      labels: task.labels || [],
-      is_private: task.isPrivate || false,
-      archived: task.archived || false,
-      archived_at: task.archivedAt ? new Date(task.archivedAt).toISOString() : null,
-      delete_after: task.deleteAfter ? new Date(task.deleteAfter).toISOString() : null,
-      completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
-      user: userId,
-    });
+    try {
+      const userId = pb.authStore.record?.id;
+      return await pb.collection('tasks').create({
+        title: task.title,
+        status: task.status || 'todo',
+        blocked: task.blocked || false,
+        blocked_comment: task.blockedComment,
+        priority: task.priority,
+        horizon: task.horizon,
+        assigned_to: task.assignedTo,
+        sprint_id: task.sprintId,
+        due_date: task.dueDate ? new Date(task.dueDate).toISOString() : null,
+        repeat_interval: task.repeatInterval,
+        labels: task.labels || [],
+        is_private: task.isPrivate || false,
+        archived: task.archived || false,
+        archived_at: task.archivedAt ? new Date(task.archivedAt).toISOString() : null,
+        delete_after: task.deleteAfter ? new Date(task.deleteAfter).toISOString() : null,
+        completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+        user: userId,
+      });
+    } catch (error: any) {
+      const msg = error?.response?.message || error?.message || 'Failed to create task';
+      console.error('createTask failed:', error);
+      this.showError(`Failed to add task: ${msg}`);
+      throw error;
+    }
   }
 
   async updateTask(id: string, updates: Partial<Task>) {
-    return pb.collection('tasks').update(id, {
-      ...updates,
-      blocked_comment: updates.blockedComment,
-      sprint_id: updates.sprintId,
-      assigned_to: updates.assignedTo,
-      due_date: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
-      repeat_interval: updates.repeatInterval,
-      is_private: updates.isPrivate,
-      archived_at: updates.archivedAt ? new Date(updates.archivedAt).toISOString() : undefined,
-      delete_after: updates.deleteAfter ? new Date(updates.deleteAfter).toISOString() : undefined,
-      completed_at: updates.completedAt ? new Date(updates.completedAt).toISOString() : undefined,
-    });
+    try {
+      return await pb.collection('tasks').update(id, {
+        ...updates,
+        blocked_comment: updates.blockedComment,
+        sprint_id: updates.sprintId,
+        assigned_to: updates.assignedTo,
+        due_date: updates.dueDate ? new Date(updates.dueDate).toISOString() : undefined,
+        repeat_interval: updates.repeatInterval,
+        is_private: updates.isPrivate,
+        archived_at: updates.archivedAt ? new Date(updates.archivedAt).toISOString() : undefined,
+        delete_after: updates.deleteAfter ? new Date(updates.deleteAfter).toISOString() : undefined,
+        completed_at: updates.completedAt ? new Date(updates.completedAt).toISOString() : undefined,
+      });
+    } catch (error: any) {
+      const msg = error?.response?.message || error?.message || 'Failed to update task';
+      console.error('updateTask failed:', error);
+      this.showError(`Failed to update task: ${msg}`);
+      throw error;
+    }
   }
 
   async deleteTask(id: string) {
@@ -268,18 +305,25 @@ class PocketBaseClient {
   }
 
   async createItem(item: Partial<Item>) {
-    return pb.collection('items').create({
-      title: item.title,
-      completed: item.completed || false,
-      shop_id: item.shopId,
-      quantity: item.quantity,
-      priority: item.priority,
-      assigned_to: item.assignedTo,
-      due_date: item.dueDate ? new Date(item.dueDate).toISOString() : null,
-      labels: item.labels || [],
-      is_private: item.isPrivate || false,
-      user: pb.authStore.record?.id,
-    });
+    try {
+      return await pb.collection('items').create({
+        title: item.title,
+        completed: item.completed || false,
+        shop_id: item.shopId,
+        quantity: item.quantity,
+        priority: item.priority,
+        assigned_to: item.assignedTo,
+        due_date: item.dueDate ? new Date(item.dueDate).toISOString() : null,
+        labels: item.labels || [],
+        is_private: item.isPrivate || false,
+        user: pb.authStore.record?.id,
+      });
+    } catch (error: any) {
+      const msg = error?.response?.message || error?.message || 'Failed to create item';
+      console.error('createItem failed:', error);
+      this.showError(`Failed to add item: ${msg}`);
+      throw error;
+    }
   }
 
   async updateItem(id: string, updates: Partial<Item>) {

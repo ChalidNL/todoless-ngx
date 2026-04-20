@@ -281,8 +281,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>) => {
     void (async () => {
-      await api.createTask(task);
-      await refreshTasks();
+      try {
+        await api.createTask(task);
+        await refreshTasks();
+      } catch (error) {
+        console.error('addTask failed:', error);
+        // Error toast is shown by pocketbase-client
+      }
     })();
   };
 

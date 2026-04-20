@@ -124,6 +124,10 @@ export const NewGlobalHeader = ({
     const { cleanText, metadata } = parseInput(inputValue);
     onAdd(cleanText, metadata);
     setInputValue('');
+    // Clear search filter after adding so the new task is visible
+    if (onSearch) {
+      onSearch('');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
