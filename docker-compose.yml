@@ -8,7 +8,7 @@ services:
     container_name: todoless-ngx
     restart: unless-stopped
     environment:
-      TZ: $TZ
+      TZ: ${TZ:-Europe/Amsterdam}
     ports:
       - target: 80
         published: 7070
@@ -39,9 +39,23 @@ services:
     pull_policy: always
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
-    command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data"]
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        mkdir -p /pb_migrations
+
+        if [ ! -f /pb_migrations/001_initial_schema.js ]; then
+          echo "[entrypoint] seeding migrations from GitHub..."
+          wget -qO /pb_migrations/001_initial_schema.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/001_initial_schema.js
+          wget -qO /pb_migrations/002_cross_relations.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/002_cross_relations.js
+          wget -qO /pb_migrations/003_rewards_system.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/003_rewards_system.js
+          wget -qO /pb_migrations/004_add_autodate_fields.js https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/004_add_autodate_fields.js
+        fi
+
+        exec /usr/local/bin/pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --migrationsDir=/pb_migrations --automigrate
     environment:
-      TZ: $TZ
+      TZ: ${TZ:-Europe/Amsterdam}
     expose:
       - "8090"
     healthcheck:
@@ -51,7 +65,8 @@ services:
       retries: 10
       start_period: 20s
     volumes:
-      - /DATA/AppData/$AppID/pb_data:/pb_data
+      - /DATA/AppData/${AppID:-todoless-ngx}/pb_data:/pb_data
+      - /DATA/AppData/${AppID:-todoless-ngx}/pb_migrations:/pb_migrations
     networks:
       - todoless-net
     x-casaos:
@@ -59,6 +74,9 @@ services:
         - container: /pb_data
           description:
             en_US: PocketBase data — database and uploads
+        - container: /pb_migrations
+          description:
+            en_US: PocketBase migration scripts
 
 networks:
   todoless-net:
@@ -73,7 +91,7 @@ x-casaos:
   category: Productivity
   description:
     en_US: todoless-ngx — self-hosted multi-user task manager. Tasks, notes, calendar, brain dumps, real-time sync. Free forever.
-  icon: https://cdn.jsdelivr.net/gh/ChalidNL/todoless-ngx@main/src/public/icon.png
+  icon: https://cdn.jsdelivr.net/gh/ChalidNL/todoless-ngx@main/src/public/icon.svg
   tagline:
     en_US: Self-hosted productivity app
   title:
