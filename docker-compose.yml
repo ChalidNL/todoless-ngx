@@ -35,7 +35,7 @@ services:
             en_US: Web UI
 
   pocketbase:
-    image: ghcr.io/muchobien/pocketbase:0.34.2
+    image: ghcr.io/chalidnl/todoless-ngx-pocketbase:latest
     pull_policy: always
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
@@ -43,11 +43,11 @@ services:
       - /bin/sh
       - -ec
       - |
-        mkdir -p /pb_data /pb_migrations
+        mkdir -p /pb_data
 
-        echo "[entrypoint] using mounted local migrations in /pb_migrations (no remote sync)"
+        echo "[entrypoint] running PocketBase with persisted db in /pb_data"
 
-        exec /usr/local/bin/pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --migrationsDir=/pb_migrations --automigrate
+        exec /usr/local/bin/pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data
     environment:
       TZ: Europe/Amsterdam
     expose:
@@ -62,7 +62,6 @@ services:
     #   start_period: 20s
     volumes:
       - /DATA/AppData/todoless-ngx/pb_data:/pb_data
-      - /DATA/AppData/todoless-ngx/pb_migrations:/pb_migrations
     networks:
       - todoless-net
     x-casaos:
@@ -70,9 +69,6 @@ services:
         - container: /pb_data
           description:
             en_US: PocketBase data — database and uploads
-        - container: /pb_migrations
-          description:
-            en_US: PocketBase migration scripts
 
 networks:
   todoless-net:
