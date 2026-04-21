@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todoless-ngx-v1';
+const CACHE_NAME = 'todoless-ngx-v2';
 const CORE_ASSETS = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -19,6 +19,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+
+  // Never cache API calls; always hit network for fresh server state.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
@@ -26,7 +33,7 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request)
         .then((networkResponse) => {
           const cloned = networkResponse.clone();
-          if (networkResponse.ok) {
+          if (networkResponse.ok && url.origin === self.location.origin) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
           }
           return networkResponse;
