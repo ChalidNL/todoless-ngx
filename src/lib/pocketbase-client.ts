@@ -248,7 +248,7 @@ class PocketBaseClient {
   async getTasks(): Promise<Task[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('tasks').getFullList({ filter: `user.id = "${userId}"`, sort: '-created' });
+    const list = await pb.collection('tasks').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
     return list.map(normalizeTask);
   }
 
@@ -311,7 +311,7 @@ class PocketBaseClient {
   async getItems(): Promise<Item[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('items').getFullList({ filter: `user.id = "${userId}"`, sort: '-created' });
+    const list = await pb.collection('items').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
     return list.map(normalizeItem);
   }
 
@@ -353,7 +353,7 @@ class PocketBaseClient {
   async getNotes(): Promise<Note[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('notes').getFullList({ filter: `user.id = "${userId}"`, sort: '-created' });
+    const list = await pb.collection('notes').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
     return list.map(normalizeNote);
   }
 
@@ -384,7 +384,7 @@ class PocketBaseClient {
   async getLabels(): Promise<Label[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('labels').getFullList({ filter: `user.id = "${userId}"`, sort: 'name' });
+    const list = await pb.collection('labels').getFullList({ filter: `user = "${userId}"`, sort: 'name' });
     return list.map(normalizeLabel);
   }
 
@@ -412,7 +412,7 @@ class PocketBaseClient {
   async getShops(): Promise<Shop[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('shops').getFullList({ filter: `user.id = "${userId}"`, sort: 'name' });
+    const list = await pb.collection('shops').getFullList({ filter: `user = "${userId}"`, sort: 'name' });
     return list.map(normalizeShop);
   }
 
@@ -431,7 +431,7 @@ class PocketBaseClient {
   async getSprints(): Promise<Sprint[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('sprints').getFullList({ filter: `user.id = "${userId}"`, sort: '-start_date' });
+    const list = await pb.collection('sprints').getFullList({ filter: `user = "${userId}"`, sort: '-start_date' });
     return list.map(normalizeSprint);
   }
 
@@ -462,7 +462,7 @@ class PocketBaseClient {
   async getCalendarEvents(): Promise<CalendarEvent[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('calendar_events').getFullList({ filter: `user.id = "${userId}"`, sort: 'start_time' });
+    const list = await pb.collection('calendar_events').getFullList({ filter: `user = "${userId}"`, sort: 'start_time' });
     return list.map(normalizeCalendarEvent);
   }
 
@@ -506,7 +506,7 @@ class PocketBaseClient {
     }
 
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('app_settings').getFullList({ filter: `user.id = "${userId}"` });
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
 
     if (!list.length) {
       const created = await pb.collection('app_settings').create({
@@ -526,7 +526,7 @@ class PocketBaseClient {
 
   async updateSettings(updates: Partial<AppSettings>) {
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('app_settings').getFullList({ filter: `user.id = "${userId}"` });
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
     const payload = {
       sprint_duration: updates.sprintDuration,
       sprint_start_day: updates.sprintStartDay,
@@ -548,7 +548,7 @@ class PocketBaseClient {
   async getInvites(): Promise<InviteCode[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('invite_codes').getFullList({ filter: `user.id = "${userId}"`, sort: '-created' });
+    const list = await pb.collection('invite_codes').getFullList({ filter: `user = "${userId}"`, sort: '-created' });
     return list.map(normalizeInvite);
   }
 

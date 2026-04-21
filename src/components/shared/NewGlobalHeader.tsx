@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, X, Check, Circle, AlertCircle, Flag, User, Tag, Zap, Lock, ShoppingCart, MapPin, CalendarDays, Repeat, CheckSquare } from 'lucide-react';
+import { Plus, Search, Filter, X, Check, Circle, AlertCircle, Flag, User, Tag, Zap, ShoppingCart, MapPin, CalendarDays, Repeat, CheckSquare } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { LabelBadge } from './LabelBadge';
 import { Priority, Horizon, TaskStatus } from '../../types';
@@ -32,7 +32,6 @@ export const NewGlobalHeader = ({
   // Common filter states
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [isPrivate, setIsPrivate] = useState<boolean | undefined>(undefined);
 
   // Task specific filters
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus[]>([]);
@@ -58,7 +57,7 @@ export const NewGlobalHeader = ({
   // Auto-apply filters when any filter changes
   useEffect(() => {
     applyFilter();
-  }, [selectedLabels, showCompleted, isPrivate, selectedStatus, selectedPriority, selectedHorizon, 
+  }, [selectedLabels, showCompleted, selectedStatus, selectedPriority, selectedHorizon, 
       selectedAssignees, hasSprintId, blocked, selectedShops, selectedCategories, selectedLocations, 
       belowMinimumStock, selectedLinkedTypes, dateRange, hasRecurring]);
 
@@ -162,7 +161,6 @@ export const NewGlobalHeader = ({
     };
 
     if (selectedLabels.length > 0) activeFilters.labelIds = selectedLabels;
-    if (isPrivate !== undefined) activeFilters.isPrivate = isPrivate;
 
     if (type === 'task') {
       if (selectedStatus.length > 0) activeFilters.status = selectedStatus;
@@ -191,7 +189,6 @@ export const NewGlobalHeader = ({
   const clearFilters = () => {
     setSelectedLabels([]);
     setShowCompleted(false);
-    setIsPrivate(undefined);
     setSelectedStatus([]);
     setSelectedPriority([]);
     setSelectedHorizon([]);
@@ -532,17 +529,6 @@ export const NewGlobalHeader = ({
               >
                 <Check className="w-3 h-3" />
                 Completed
-              </button>
-              <button
-                onClick={() => setIsPrivate(isPrivate === true ? undefined : true)}
-                className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
-                  isPrivate === true
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-white border border-neutral-200 text-neutral-600'
-                }`}
-              >
-                <Lock className="w-3 h-3" />
-                Private
               </button>
             </div>
 
