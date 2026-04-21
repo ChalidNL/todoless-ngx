@@ -164,41 +164,51 @@ class PocketBaseClient {
     setTimeout(() => toast.remove(), 5000);
   }
 
+  private async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string }> {
+    const normalizedCode = inviteCode.trim().toUpperCase();
+    const response = await fetch(
+      `/api/collections/invite_codes/records?perPage=1&page=1&code=${encodeURIComponent(normalizedCode)}&fields=id,code`,
+    );
+
+    if (!response.ok) {
+      throw new Error('Invalid or expired invite code');
+    }
+
+    const data = await response.json();
+    const invite = Array.isArray(data?.items) ? data.items[0] : null;
+
+    if (!invite?.id || !invite?.code) {
+      throw new Error('Invalid or expired invite code');
+    }
+
+    return { id: invite.id, code: invite.code };
+  }
+
   async login(email: string, password: string) {
     const authData = await pb.collection('users').authWithPassword(email, password);
     return { token: pb.authStore.token, user: normalizeUser(authData.record) };
   }
 
   async register(email: string, password: string, name: string, inviteCode?: string) {
-    // PB 0.34: unauthenticated list returns empty (not 403). We can't reliably
-    // check user count. Instead, try to create the user. If it fails with
-    // "not_unique" on email, users already exist. For true first-user scenario,
-    // we check if the _superusers collection has any records (PB 0.34 health-like check).
+    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
+
     let isFirstUser = false;
     try {
-      // This endpoint is accessible without auth and gives us the real count
       const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
       const data = await resp.json();
-      // If totalItems is 0 AND we're not authenticated, this might be a false 0
-      // due to list rules. The safest check: try creating without invite code.
-      // If creation succeeds → first user. If fails on unique → not first.
       isFirstUser = resp.ok && data.totalItems === 0;
     } catch {
       isFirstUser = false;
     }
 
+    let invite: { id: string; code: string } | null = null;
+
     if (!isFirstUser) {
-      if (!inviteCode) {
+      if (!normalizedInviteCode) {
         throw new Error('Invite code is required');
       }
 
-      const invites = await pb.collection('invite_codes').getFullList({
-        filter: `code = "${inviteCode}" && used = false && expires_at > "${new Date().toISOString()}"`,
-      });
-
-      if (!invites.length) {
-        throw new Error('Invalid or expired invite code');
-      }
+      invite = await this.validateInviteCode(normalizedInviteCode);
     }
 
     const created = await pb.collection('users').create({
@@ -210,16 +220,17 @@ class PocketBaseClient {
       role: isFirstUser ? 'admin' : 'user',
     });
 
-    if (!isFirstUser && inviteCode) {
-      const invite = await pb.collection('invite_codes').getFirstListItem(`code = "${inviteCode}"`);
+    if (!isFirstUser && invite) {
+      await pb.collection('users').authWithPassword(email, password);
       await pb.collection('invite_codes').update(invite.id, {
         used: true,
         used_by: created.id,
         used_at: new Date().toISOString(),
       });
+    } else {
+      await pb.collection('users').authWithPassword(email, password);
     }
 
-    await pb.collection('users').authWithPassword(email, password);
     return { token: pb.authStore.token, user: normalizeUser(pb.authStore.record) };
   }
 

@@ -55,7 +55,7 @@ services:
         fi
 
         echo "[entrypoint] validating migrations..."
-        for f in 001_initial_schema.js 002_cross_relations.js 003_rewards_system.js 004_add_autodate_fields.js; do
+        for f in 001_initial_schema.js 002_cross_relations.js 003_rewards_system.js 004_add_autodate_fields.js 005_invite_registration_rules.js; do
           if [ ! -s "/pb_migrations/$f" ]; then
             echo "[entrypoint] fetching migration: $f"
             if command -v wget >/dev/null 2>&1; then

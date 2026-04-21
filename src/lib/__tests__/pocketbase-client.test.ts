@@ -32,6 +32,7 @@ let api: any;
 describe('PocketBaseClient', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', vi.fn());
     // Re-import to get fresh instance
     const mod = await import('../pocketbase-client');
     api = mod.api;
@@ -54,7 +55,7 @@ describe('PocketBaseClient', () => {
 
   describe('register', () => {
     it('creates user and handles first user as admin', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 0 });
+      (fetch as any).mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 0 }) });
       mockCollection.create.mockResolvedValue({ id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' });
       mockCollection.authWithPassword.mockResolvedValue({
         record: { id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' },
@@ -62,23 +63,41 @@ describe('PocketBaseClient', () => {
 
       const result = await api.register('admin@test.com', 'pass', 'Admin');
 
-      expect(mockCollection.create).toHaveBeenCalledWith(
-        expect.objectContaining({ role: 'admin' })
-      );
+      expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'admin' }));
+      expect(mockCollection.authWithPassword).toHaveBeenCalledWith('admin@test.com', 'pass');
       expect(result).toHaveProperty('user');
     });
 
     it('requires invite code for non-first user', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 1 });
+      (fetch as any).mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 1 }) });
 
       await expect(api.register('user@test.com', 'pass', 'User')).rejects.toThrow('Invite code is required');
     });
 
     it('validates invite code for non-first user', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 1 });
-      mockCollection.getFullList.mockResolvedValue([]); // no valid invites
+      (fetch as any)
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 1 }) })
+        .mockResolvedValueOnce({ ok: false, json: vi.fn().mockResolvedValue({}) });
 
       await expect(api.register('user@test.com', 'pass', 'User', 'BAD_CODE')).rejects.toThrow('Invalid or expired invite code');
+    });
+
+    it('consumes invite after successful non-first-user registration', async () => {
+      (fetch as any)
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 3 }) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ items: [{ id: 'inv1', code: 'ABC123' }] }) });
+      mockCollection.create.mockResolvedValue({ id: 'u2', email: 'user@test.com', name: 'User', role: 'user' });
+      mockCollection.authWithPassword.mockResolvedValue({
+        record: { id: 'u2', email: 'user@test.com', name: 'User', role: 'user' },
+      });
+
+      await api.register('user@test.com', 'pass', 'User', 'abc123');
+
+      expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'user' }));
+      expect(mockCollection.update).toHaveBeenCalledWith(
+        'inv1',
+        expect.objectContaining({ used: true, used_by: 'u2' }),
+      );
     });
   });
 
