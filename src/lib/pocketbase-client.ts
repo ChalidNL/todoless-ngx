@@ -506,7 +506,7 @@ class PocketBaseClient {
     }
 
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('app_settings').getFullList({ filter: `user.id = "${userId}"` });
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
 
     if (!list.length) {
       const created = await pb.collection('app_settings').create({
@@ -526,7 +526,7 @@ class PocketBaseClient {
 
   async updateSettings(updates: Partial<AppSettings>) {
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('app_settings').getFullList({ filter: `user.id = "${userId}"` });
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
     const payload = {
       sprint_duration: updates.sprintDuration,
       sprint_start_day: updates.sprintStartDay,
