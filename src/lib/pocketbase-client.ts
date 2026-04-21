@@ -155,6 +155,8 @@ const normalizeGoal = (record: any): Goal => ({
 });
 
 class PocketBaseClient {
+  private settingsRequest: Promise<AppSettings> | null = null;
+
   private showError(message: string) {
     // Create a toast notification for API errors
     const toast = document.createElement('div');
@@ -505,30 +507,41 @@ class PocketBaseClient {
       };
     }
 
+    if (this.settingsRequest) return this.settingsRequest;
+
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
 
-    if (!list.length) {
-      try {
-        const created = await pb.collection('app_settings').create({
-          user: userId,
-          sprint_duration: '2weeks',
-          sprint_start_day: 1,
-          language: 'en',
-          archive_retention_days: 30,
-          auto_cleanup: true,
-          theme: 'light',
-        });
-        return normalizeSettings(created);
-      } catch {
-        // Handle concurrent first-run create race (unique user index may already be filled).
-        const retry = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
-        if (retry.length) return normalizeSettings(retry[0]);
-        throw new Error('Failed to initialize settings');
+    this.settingsRequest = (async () => {
+      const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+
+      if (!list.length) {
+        try {
+          const created = await pb.collection('app_settings').create({
+            user: userId,
+            sprint_duration: '2weeks',
+            sprint_start_day: 1,
+            language: 'en',
+            archive_retention_days: 30,
+            auto_cleanup: true,
+            theme: 'light',
+          });
+          return normalizeSettings(created);
+        } catch {
+          // Handle concurrent first-run create race (unique user index may already be filled).
+          const retry = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+          if (retry.length) return normalizeSettings(retry[0]);
+          throw new Error('Failed to initialize settings');
+        }
       }
-    }
 
-    return normalizeSettings(list[0]);
+      return normalizeSettings(list[0]);
+    })();
+
+    try {
+      return await this.settingsRequest;
+    } finally {
+      this.settingsRequest = null;
+    }
   }
 
   async updateSettings(updates: Partial<AppSettings>) {
