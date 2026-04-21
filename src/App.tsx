@@ -96,7 +96,9 @@ function AppContent() {
           hasUsers = true;
         }
 
-        if (!hasUsers) {
+        // Only show onboarding for zero-users on first run.
+        // Prevent onboarding loop after user already completed it once.
+        if (!hasUsers && !hasCompletedOnboarding) {
           setAppScreen('onboarding');
           return;
         }
