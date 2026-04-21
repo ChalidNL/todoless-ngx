@@ -11,12 +11,8 @@ import { BulkImport } from './shared/BulkImport';
 import { InviteManager } from './InviteManager';
 
 export const Settings = () => {
-  const { users, appSettings, addUser, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, sprints, createNewSprint, currentSprint, deleteSprint, tasks, archiveCompletedSprintTasks, archiveAllDoneTasks, deleteArchivedTasks, showCompletionMessage } = useApp();
+  const { users, appSettings, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, sprints, createNewSprint, currentSprint, deleteSprint, tasks, archiveCompletedSprintTasks, archiveAllDoneTasks, deleteArchivedTasks, showCompletionMessage } = useApp();
   const { signOut } = useAuth();
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteName, setInviteName] = useState('');
-  const [inviteRole, setInviteRole] = useState<'admin' | 'user' | 'child'>('user');
   const [editingPassword, setEditingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,23 +42,6 @@ export const Settings = () => {
   const [showArchive, setShowArchive] = useState(false);
 
   const currentUser = users.find(u => u.id === appSettings.currentUserId);
-
-  const handleInvite = () => {
-    if (!inviteEmail || !inviteName) return;
-
-    const newUser = {
-      id: Math.random().toString(36).substring(2, 11),
-      email: inviteEmail,
-      name: inviteName,
-      role: inviteRole,
-    };
-
-    addUser(newUser);
-    setShowInviteModal(false);
-    setInviteEmail('');
-    setInviteName('');
-    setInviteRole('user');
-  };
 
   const handlePasswordChange = () => {
     if (!currentUser || !newPassword) return;
@@ -733,90 +712,6 @@ export const Settings = () => {
           Log Out
         </button>
       </div>
-
-      {/* Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Invite Team Member</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-neutral-600 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-neutral-600 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="john@example.com"
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-neutral-600 mb-1">Role</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setInviteRole('admin')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      inviteRole === 'admin'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    Admin
-                  </button>
-                  <button
-                    onClick={() => setInviteRole('user')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      inviteRole === 'user'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    User
-                  </button>
-                  <button
-                    onClick={() => setInviteRole('child')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      inviteRole === 'child'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    Child
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => setShowInviteModal(false)}
-                  className="flex-1 px-4 py-2 border border-neutral-200 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleInvite}
-                  className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded"
-                >
-                  Send Invite
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add Label Modal */}
       {showAddLabelModal && (

@@ -82,7 +82,7 @@ interface AppContextType {
   createNewSprint: () => void;
   convertTaskToItem: (taskId: string) => void;
   convertItemToTask: (itemId: string) => void;
-  generateInviteCode: () => InviteCode;
+  generateInviteCode: () => Promise<InviteCode | null>;
   validateInviteCode: (code: string) => InviteCode | null;
   useInviteCode: (code: string, userId: string) => boolean;
   deleteInviteCode: (id: string) => void;
@@ -560,7 +560,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     deleteItem(itemId);
   };
 
-  const generateInviteCode = (): InviteCode => {
+  const generateInviteCode = async (): Promise<InviteCode | null> => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const now = Date.now();
     const expiresAt = now + 60 * 60 * 1000;
@@ -574,12 +574,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       used: false,
     };
 
-    void (async () => {
+    try {
       await api.createInvite({ code, expiresAt });
       await refreshInvites();
-    })();
-
-    return inviteCode;
+      return inviteCode;
+    } catch (error) {
+      console.error('generateInviteCode failed:', error);
+      return null;
+    }
   };
 
   const validateInviteCode = (code: string): InviteCode | null => {

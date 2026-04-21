@@ -4,7 +4,7 @@ import { CompactTaskCard } from './shared/CompactTaskCard';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { TopBar } from './shared/TopBar';
 import { DueDateNotifications } from './shared/DueDateNotifications';
-import { CheckSquare, Zap, Compass, Flag, X, Lock, Unlock } from 'lucide-react';
+import { CheckSquare, Zap, Compass, Flag, X } from 'lucide-react';
 import { Priority, Horizon } from '../types';
 import { parseQuickAdd } from '../lib/quick-add-parser';
 
@@ -13,7 +13,6 @@ export const InboxBacklog = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [showBulkMenu, setShowBulkMenu] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false);
 
   const backlogTasks = tasks
     .filter(t => t.status === 'backlog')
@@ -28,11 +27,9 @@ export const InboxBacklog = () => {
       labels: metadata?.labels || [],
       assignedTo: metadata?.assignee,
       dueDate: metadata?.dueDate,
-      isPrivate,
       horizon: null,
       sprint: null
     } as any);
-    setIsPrivate(false);
   };
 
   const handleTaskSelect = (taskId: string) => {
@@ -84,20 +81,6 @@ export const InboxBacklog = () => {
         onSearch={setSearchQuery}
         searchPlaceholder="Search or brain dump..."
       />
-
-      {/* Private Toggle */}
-      <div className="max-w-2xl mx-auto px-4 pt-2 flex justify-end">
-        <button
-          onClick={() => setIsPrivate(!isPrivate)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-            isPrivate ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'
-          }`}
-          title="Privé - alleen zichtbaar voor jou"
-        >
-          {isPrivate ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-          {isPrivate ? 'Private' : 'Public'}
-        </button>
-      </div>
 
       {/* Backlog list */}
       <div className="max-w-2xl mx-auto px-4 pt-4">

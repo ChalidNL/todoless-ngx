@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { TopBar } from './shared/TopBar';
-import { Trash2, Pin, Tag, Lock, Unlock, Menu, X } from 'lucide-react';
+import { Trash2, Pin, Tag, Menu, X } from 'lucide-react';
 import { LabelBadge } from './shared/LabelBadge';
 import { EditableText } from './shared/EditableText';
 
@@ -30,7 +30,6 @@ export const Notes = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [showLabelSelector, setShowLabelSelector] = useState<string | null>(null);
-  const [isPrivate, setIsPrivate] = useState(false);
 
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
@@ -38,10 +37,8 @@ export const Notes = () => {
     const newNote = {
       content: value,
       labels: [],
-      isPrivate,
     };
     addNote(newNote as any);
-    setIsPrivate(false);
   };
 
   const handleToggleLabel = (noteId: string, labelId: string) => {
@@ -82,20 +79,6 @@ export const Notes = () => {
         searchPlaceholder="Search notes or add new..."
         type="note"
       />
-
-      {/* Private Toggle */}
-      <div className="max-w-2xl mx-auto px-4 pt-2 flex justify-end">
-        <button
-          onClick={() => setIsPrivate(!isPrivate)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-            isPrivate ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'
-          }`}
-          title="Privé - alleen zichtbaar voor jou"
-        >
-          {isPrivate ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-          {isPrivate ? 'Private' : 'Public'}
-        </button>
-      </div>
 
       <div className="max-w-2xl mx-auto p-4">
         {/* Notes List */}

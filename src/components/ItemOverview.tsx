@@ -3,13 +3,12 @@ import { useApp } from '../context/AppContext';
 import { CompactItemCard } from './shared/CompactItemCard';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { TopBar } from './shared/TopBar';
-import { ChevronDown, ChevronUp, RotateCcw, Lock, Unlock } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 
 export const ItemOverview = () => {
   const { items, addItem, activeLabelFilters, uncheckAllDoneItems, showCompletionMessage } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCheckedOut, setShowCheckedOut] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleAddItem = (value: string, metadata?: { assignee?: string; labels?: string[]; dueDate?: number }) => {
     addItem({
@@ -18,9 +17,7 @@ export const ItemOverview = () => {
       assignedTo: metadata?.assignee,
       labels: metadata?.labels || [],
       dueDate: metadata?.dueDate,
-      isPrivate,
     });
-    setIsPrivate(false);
   };
 
   const activeItems = items.filter(item => {
@@ -46,20 +43,6 @@ export const ItemOverview = () => {
         searchPlaceholder="Search items or add with @user #label //date..."
         type="item"
       />
-
-      {/* Private Toggle */}
-      <div className="max-w-2xl mx-auto px-4 pt-2 flex justify-end">
-        <button
-          onClick={() => setIsPrivate(!isPrivate)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-            isPrivate ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'
-          }`}
-          title="Privé - alleen zichtbaar voor jou"
-        >
-          {isPrivate ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-          {isPrivate ? 'Private' : 'Public'}
-        </button>
-      </div>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         {/* Active Items */}

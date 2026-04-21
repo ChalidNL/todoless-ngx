@@ -8,9 +8,19 @@ export const InviteManager = () => {
   const [currentInviteUrl, setCurrentInviteUrl] = useState('');
   const [currentInviteCode, setCurrentInviteCode] = useState('');
 
-  const handleGenerateInvite = () => {
-    const invite = generateInviteCode();
-    showCompletionMessage('Invite code gegenereerd!');
+  const handleGenerateInvite = async () => {
+    const invite = await generateInviteCode();
+    if (!invite) {
+      showCompletionMessage('Failed to generate invite code');
+      return;
+    }
+
+    const baseUrl = window.location.origin;
+    const inviteUrl = `${baseUrl}/register?invite=${invite.code}`;
+    setCurrentInviteUrl(inviteUrl);
+    setCurrentInviteCode(invite.code);
+    setShowShareModal(true);
+    showCompletionMessage('Invite code generated');
   };
 
   const handleShareInvite = (code: string) => {
