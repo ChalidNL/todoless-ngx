@@ -102,7 +102,7 @@ describe('PocketBaseClient', () => {
   });
 
   describe('CRUD operations', () => {
-    it('getTasks calls tasks collection with user filter', async () => {
+    it('getTasks calls tasks collection with exact user relation filter', async () => {
       mockCollection.getFullList.mockResolvedValue([
         { id: 't1', title: 'Test Task', status: 'todo', created: new Date().toISOString(), user: 'user1', labels: [] },
       ]);
@@ -111,7 +111,7 @@ describe('PocketBaseClient', () => {
 
       expect(pb.collection).toHaveBeenCalledWith('tasks');
       expect(mockCollection.getFullList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.stringContaining('user1') })
+        expect.objectContaining({ filter: 'user = "user1"' })
       );
       expect(tasks).toHaveLength(1);
       expect(tasks[0].title).toBe('Test Task');
