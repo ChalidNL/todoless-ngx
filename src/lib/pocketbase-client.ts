@@ -509,16 +509,23 @@ class PocketBaseClient {
     const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
 
     if (!list.length) {
-      const created = await pb.collection('app_settings').create({
-        user: userId,
-        sprint_duration: '2weeks',
-        sprint_start_day: 1,
-        language: 'en',
-        archive_retention_days: 30,
-        auto_cleanup: true,
-        theme: 'light',
-      });
-      return normalizeSettings(created);
+      try {
+        const created = await pb.collection('app_settings').create({
+          user: userId,
+          sprint_duration: '2weeks',
+          sprint_start_day: 1,
+          language: 'en',
+          archive_retention_days: 30,
+          auto_cleanup: true,
+          theme: 'light',
+        });
+        return normalizeSettings(created);
+      } catch {
+        // Handle concurrent first-run create race (unique user index may already be filled).
+        const retry = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+        if (retry.length) return normalizeSettings(retry[0]);
+        throw new Error('Failed to initialize settings');
+      }
     }
 
     return normalizeSettings(list[0]);
