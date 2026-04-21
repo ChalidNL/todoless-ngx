@@ -1,0 +1,14 @@
+title = "agentix/todoless-ngx gitleaks config"
+
+[allowlist]
+description = "Global allowlist for non-secret files and false positives"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)build/''',
+  '''(^|/)dist/''',
+  '''(^|/)coverage/'''
+]
+
+# Add specific known false positives here if needed.
+# commits = ["<commit_sha>"]
+# regexes = ["<false_positive_pattern>"]

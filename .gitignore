@@ -1,9 +1,42 @@
+# Environment and local secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.test.example
+.envrc
+*.env
+*.secret
+*.secrets
+*.token
+
+# Certificates / keys
 *.pem
 *.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+
+# Local app/runtime data
+*.sqlite
+*.sqlite3
+*.db
+*.pid
+*.log
+
+# Node / build artifacts
 node_modules/
 dist/
-.DS_Store
 build/
+coverage/
+
+# Tooling caches
+.cache/
+.vite/
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/

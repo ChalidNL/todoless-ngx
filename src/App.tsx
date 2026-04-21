@@ -81,16 +81,15 @@ function AppContent() {
         const health = await healthResp.json();
         const path = window.location.pathname.toLowerCase();
 
-        // Check if any users exist. PB 0.34 returns 200 with empty results
-        // for unauthenticated list (not 403), so we use a direct fetch with
-        // skipTotal to minimize overhead. If we get items → users exist.
-        // If empty AND not authenticated → assume users may exist (safe default).
+        // Check if any users exist.
+        // If users endpoint is publicly readable (fresh install), totalItems===0
+        // should trigger onboarding. If endpoint is protected (403/error), we
+        // fall back to "has users" and skip onboarding.
         let hasUsers = true;
         try {
           const resp = await fetch('/api/collections/users/records?perPage=1');
           const data = await resp.json();
-          if (resp.ok && data.totalItems === 0 && pb.authStore.isValid) {
-            // Only trust "no users" when authenticated (can actually see them)
+          if (resp.ok && data.totalItems === 0) {
             hasUsers = false;
           }
         } catch {

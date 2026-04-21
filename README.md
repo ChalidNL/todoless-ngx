@@ -17,6 +17,23 @@ Use `docker-compose.local.yml`:
 docker compose -f docker-compose.local.yml up --build
 ```
 
+## Security baseline (secrets/tokens)
+- Use `.env.example` as a template; keep real values only in local `.env` files or a secret manager.
+- Install pre-commit hooks:
+
+```bash
+pipx install pre-commit || pip install pre-commit
+pre-commit install
+```
+
+- Run a full repository scan:
+
+```bash
+npm run security:secrets
+```
+
+- Policy document: `docs/security/secrets-rotation-policy.md`
+
 ## Deploy to CasaOS
 See README-casaos.md
 
