@@ -111,7 +111,7 @@ describe('PocketBaseClient', () => {
 
       expect(pb.collection).toHaveBeenCalledWith('tasks');
       expect(mockCollection.getFullList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: 'user = "user1"' })
+        expect.objectContaining({ filter: 'user.id = "user1"' })
       );
       expect(tasks).toHaveLength(1);
       expect(tasks[0].title).toBe('Test Task');
