@@ -7,7 +7,7 @@ migrate(
     inviteCodes.viewRule =
       'user = @request.auth.id || (code = @request.query.code && used = false && expires_at > @now)';
     inviteCodes.updateRule =
-      'user = @request.auth.id || (@request.auth.id != "" && used = false && expires_at > @now && @request.data.used = true && @request.data.used_by = @request.auth.id)';
+      'user = @request.auth.id || (@request.auth.id != "" && used = false && expires_at > @now)';
 
     app.save(inviteCodes);
   },
