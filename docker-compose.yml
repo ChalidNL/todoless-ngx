@@ -54,18 +54,16 @@ services:
           fi
         fi
 
-        echo "[entrypoint] validating migrations..."
+        echo "[entrypoint] syncing migrations..."
         for f in 001_initial_schema.js 002_cross_relations.js 003_rewards_system.js 004_add_autodate_fields.js 005_invite_registration_rules.js; do
-          if [ ! -s "/pb_migrations/$$f" ]; then
-            echo "[entrypoint] fetching migration: $$f"
-            if command -v wget >/dev/null 2>&1; then
-              wget -qO "/pb_migrations/$$f" "https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/$$f"
-            elif command -v curl >/dev/null 2>&1; then
-              curl -fsSL "https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/$$f" -o "/pb_migrations/$$f"
-            else
-              echo "[entrypoint] ERROR: neither wget nor curl is available" >&2
-              exit 1
-            fi
+          echo "[entrypoint] fetching migration: $$f"
+          if command -v wget >/dev/null 2>&1; then
+            wget -qO "/pb_migrations/$$f" "https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/$$f"
+          elif command -v curl >/dev/null 2>&1; then
+            curl -fsSL "https://raw.githubusercontent.com/ChalidNL/todoless-ngx/main/pb_migrations/$$f" -o "/pb_migrations/$$f"
+          else
+            echo "[entrypoint] ERROR: neither wget nor curl is available" >&2
+            exit 1
           fi
         done
 
