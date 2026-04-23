@@ -16,6 +16,7 @@ import { Rewards } from './components/Rewards';
 import { Dashboard } from './components/Dashboard';
 import { pb } from './lib/pocketbase';
 import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw, Star, LayoutDashboard } from 'lucide-react';
+import { shouldShowOnboarding } from './lib/onboarding-gate';
 
 const ONBOARDING_SEEN_KEY = 'todoless_onboarding_completed';
 
@@ -96,14 +97,10 @@ function AppContent() {
           hasUsers = true;
         }
 
-        // Only show onboarding for zero-users on first run.
-        // Prevent onboarding loop after user already completed it once.
-        if (!hasUsers && !hasCompletedOnboarding) {
-          setAppScreen('onboarding');
-          return;
-        }
-
-        if (!hasCompletedOnboarding) {
+        // Only show onboarding for first install of this deployment:
+        // no users exist yet AND current device has not completed onboarding.
+        // If users already exist, never show onboarding to a fresh device/PWA install.
+        if (shouldShowOnboarding({ hasUsers, hasCompletedOnboarding })) {
           setAppScreen('onboarding');
           return;
         }
