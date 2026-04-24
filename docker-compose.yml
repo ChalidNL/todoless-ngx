@@ -2,8 +2,11 @@ name: todoless-ngx
 
 services:
   todoless-ngx:
-    image: ghcr.io/chalidnl/todoless-ngx:latest
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: todoless-ngx-frontend:latest
+    pull_policy: never
     container_name: todoless-ngx
     restart: unless-stopped
     environment:
@@ -34,8 +37,11 @@ services:
             en_US: Web UI
 
   pocketbase:
-    image: ghcr.io/chalidnl/todoless-ngx-pocketbase:latest
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile.pocketbase
+    image: todoless-ngx-pocketbase:latest
+    pull_policy: never
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
     command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--automigrate"]
@@ -43,14 +49,6 @@ services:
       TZ: Europe/Amsterdam
     expose:
       - "8090"
-    # CasaOS note: disable PB healthcheck to avoid false-unhealthy on minimal images.
-    # PB startup is validated by container running state and app-level retry logic.
-    # healthcheck:
-    #   test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8090/api/health || exit 1"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 10
-    #   start_period: 20s
     volumes:
       - /DATA/AppData/todoless-ngx/pb_data:/pb_data
       - /DATA/AppData/todoless-ngx/pb_migrations:/pb_migrations
