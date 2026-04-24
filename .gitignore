@@ -19,6 +19,10 @@
 id_rsa
 id_ed25519
 
+# Secrets (local only)
+/secrets/
+/.ssh/
+
 # Local app/runtime data
 *.sqlite
 *.sqlite3
