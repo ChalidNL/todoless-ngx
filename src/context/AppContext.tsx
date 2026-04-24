@@ -219,6 +219,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    if (users.length > 1 && !sharedView) {
+      setSharedView(true);
+    }
+  }, [users.length]);
+
+  useEffect(() => {
     if (!pb.authStore.isValid) return;
 
     const subscribeAll = async () => {

@@ -205,12 +205,13 @@ class PocketBaseClient {
 
     let invite: { id: string; code: string } | null = null;
 
-    if (!isFirstUser) {
-      if (!normalizedInviteCode) {
-        throw new Error('Invite code is required');
-      }
-
+    // If invite code is provided, treat as non-first user regardless of fetch result
+    if (normalizedInviteCode) {
       invite = await this.validateInviteCode(normalizedInviteCode);
+      isFirstUser = false;
+    } else if (!isFirstUser) {
+      // No invite code and not first user => error
+      throw new Error('Invite code is required');
     }
 
     const created = await pb.collection('users').create({
