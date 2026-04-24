@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { Brain, Inbox, Calendar, Check, Eye, EyeOff, ShoppingCart, StickyNote, UserPlus, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
+import { api } from '../lib/pocketbase-client';
 import { AppLogo } from './shared/AppLogo';
 
 interface OnboardingProps {
+  mode: 'admin' | 'user';
   onComplete: () => void;
 }
 
-export const Onboarding = ({ onComplete }: OnboardingProps) => {
-  const { users, updateAppSettings } = useApp();
+export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
+  const { updateAppSettings } = useApp();
   const { signUp } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
@@ -17,9 +19,7 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
-
-  // Check if this is first-time setup
-  const isFirstTimeSetup = users.length === 0;
+  const isAdmin = mode === 'admin';
 
   const steps = [
     {
@@ -54,8 +54,8 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
     },
   ];
 
-  // Add admin creation step if first-time setup
-  if (isFirstTimeSetup) {
+  // Add admin creation step for first-time setup
+  if (isAdmin) {
     steps.push({
       icon: <UserPlus className="w-16 h-16 text-neutral-900" />,
       title: 'Create Admin Account',
@@ -64,7 +64,7 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
   } else {
     steps.push({
       icon: <Check className="w-16 h-16 text-neutral-900" />,
-      title: 'Let\'s Start',
+      title: "Let's Start",
       description: 'Ready to unload your mind and get organized?',
     });
   }
@@ -73,11 +73,10 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // If last step and first-time setup, create admin user
-      if (isFirstTimeSetup) {
+      if (isAdmin) {
         handleCreateAdmin();
       } else {
-        onComplete();
+        handleUserOnboardingComplete();
       }
     }
   };
@@ -99,26 +98,35 @@ export const Onboarding = ({ onComplete }: OnboardingProps) => {
       return;
     }
 
+    // Admin setup: create app_settings record with setup_complete=true
+    await api.markOnboardingSeen(true);
+    updateAppSettings({ hasCompletedOnboarding: true, setupComplete: true });
+    onComplete();
+  };
+
+  const handleUserOnboardingComplete = async () => {
+    // Regular user: create app_settings record (setup_complete stays false)
+    await api.markOnboardingSeen(false);
     updateAppSettings({ hasCompletedOnboarding: true });
     onComplete();
   };
 
   const handleSkip = () => {
-    if (isFirstTimeSetup) {
+    if (isAdmin) {
       // Can't skip initial setup
       return;
     }
-    onComplete();
+    handleUserOnboardingComplete();
   };
 
   const step = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
-  const showAdminForm = isFirstTimeSetup && isLastStep;
+  const showAdminForm = isAdmin && isLastStep;
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
-      {/* Skip button - only show if not first-time setup */}
-      {!isFirstTimeSetup && (
+      {/* Skip button - only show for user onboarding */}
+      {!isAdmin && (
         <div className="p-4 flex justify-end">
           <button
             onClick={handleSkip}

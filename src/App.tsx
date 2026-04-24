@@ -15,10 +15,9 @@ import { Calendar } from './components/Calendar';
 import { Rewards } from './components/Rewards';
 import { Dashboard } from './components/Dashboard';
 import { pb } from './lib/pocketbase';
+import { api } from './lib/pocketbase-client';
 import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw, Star, LayoutDashboard } from 'lucide-react';
-import { shouldShowOnboarding } from './lib/onboarding-gate';
-
-const ONBOARDING_SEEN_KEY = 'todoless_onboarding_completed';
+import { getOnboardingMode, OnboardingMode } from './lib/onboarding-gate';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -65,6 +64,7 @@ class ErrorBoundary extends React.Component<
 
 function AppContent() {
   const [appScreen, setAppScreen] = useState<'checking' | 'onboarding' | 'login' | 'register' | 'app'>('checking');
+  const [onboardingMode, setOnboardingMode] = useState<OnboardingMode>('none');
   const { completionMessage } = useApp();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -74,60 +74,56 @@ function AppContent() {
     const checkFirstRun = async () => {
       if (loading) return;
 
-      const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
-
+      // 1. Check if any users exist (unauthenticated, works on fresh install)
+      let hasUsers = true;
       try {
-        // Use health endpoint (no auth needed) to check if PB is running
-        const healthResp = await fetch('/api/health');
-        const health = await healthResp.json();
-        const path = window.location.pathname.toLowerCase();
-
-        // Check if any users exist.
-        // If users endpoint is publicly readable (fresh install), totalItems===0
-        // should trigger onboarding. If endpoint is protected (403/error), we
-        // fall back to "has users" and skip onboarding.
-        let hasUsers = true;
-        try {
-          const resp = await fetch('/api/collections/users/records?perPage=1');
-          const data = await resp.json();
-          if (resp.ok && data.totalItems === 0) {
-            hasUsers = false;
-          }
-        } catch {
-          hasUsers = true;
+        const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
+        const data = await resp.json();
+        if (resp.ok && data.totalItems === 0) {
+          hasUsers = false;
         }
-
-        // Only show onboarding for first install of this deployment:
-        // no users exist yet AND current device has not completed onboarding.
-        // If users already exist, never show onboarding to a fresh device/PWA install.
-        if (shouldShowOnboarding({ hasUsers, hasCompletedOnboarding })) {
-          setAppScreen('onboarding');
-          return;
-        }
-
-        if (path === '/register') {
-          setAppScreen('register');
-          return;
-        }
-
-        if (!pb.authStore.isValid || !user) {
-          setAppScreen('login');
-          return;
-        }
-
-        setAppScreen('app');
       } catch {
-        // API error (e.g. 403) means PB is running with users — skip onboarding
-        if (!hasCompletedOnboarding) {
-          localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
-        }
-
-        if (!pb.authStore.isValid) {
-          setAppScreen('login');
-        } else {
-          setAppScreen('app');
-        }
+        hasUsers = true;
       }
+
+      // 2. Determine onboarding mode
+      let hasSeenOnboarding = false;
+      if (pb.authStore.isValid && user) {
+        hasSeenOnboarding = await api.hasUserSeenOnboarding();
+      }
+
+      const mode = getOnboardingMode({
+        hasUsers,
+        isAuthenticated: pb.authStore.isValid && !!user,
+        hasUserSeenOnboarding: hasSeenOnboarding,
+      });
+
+      const path = window.location.pathname.toLowerCase();
+
+      if (mode === 'admin') {
+        setOnboardingMode('admin');
+        setAppScreen('onboarding');
+        return;
+      }
+
+      if (mode === 'user') {
+        setOnboardingMode('user');
+        setAppScreen('onboarding');
+        return;
+      }
+
+      // mode === 'none'
+      if (path === '/register') {
+        setAppScreen('register');
+        return;
+      }
+
+      if (!pb.authStore.isValid || !user) {
+        setAppScreen('login');
+        return;
+      }
+
+      setAppScreen('app');
     };
 
     void checkFirstRun();
@@ -144,8 +140,8 @@ function AppContent() {
   if (appScreen === 'onboarding') {
     return (
       <Onboarding
+        mode={onboardingMode}
         onComplete={() => {
-          localStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
           setAppScreen('app');
         }}
       />

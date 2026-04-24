@@ -122,6 +122,7 @@ const normalizeInvite = (record: any): InviteCode => ({
 
 const normalizeSettings = (record: any): AppSettings => ({
   hasCompletedOnboarding: true,
+  setupComplete: !!record.setup_complete,
   sprintDuration: record.sprint_duration || '2weeks',
   sprintStartDay: record.sprint_start_day ?? 1,
   currentUserId: record.user,
@@ -495,6 +496,35 @@ class PocketBaseClient {
     await pb.collection('calendar_events').delete(id);
   }
 
+  /** Check if the current authenticated user has an app_settings record (i.e. has seen onboarding). */
+  async hasUserSeenOnboarding(): Promise<boolean> {
+    if (!pb.authStore.isValid) return false;
+    const userId = pb.authStore.record?.id;
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+    return list.length > 0;
+  }
+
+  /** Mark that the current user has completed onboarding. Creates app_settings record if needed. */
+  async markOnboardingSeen(setupComplete = false) {
+    if (!pb.authStore.isValid) return;
+    const userId = pb.authStore.record?.id;
+    const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
+    if (list.length > 0) {
+      await pb.collection('app_settings').update(list[0].id, { setup_complete: setupComplete });
+    } else {
+      await pb.collection('app_settings').create({
+        user: userId,
+        sprint_duration: '2weeks',
+        sprint_start_day: 1,
+        language: 'en',
+        archive_retention_days: 30,
+        auto_cleanup: true,
+        theme: 'light',
+        setup_complete: setupComplete,
+      });
+    }
+  }
+
   async getSettings(): Promise<AppSettings> {
     if (!pb.authStore.isValid) {
       return {
@@ -548,7 +578,7 @@ class PocketBaseClient {
   async updateSettings(updates: Partial<AppSettings>) {
     const userId = pb.authStore.record?.id;
     const list = await pb.collection('app_settings').getFullList({ filter: `user = "${userId}"` });
-    const payload = {
+    const payload: Record<string, unknown> = {
       sprint_duration: updates.sprintDuration,
       sprint_start_day: updates.sprintStartDay,
       language: updates.language,
@@ -556,6 +586,9 @@ class PocketBaseClient {
       auto_cleanup: updates.autoCleanup,
       theme: updates.theme,
     };
+    if (updates.setupComplete !== undefined) {
+      payload.setup_complete = updates.setupComplete;
+    }
 
     if (list.length) {
       const updated = await pb.collection('app_settings').update(list[0].id, payload);

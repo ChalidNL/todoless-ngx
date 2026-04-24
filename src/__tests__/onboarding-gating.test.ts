@@ -1,17 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { shouldShowOnboarding } from '../lib/onboarding-gate'
+import { getOnboardingMode } from '../lib/onboarding-gate'
 
 describe('onboarding gate', () => {
-  it('shows onboarding only for very first install (no users + not completed)', () => {
-    expect(shouldShowOnboarding({ hasUsers: false, hasCompletedOnboarding: false })).toBe(true)
+  // Scenario 1: first-ever install — no users exist
+  it('returns admin mode when no users exist (first-ever install)', () => {
+    expect(
+      getOnboardingMode({ hasUsers: false, isAuthenticated: false, hasUserSeenOnboarding: false })
+    ).toBe('admin')
   })
 
-  it('does not show onboarding when users already exist, even on a fresh device/PWA install', () => {
-    expect(shouldShowOnboarding({ hasUsers: true, hasCompletedOnboarding: false })).toBe(false)
+  // Scenario 2: users exist, authenticated user who hasn't seen onboarding
+  it('returns user mode when authenticated but has not seen onboarding', () => {
+    expect(
+      getOnboardingMode({ hasUsers: true, isAuthenticated: true, hasUserSeenOnboarding: false })
+    ).toBe('user')
   })
 
-  it('does not show onboarding when completed flag is true', () => {
-    expect(shouldShowOnboarding({ hasUsers: true, hasCompletedOnboarding: true })).toBe(false)
-    expect(shouldShowOnboarding({ hasUsers: false, hasCompletedOnboarding: true })).toBe(false)
+  // Scenario 3: users exist, not authenticated → show login (no onboarding)
+  it('returns none when users exist but not authenticated', () => {
+    expect(
+      getOnboardingMode({ hasUsers: true, isAuthenticated: false, hasUserSeenOnboarding: false })
+    ).toBe('none')
+  })
+
+  // Scenario 4: already onboarded
+  it('returns none when user has already seen onboarding', () => {
+    expect(
+      getOnboardingMode({ hasUsers: true, isAuthenticated: true, hasUserSeenOnboarding: true })
+    ).toBe('none')
+  })
+
+  // Edge: no users but somehow authenticated — still admin
+  it('returns admin when no users exist even if authenticated', () => {
+    expect(
+      getOnboardingMode({ hasUsers: false, isAuthenticated: true, hasUserSeenOnboarding: false })
+    ).toBe('admin')
   })
 })
