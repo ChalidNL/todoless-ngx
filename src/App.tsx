@@ -19,6 +19,8 @@ import { api } from './lib/pocketbase-client';
 import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw, Star, LayoutDashboard } from 'lucide-react';
 import { getOnboardingMode, OnboardingMode } from './lib/onboarding-gate';
 
+const ONBOARDING_SEEN_KEY = 'todoless_onboarding_completed';
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -74,31 +76,46 @@ function AppContent() {
     const checkFirstRun = async () => {
       if (loading) return;
 
-      // 1. Check if any users exist (unauthenticated, works on fresh install)
-      let hasUsers = true;
-      try {
-        const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
-        const data = await resp.json();
-        if (resp.ok && data.totalItems === 0) {
-          hasUsers = false;
+      const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
+
+      // Fast path: if localStorage says onboarding already done, skip all checks
+      if (hasCompletedOnboarding) {
+        const path = window.location.pathname.toLowerCase();
+        if (path === '/register') {
+          setAppScreen('register');
+        } else if (!pb.authStore.isValid || !user) {
+          setAppScreen('login');
+        } else {
+          setAppScreen('app');
         }
-      } catch {
-        hasUsers = true;
+        return;
       }
 
-      // 2. Determine onboarding mode
-      let hasSeenOnboarding = false;
-      if (pb.authStore.isValid && user) {
-        hasSeenOnboarding = await api.hasUserSeenOnboarding();
-      }
+      // Check if any users exist (unauthenticated, works on fresh install)
+      // and (in parallel) check if current authenticated user has seen onboarding
+      const [hasUsers, hasSeenOnboarding] = await Promise.all([
+        (async () => {
+          try {
+            const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
+            const data = await resp.json();
+            return !(resp.ok && data.totalItems === 0);
+          } catch {
+            return true;
+          }
+        })(),
+        (async () => {
+          if (pb.authStore.isValid && user) {
+            return api.hasUserSeenOnboarding();
+          }
+          return false;
+        })(),
+      ]);
 
       const mode = getOnboardingMode({
         hasUsers,
         isAuthenticated: pb.authStore.isValid && !!user,
         hasUserSeenOnboarding: hasSeenOnboarding,
       });
-
-      const path = window.location.pathname.toLowerCase();
 
       if (mode === 'admin') {
         setOnboardingMode('admin');
@@ -113,6 +130,7 @@ function AppContent() {
       }
 
       // mode === 'none'
+      const path = window.location.pathname.toLowerCase();
       if (path === '/register') {
         setAppScreen('register');
         return;
