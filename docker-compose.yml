@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     image: todoless-ngx-frontend:latest
-    pull_policy: never
+    pull_policy: build
     container_name: todoless-ngx
     restart: unless-stopped
     environment:
@@ -41,7 +41,7 @@ services:
       context: .
       dockerfile: Dockerfile.pocketbase
     image: todoless-ngx-pocketbase:latest
-    pull_policy: never
+    pull_policy: build
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
     command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--automigrate"]
