@@ -93,7 +93,7 @@ function AppContent() {
 
       // Check if any users exist (unauthenticated, works on fresh install)
       // and (in parallel) check if current authenticated user has seen onboarding
-      const [hasUsers, hasSeenOnboarding] = await Promise.all([
+      const [hasUsers, hasSeenOnboarding, setupComplete] = await Promise.all([
         (async () => {
           try {
             const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
@@ -109,12 +109,22 @@ function AppContent() {
           }
           return false;
         })(),
+        (async () => {
+          try {
+            const resp = await fetch('/api/collections/app_settings/records?perPage=1&fields=setup_complete');
+            const data = await resp.json();
+            return !!(resp.ok && data.items?.[0]?.setup_complete);
+          } catch {
+            return false;
+          }
+        })(),
       ]);
 
       const mode = getOnboardingMode({
         hasUsers,
         isAuthenticated: pb.authStore.isValid && !!user,
         hasUserSeenOnboarding: hasSeenOnboarding,
+        setupComplete,
       });
 
       if (mode === 'admin') {
@@ -125,6 +135,12 @@ function AppContent() {
 
       if (mode === 'user') {
         setOnboardingMode('user');
+        setAppScreen('onboarding');
+        return;
+      }
+
+      if (mode === 'info') {
+        setOnboardingMode('info');
         setAppScreen('onboarding');
         return;
       }
@@ -160,7 +176,11 @@ function AppContent() {
       <Onboarding
         mode={onboardingMode}
         onComplete={() => {
-          setAppScreen('app');
+          if (onboardingMode === 'info') {
+            setAppScreen('login');
+          } else {
+            setAppScreen('app');
+          }
         }}
       />
     );

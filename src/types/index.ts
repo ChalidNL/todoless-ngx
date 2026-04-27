@@ -1,3 +1,11 @@
+export interface Family {
+  id: string;
+  name: string;
+  created_by: string;
+  created: string;
+  updated: string;
+}
+
 export interface Label {
   id: string;
   name: string;

@@ -711,6 +711,21 @@ class PocketBaseClient {
     const list = await pb.collection('users').getFullList({ sort: 'name' });
     return list.map(normalizeUser);
   }
+
+  // Family
+  async createFamily(name: string, createdBy: string): Promise<{ id: string; name: string }> {
+    const record = await pb.collection('families').create({ name, created_by: createdBy });
+    return { id: record.id, name: record['name'] as string };
+  }
+
+  async getFamilyById(id: string): Promise<{ id: string; name: string }> {
+    const record = await pb.collection('families').getOne(id);
+    return { id: record.id, name: record['name'] as string };
+  }
+
+  async updateUserFamily(userId: string, familyId: string): Promise<void> {
+    await pb.collection('users').update(userId, { family_id: familyId });
+  }
 }
 
 export const api = new PocketBaseClient();
