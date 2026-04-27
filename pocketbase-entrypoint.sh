@@ -11,4 +11,4 @@ for f in /pb_migrations_bundled/*.js; do
   fi
 done
 
-exec /pocketbase "$@"
+exec /usr/local/bin/pocketbase "$@"
