@@ -1,18 +1,12 @@
 migrate(
   (app) => {
-    // Update listRule and viewRule for tasks, items, notes to allow viewing non-private records of other users
-    const collectionsToUpdate = ['tasks', 'items', 'notes'];
+    // Update listRule and viewRule for tasks and notes to allow viewing non-private records
+    // Note: 'items' is excluded here as it does not have an is_private field
+    const collectionsWithPrivate = ['tasks', 'notes'];
     
-    collectionsToUpdate.forEach(name => {
+    collectionsWithPrivate.forEach(name => {
       const collection = app.findCollectionByNameOrId(name);
       if (!collection) return;
-      
-      // Only set rule if is_private field exists on this collection
-      const hasIsPrivate = collection.fields.some(f => f.name === 'is_private');
-      if (!hasIsPrivate) {
-        console.log(`[007] Skipping ${name}: is_private field not found`);
-        return;
-      }
       
       // New rule: user can see their own records OR non-private records of others
       const newRule = '(user = @request.auth.id) || (is_private = false)';
@@ -21,6 +15,15 @@ migrate(
       
       app.save(collection);
     });
+
+    // For items: allow viewing items that belong to accessible tasks
+    const items = app.findCollectionByNameOrId('items');
+    if (items) {
+      const itemsRule = 'user = @request.auth.id';
+      items.listRule = itemsRule;
+      items.viewRule = itemsRule;
+      app.save(items);
+    }
   },
   (app) => {
     // Rollback: restore original rules (user = @request.auth.id)
