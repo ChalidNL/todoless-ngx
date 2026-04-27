@@ -7,13 +7,17 @@ migrate(
       const collection = app.findCollectionByNameOrId(name);
       if (!collection) return;
       
+      // Only set rule if is_private field exists on this collection
+      const hasIsPrivate = collection.fields.some(f => f.name === 'is_private');
+      if (!hasIsPrivate) {
+        console.log(`[007] Skipping ${name}: is_private field not found`);
+        return;
+      }
+      
       // New rule: user can see their own records OR non-private records of others
       const newRule = '(user = @request.auth.id) || (is_private = false)';
       collection.listRule = newRule;
       collection.viewRule = newRule;
-      
-      // Keep updateRule and deleteRule restricted to owner
-      // (they already are user = @request.auth.id from baseRules)
       
       app.save(collection);
     });
