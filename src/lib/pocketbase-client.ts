@@ -192,6 +192,19 @@ class PocketBaseClient {
     return { token: pb.authStore.token, user: normalizeUser(authData.record) };
   }
 
+  async registerAdmin(email: string, password: string, name: string) {
+    const created = await pb.collection('users').create({
+      email,
+      password,
+      passwordConfirm: password,
+      name,
+      username: email.split('@')[0],
+      role: 'admin',
+    });
+    await pb.collection('users').authWithPassword(email, password);
+    return { token: pb.authStore.token, user: normalizeUser(pb.authStore.record) };
+  }
+
   async register(email: string, password: string, name: string, inviteCode?: string) {
     const normalizedInviteCode = inviteCode?.trim().toUpperCase();
 

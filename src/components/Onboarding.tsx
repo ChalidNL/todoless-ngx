@@ -12,7 +12,6 @@ interface OnboardingProps {
 
 export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   const { updateAppSettings } = useApp();
-  const { signUp } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -124,23 +123,23 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
       return;
     }
 
-    const { error: signUpError, user: newUser } = await signUp(email, password, name, '');
-    if (signUpError || !newUser) {
-      setError((signUpError as any)?.message || 'Aanmaken account mislukt');
-      return;
-    }
-
-    // Maak family aan en koppel admin
     try {
-      const family = await api.createFamily(familyName.trim(), newUser.id);
-      await api.updateUserFamily(newUser.id, family.id);
-    } catch (e) {
-      console.warn('Family aanmaken mislukt (niet kritisch):', e);
-    }
+      const { user: newUser } = await api.registerAdmin(email, password, name);
 
-    await api.markOnboardingSeen(true);
-    updateAppSettings({ hasCompletedOnboarding: true, setupComplete: true });
-    onComplete();
+      // Maak family aan en koppel admin
+      try {
+        const family = await api.createFamily(familyName.trim(), newUser.id);
+        await api.updateUserFamily(newUser.id, family.id);
+      } catch (e) {
+        console.warn('Family aanmaken mislukt (niet kritisch):', e);
+      }
+
+      await api.markOnboardingSeen(true);
+      updateAppSettings({ hasCompletedOnboarding: true, setupComplete: true });
+      onComplete();
+    } catch (e: any) {
+      setError(e?.message || 'Aanmaken account mislukt');
+    }
   };
 
   const handleUserOnboardingComplete = async () => {
