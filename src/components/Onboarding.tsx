@@ -15,6 +15,7 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [familyName, setFamilyName] = useState('');
@@ -108,13 +109,18 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   };
 
   const handleCreateAdmin = async () => {
-    if (!email || !password || !name) {
+    if (!email || !password || !passwordConfirm || !name) {
       setError('Alle velden zijn verplicht');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Wachtwoord moet minimaal 6 tekens zijn');
+    if (password.length < 8) {
+      setError('Wachtwoord moet minimaal 8 tekens zijn');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setError('Wachtwoorden komen niet overeen');
       return;
     }
 
@@ -130,8 +136,11 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
       try {
         const family = await api.createFamily(familyName.trim(), newUser.id);
         await api.updateUserFamily(newUser.id, family.id);
-      } catch (e) {
-        console.warn('Family aanmaken mislukt (niet kritisch):', e);
+      } catch (e: any) {
+        // Family aanmaken mislukt — toon fout maar blokkeer niet de login
+        console.error('Family aanmaken mislukt:', e);
+        setError(`Account aangemaakt, maar familienaam opslaan mislukt: ${e?.message || 'onbekende fout'}. Je kunt dit later instellen in Settings.`);
+        // Toch doorgaan want user is al aangemaakt en ingelogd
       }
 
       await api.markOnboardingSeen(true);
@@ -231,6 +240,17 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
                 </button>
               </div>
 
+              <div>
+                <label className="block text-sm text-neutral-600 mb-1">Wachtwoord bevestigen</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  placeholder="••••••••"
+                />
+              </div>
+
               {error && (
                 <p className="text-red-500 text-sm">{error}</p>
               )}
@@ -302,9 +322,9 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
               {step.description}
             </p>
 
-            {/* Progress dots */}
+            {/* Progress dots — only for info slides (not family/admin form steps) */}
             <div className="flex gap-2 mb-12">
-              {steps.map((_, index) => (
+              {infoSteps.map((_, index) => (
                 <div
                   key={index}
                   className={`w-2 h-2 rounded-full transition-colors ${
