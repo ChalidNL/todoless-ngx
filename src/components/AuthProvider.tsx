@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, inviteCode: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, inviteCode: string) => Promise<{ error: Error | null; user: { id: string; email: string; name: string; role: string } | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -91,9 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await api.register(email, password, name, inviteCode);
       setUser(data.user);
-      return { error: null };
+      return { error: null, user: data.user };
     } catch (error) {
-      return { error: error as Error };
+      return { error: error as Error, user: null };
     }
   };
 

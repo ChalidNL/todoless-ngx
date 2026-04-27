@@ -197,9 +197,8 @@ class PocketBaseClient {
 
     let isFirstUser = false;
     try {
-      const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
-      const data = await resp.json();
-      isFirstUser = resp.ok && data.totalItems === 0;
+      const data = await pb.collection('users').getList(1, 1, { fields: 'id', $autoCancel: false });
+      isFirstUser = data.totalItems === 0;
     } catch {
       isFirstUser = false;
     }
