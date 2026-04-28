@@ -96,9 +96,14 @@ function AppContent() {
       const [hasUsers, hasSeenOnboarding, setupComplete] = await Promise.all([
         (async () => {
           try {
-            const resp = await fetch('/api/collections/users/records?perPage=1&fields=id');
+            // users.listRule requires auth — use app_settings.setup_complete as proxy for "has users"
+            const resp = await fetch('/api/collections/app_settings/records?perPage=1&fields=setup_complete');
             const data = await resp.json();
-            return !(resp.ok && data.totalItems === 0);
+            if (resp.ok && data.items?.length > 0) return true;
+            // Fallback: try users endpoint (works when authenticated)
+            const resp2 = await fetch('/api/collections/users/records?perPage=1&fields=id');
+            const data2 = await resp2.json();
+            return !(resp2.ok && data2.totalItems === 0);
           } catch {
             return true;
           }
