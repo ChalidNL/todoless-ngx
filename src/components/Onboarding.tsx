@@ -130,7 +130,28 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
     }
 
     try {
-      const { user: newUser } = await api.registerAdmin(email, password, name);
+      let newUser: any;
+      try {
+        const result = await api.registerAdmin(email, password, name);
+        newUser = result.user;
+      } catch (createErr: any) {
+        // Email bestaat al — probeer in te loggen met hetzelfde wachtwoord
+        const isEmailConflict =
+          createErr?.message?.includes('Failed to create record') ||
+          createErr?.status === 400 ||
+          createErr?.response?.data?.email;
+        if (isEmailConflict) {
+          try {
+            await api.login(email, password);
+            newUser = (await import('../lib/pocketbase-client')).default.authStore.record;
+          } catch {
+            setError('Dit e-mailadres is al in gebruik. Probeer in te loggen.');
+            return;
+          }
+        } else {
+          throw createErr;
+        }
+      }
 
       // Maak family aan en koppel admin
       try {
@@ -139,7 +160,6 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
       } catch (e: any) {
         // Family aanmaken mislukt — toon fout maar blokkeer niet de login
         console.error('Family aanmaken mislukt:', e);
-        setError(`Account aangemaakt, maar familienaam opslaan mislukt: ${e?.message || 'onbekende fout'}. Je kunt dit later instellen in Settings.`);
         // Toch doorgaan want user is al aangemaakt en ingelogd
       }
 
