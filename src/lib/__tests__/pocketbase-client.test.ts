@@ -55,7 +55,7 @@ describe('PocketBaseClient', () => {
 
   describe('register', () => {
     it('creates user and handles first user as admin', async () => {
-      (fetch as any).mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 0 }) });
+      mockCollection.getList.mockResolvedValue({ totalItems: 0, items: [] });
       mockCollection.create.mockResolvedValue({ id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' });
       mockCollection.authWithPassword.mockResolvedValue({
         record: { id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' },
@@ -69,7 +69,7 @@ describe('PocketBaseClient', () => {
     });
 
     it('requires invite code for non-first user', async () => {
-      (fetch as any).mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 1 }) });
+      mockCollection.getList.mockResolvedValue({ totalItems: 1, items: [] });
 
       await expect(api.register('user@test.com', 'pass', 'User')).rejects.toThrow('Invite code is required');
     });
@@ -83,9 +83,8 @@ describe('PocketBaseClient', () => {
     });
 
     it('consumes invite after successful non-first-user registration', async () => {
-      (fetch as any)
-        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 3 }) })
-        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ items: [{ id: 'inv1', code: 'ABC123' }] }) });
+      mockCollection.getList.mockResolvedValue({ totalItems: 3, items: [] });
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ items: [{ id: 'inv1', code: 'ABC123' }] }) });
       mockCollection.create.mockResolvedValue({ id: 'u2', email: 'user@test.com', name: 'User', role: 'user' });
       mockCollection.authWithPassword.mockResolvedValue({
         record: { id: 'u2', email: 'user@test.com', name: 'User', role: 'user' },
