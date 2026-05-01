@@ -75,11 +75,18 @@ describe('PocketBaseClient', () => {
     });
 
     it('validates invite code for non-first user', async () => {
-      (fetch as any)
-        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ totalItems: 1 }) })
-        .mockResolvedValueOnce({ ok: false, json: vi.fn().mockResolvedValue({}) });
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ items: [] }),
+      });
 
       await expect(api.register('user@test.com', 'pass', 'User', 'BAD_CODE')).rejects.toThrow('Invalid or expired invite code');
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/collections/invite_codes/records?perPage=1&page=1&filter='),
+      );
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('code%20%3D%20%22BAD_CODE%22'));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('used%20%3D%20false'));
     });
 
     it('consumes invite after successful non-first-user registration', async () => {

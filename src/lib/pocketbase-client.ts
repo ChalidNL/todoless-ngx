@@ -169,8 +169,9 @@ class PocketBaseClient {
 
   async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string }> {
     const normalizedCode = inviteCode.trim().toUpperCase();
+    const filter = encodeURIComponent(`code = "${normalizedCode}" && used = false`);
     const response = await fetch(
-      `/api/collections/invite_codes/records?perPage=1&page=1&code=${encodeURIComponent(normalizedCode)}&fields=id,code`,
+      `/api/collections/invite_codes/records?perPage=1&page=1&filter=${filter}&fields=id,code`,
     );
 
     if (!response.ok) {
