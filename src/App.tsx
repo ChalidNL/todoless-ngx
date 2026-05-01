@@ -21,6 +21,9 @@ import { getOnboardingMode, OnboardingMode } from './lib/onboarding-gate';
 
 const ONBOARDING_SEEN_KEY = 'todoless_onboarding_completed';
 
+const getOnboardingSeenValueForUser = (userId?: string | null) =>
+  userId ? `user:${userId}` : 'anon';
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -76,7 +79,15 @@ function AppContent() {
     const checkFirstRun = async () => {
       if (loading) return;
 
-      const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_SEEN_KEY) === 'true';
+      const onboardingSeenValue = localStorage.getItem(ONBOARDING_SEEN_KEY);
+      const expectedOnboardingSeenValue = getOnboardingSeenValueForUser((user as any)?.id ?? null);
+      const hasCompletedOnboarding =
+        onboardingSeenValue === expectedOnboardingSeenValue ||
+        (onboardingSeenValue === 'true' && !user);
+
+      if (onboardingSeenValue && !hasCompletedOnboarding) {
+        localStorage.removeItem(ONBOARDING_SEEN_KEY);
+      }
 
       // Fast path: if localStorage says onboarding already done, skip all checks
       if (hasCompletedOnboarding) {
@@ -181,6 +192,8 @@ function AppContent() {
       <Onboarding
         mode={onboardingMode}
         onComplete={() => {
+          localStorage.setItem(ONBOARDING_SEEN_KEY, getOnboardingSeenValueForUser((user as any)?.id ?? null));
+
           if (onboardingMode === 'info') {
             setAppScreen('login');
           } else {
