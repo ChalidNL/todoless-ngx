@@ -167,7 +167,7 @@ class PocketBaseClient {
     setTimeout(() => toast.remove(), 5000);
   }
 
-  private async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string }> {
+  async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string }> {
     const normalizedCode = inviteCode.trim().toUpperCase();
     const response = await fetch(
       `/api/collections/invite_codes/records?perPage=1&page=1&code=${encodeURIComponent(normalizedCode)}&fields=id,code`,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { AppLogo } from './shared/AppLogo';
 import { Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
+import { api } from '../lib/pocketbase-client';
 
 interface RegisterProps {
   onRegister: () => void;
@@ -30,14 +31,23 @@ export const Register = ({ onRegister }: RegisterProps) => {
     }
   }, []);
 
-  const handleValidateInvite = () => {
+  const handleValidateInvite = async () => {
     if (!inviteCode || inviteCode.length < 6) {
       setError('Please enter a valid invite code');
       return;
     }
 
-    setStep('create');
+    setIsLoading(true);
     setError('');
+
+    try {
+      await api.validateInviteCode(inviteCode);
+      setStep('create');
+    } catch (validationError: any) {
+      setError(validationError?.message || 'Invalid or expired invite code');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreateAccount = async () => {
@@ -113,9 +123,10 @@ export const Register = ({ onRegister }: RegisterProps) => {
 
             <button
               onClick={() => handleValidateInvite()}
+              disabled={isLoading}
               className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
             >
-              Validate Code
+              {isLoading ? <Loader2 className="animate-spin inline" size={16} /> : 'Validate Code'}
             </button>
 
             <div className="text-center pt-4 border-t border-neutral-100">
