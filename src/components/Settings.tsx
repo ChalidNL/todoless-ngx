@@ -13,6 +13,8 @@ import { InviteManager } from './InviteManager';
 export const Settings = () => {
   const { users, appSettings, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, sprints, createNewSprint, currentSprint, deleteSprint, tasks, archiveCompletedSprintTasks, archiveAllDoneTasks, deleteArchivedTasks, showCompletionMessage } = useApp();
   const { signOut } = useAuth();
+  const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
+  const appCommit = import.meta.env.VITE_GIT_COMMIT || 'unknown';
   const [editingPassword, setEditingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -702,6 +704,15 @@ export const Settings = () => {
           <Upload className="w-5 h-5" />
           Bulk Import
         </button>
+
+        {/* App Info */}
+        <div className="bg-white rounded-lg border border-neutral-200 p-4 space-y-2" data-testid="app-info">
+          <h3 className="text-sm font-semibold text-neutral-900">App Info</h3>
+          <div className="text-sm text-neutral-600">
+            <p><span className="font-medium text-neutral-800">Version:</span> <code>{appVersion}</code></p>
+            <p><span className="font-medium text-neutral-800">Commit:</span> <code>{appCommit}</code></p>
+          </div>
+        </div>
 
         {/* Logout */}
         <button
