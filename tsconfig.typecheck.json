@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "node", "vite/client"],
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/lib/**/*.ts",
+    "src/hooks/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/types/**/*.ts",
+    "src/**/__tests__/**/*.ts",
+    "src/test-setup.ts"
+  ]
+}
