@@ -101,7 +101,8 @@ describe('PocketBaseClient', () => {
   });
 
   describe('CRUD operations', () => {
-    it('getTasks calls tasks collection with exact user relation filter', async () => {
+    it('getTasks filters by shared family/workspace instead of creator', async () => {
+      (pb.authStore.record as any).family_id = 'fam1';
       mockCollection.getFullList.mockResolvedValue([
         { id: 't1', title: 'Test Task', status: 'todo', created: new Date().toISOString(), user: 'user1', labels: [] },
       ]);
@@ -110,7 +111,7 @@ describe('PocketBaseClient', () => {
 
       expect(pb.collection).toHaveBeenCalledWith('tasks');
       expect(mockCollection.getFullList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: 'user.id = "user1"' })
+        expect.objectContaining({ filter: 'user.family_id = "fam1"' })
       );
       expect(tasks).toHaveLength(1);
       expect(tasks[0].title).toBe('Test Task');

@@ -264,7 +264,9 @@ class PocketBaseClient {
   async getTasks(): Promise<Task[]> {
     if (!pb.authStore.isValid) return [];
     const userId = pb.authStore.record?.id;
-    const list = await pb.collection('tasks').getFullList({ filter: `user.id = "${userId}"`, sort: '-created' });
+    const familyId = (pb.authStore.record as any)?.family_id;
+    const filter = familyId ? `user.family_id = "${familyId}"` : `user.id = "${userId}"`;
+    const list = await pb.collection('tasks').getFullList({ filter, sort: '-created' });
     return list.map(normalizeTask);
   }
 
