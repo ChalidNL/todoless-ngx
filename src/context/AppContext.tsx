@@ -83,8 +83,6 @@ interface AppContextType {
   convertTaskToItem: (taskId: string) => void;
   convertItemToTask: (itemId: string) => void;
   generateInviteCode: () => Promise<InviteCode | null>;
-  validateInviteCode: (code: string) => InviteCode | null;
-  useInviteCode: (code: string, userId: string) => boolean;
   deleteInviteCode: (id: string) => void;
   uncheckAllDoneTasks: () => void;
   uncheckAllDoneItems: () => void;
@@ -590,16 +588,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const validateInviteCode = (code: string): InviteCode | null => {
-    const invite = inviteCodes.find((entry) => entry.code === code);
-    if (!invite) return null;
-    if (invite.expiresAt && invite.expiresAt < Date.now()) return null;
-    if (invite.used) return null;
-    return invite;
-  };
-
-  const useInviteCode = (_code: string, _userId: string): boolean => true;
-
   const deleteInviteCode = (id: string) => {
     void (async () => {
       await api.deleteInvite(id);
@@ -712,8 +700,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       convertTaskToItem,
       convertItemToTask,
       generateInviteCode,
-      validateInviteCode,
-      useInviteCode,
       deleteInviteCode,
       uncheckAllDoneTasks,
       uncheckAllDoneItems,
