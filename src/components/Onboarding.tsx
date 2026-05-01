@@ -158,9 +158,9 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
         const family = await api.createFamily(familyName.trim(), newUser.id);
         await api.updateUserFamily(newUser.id, family.id);
       } catch (e: any) {
-        // Family aanmaken mislukt — toon fout maar blokkeer niet de login
         console.error('Family aanmaken mislukt:', e);
-        // Toch doorgaan want user is al aangemaakt en ingelogd
+        setError('Kon familie niet aanmaken. Controleer de familienaam of probeer opnieuw.');
+        return;
       }
 
       await api.markOnboardingSeen(true);
