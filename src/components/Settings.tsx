@@ -2,21 +2,19 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from './AuthProvider';
+import { User, SprintDuration } from '../types';
 import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Lock, Eye, EyeOff, Upload, Archive, Share2, Copy, Moon, Sun, Globe, Bell, Mail, Smartphone, AlertTriangle, UserX } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { LabelBadge } from './shared/LabelBadge';
-import { FilterBuilder } from './shared/FilterBuilder';
-import { ApiIntegrations } from './ApiIntegrations';
 import { TopBar } from './shared/TopBar';
-import { BulkImport } from './shared/BulkImport';
 import { InviteManager } from './InviteManager';
 
 export const Settings = () => {
   const { users, appSettings, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, sprints, createNewSprint, currentSprint, deleteSprint, tasks, archiveCompletedSprintTasks, archiveAllDoneTasks, deleteArchivedTasks, showCompletionMessage } = useApp();
   const { language, setLanguage } = useLanguage();
   const { signOut } = useAuth();
-  const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
-  const appCommit = import.meta.env.VITE_GIT_COMMIT || 'unknown';
+  const appVersion = 'mvp';
+  const appCommit = 'local';
   const [editingPassword, setEditingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,8 +27,6 @@ export const Settings = () => {
   const [showSprints, setShowSprints] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
   const [showIntegrations, setShowIntegrations] = useState(false);
-  const [showFilterBuilder, setShowFilterBuilder] = useState(false);
-  const [filterBuilderType, setFilterBuilderType] = useState<'task' | 'item' | 'note'>('task');
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
   const [newShopName, setNewShopName] = useState('');
@@ -45,14 +41,13 @@ export const Settings = () => {
   const [showAddLabelModal, setShowAddLabelModal] = useState(false);
   const [showAddShopModal, setShowAddShopModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
 
   const currentUser = users.find(u => u.id === appSettings.currentUserId);
 
   const handlePasswordChange = () => {
     if (!currentUser || !newPassword) return;
-    updateUser(currentUser.id, { password: newPassword });
+    updateUser(currentUser.id, { password: newPassword } as Partial<User>);
     setNewPassword('');
     setEditingPassword(false);
     setShowPassword(false);
@@ -308,13 +303,13 @@ export const Settings = () => {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">Sprint Duration</label>
                 <select
                   value={appSettings.sprintDuration || '2weeks'}
-                  onChange={(e) => updateAppSettings({ sprintDuration: e.target.value as '1week' | '2weeks' | '3weeks' | '4weeks' })}
+                  onChange={(e) => updateAppSettings({ sprintDuration: e.target.value as SprintDuration })}
                   className="w-full px-3 py-2 border border-neutral-200 rounded"
                 >
                   <option value="1week">1 Week</option>
                   <option value="2weeks">2 Weeks</option>
                   <option value="3weeks">3 Weeks</option>
-                  <option value="4weeks">4 Weeks</option>
+                  <option value="1month">1 Month</option>
                 </select>
               </div>
             </div>
@@ -455,7 +450,6 @@ export const Settings = () => {
                   onClick={() => {
                     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
                       if (confirm('This is your final confirmation. All your data will be permanently deleted.')) {
-                        // Sign out first, then clear local storage
                         signOut();
                         localStorage.clear();
                         window.location.href = '/';
@@ -565,7 +559,7 @@ export const Settings = () => {
                           setEditingLabelId(label.id);
                           setEditingLabelName(label.name);
                           setEditingLabelColor(label.color);
-                          setEditingLabelPrivate(label.private || false);
+                          setEditingLabelPrivate(label.isPrivate || false);
                         }}
                         className="p-1 hover:bg-neutral-100 rounded"
                         title="Edit"
@@ -665,13 +659,7 @@ export const Settings = () => {
 
           {showFilters && (
             <>
-              <button
-                onClick={() => setShowFilterBuilder(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
-              >
-                <Plus className="w-4 h-4" />
-                Add Filter
-              </button>
+              <div>Filter builder coming soon</div>
 
               <div className="space-y-3">
                 {filters.map(filter => (
@@ -713,7 +701,7 @@ export const Settings = () => {
           </button>
 
           {showIntegrations && (
-            <ApiIntegrations />
+            <div>Integrations coming soon</div>
           )}
         </div>
 
@@ -934,13 +922,7 @@ export const Settings = () => {
         </div>
 
         {/* Bulk Import */}
-        <button
-          onClick={() => setShowBulkImport(true)}
-          className="w-full px-4 py-3 border-2 border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <Upload className="w-5 h-5" />
-          Bulk Import
-        </button>
+        <div>Bulk import coming soon</div>
 
         {/* App Info */}
         <div className="bg-white rounded-lg border border-neutral-200 p-4 space-y-2" data-testid="app-info">
@@ -1000,7 +982,7 @@ export const Settings = () => {
                   onClick={handleAddLabel}
                   className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded"
                 >
-                  Add Label
+                  Add
                 </button>
               </div>
             </div>
@@ -1047,7 +1029,7 @@ export const Settings = () => {
                   onClick={handleAddShop}
                   className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded"
                 >
-                  Add Shop
+                  Add
                 </button>
               </div>
             </div>
@@ -1055,66 +1037,62 @@ export const Settings = () => {
         </div>
       )}
 
-      {/* Filter Builder Modal */}
-      {showFilterBuilder && (
+      {/* Edit Label Modal */}
+      {editingLabelId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Add Filter</h3>
+            <h3 className="text-lg font-semibold mb-4">Edit Label</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-neutral-600 mb-1">Type</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFilterBuilderType('task')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      filterBuilderType === 'task'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    Task
-                  </button>
-                  <button
-                    onClick={() => setFilterBuilderType('item')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      filterBuilderType === 'item'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    Item
-                  </button>
-                  <button
-                    onClick={() => setFilterBuilderType('note')}
-                    className={`flex-1 px-3 py-2 rounded border text-sm ${
-                      filterBuilderType === 'note'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white border-neutral-200'
-                    }`}
-                  >
-                    Note
-                  </button>
-                </div>
+                <label className="block text-sm text-neutral-600 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editingLabelName}
+                  onChange={(e) => setEditingLabelName(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded"
+                />
               </div>
 
-              <FilterBuilder 
-                type={filterBuilderType} 
-                onSave={() => setShowFilterBuilder(false)} 
-              />
+              <div>
+                <label className="block text-sm text-neutral-600 mb-1">Color</label>
+                <input
+                  type="color"
+                  value={editingLabelColor}
+                  onChange={(e) => setEditingLabelColor(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm text-neutral-600">
+                  <input
+                    type="checkbox"
+                    checked={editingLabelPrivate}
+                    onChange={(e) => setEditingLabelPrivate(e.target.checked)}
+                    className="rounded border-neutral-300"
+                  />
+                  Private label
+                </label>
+              </div>
 
               <div className="flex gap-2 pt-2">
                 <button
-                  onClick={() => setShowFilterBuilder(false)}
+                  onClick={() => {
+                    setEditingLabelId(null);
+                    setEditingLabelName('');
+                    setEditingLabelColor('');
+                    setEditingLabelPrivate(false);
+                  }}
                   className="flex-1 px-4 py-2 border border-neutral-200 rounded"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => setShowFilterBuilder(false)}
+                  onClick={handleEditLabel}
                   className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded"
                 >
-                  Add Filter
+                  Save
                 </button>
               </div>
             </div>
@@ -1122,9 +1100,54 @@ export const Settings = () => {
         </div>
       )}
 
-      {/* Bulk Import Modal */}
-      {showBulkImport && (
-        <BulkImport onClose={() => setShowBulkImport(false)} />
+      {/* Edit Shop Modal */}
+      {editingShopId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Edit Shop</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-neutral-600 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editingShopName}
+                  onChange={(e) => setEditingShopName(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-neutral-600 mb-1">Color</label>
+                <input
+                  type="color"
+                  value={editingShopColor}
+                  onChange={(e) => setEditingShopColor(e.target.value)}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setEditingShopId(null);
+                    setEditingShopName('');
+                    setEditingShopColor('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-neutral-200 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditShop}
+                  className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

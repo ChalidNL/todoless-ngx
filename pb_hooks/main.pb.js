@@ -1,91 +1,223 @@
 /// <reference path="../pb_data/types.d.ts" />
 
-// PocketBase 0.26 loads only *.pb.js files from hooksDir.
-// Keep the P10 security-critical hooks here so they are guaranteed to be active.
+// PB 0.34 JS hooks: 
+// - function/var declarations don't hoist into callbacks — inline helpers per handler
+// - c.requestInfo() call ONCE per request
+// - use info.auth NOT info.authRecord
+// - path params via routerAdd(':param') don't work — use body/query for IDs
 
 routerAdd('GET', '/api/todoless/hook-health', (c) => c.json(200, { ok: true }));
 
-// Public bootstrap endpoint: exposes only first-run state, not app_settings records.
 routerAdd('GET', '/api/todoless/setup-status', (c) => {
   try {
-    const userRows = $app.findRecordsByFilter('users', '', '-created', 1, 0);
-    const settingsRows = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0);
-    return c.json(200, {
-      has_users: userRows.length > 0,
-      setup_complete: settingsRows.length > 0,
-    });
-  } catch {
-    return c.json(200, { has_users: true, setup_complete: false });
-  }
+    var u = $app.findRecordsByFilter('users', '', '-created', 1, 0);
+    var s = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0);
+    return c.json(200, { has_users: u.length > 0, setup_complete: s.length > 0 });
+  } catch(e) { return c.json(200, { has_users: false, setup_complete: false }); }
 });
 
-// Invite-only registration: allow first admin bootstrap without invite; require invite after that.
-onRecordCreateRequest((e) => {
-  const existingUsers = $app.findRecordsByFilter('users', '', '-created', 1, 0);
-  if (existingUsers.length === 0) {
-    e.record.set('role', 'admin');
-    e.record.set('family_id', '');
-    if (typeof e.next === 'function') e.next();
-    return;
-  }
+// ── User registration (no auth required) ──
+routerAdd('POST', '/api/todoless/register', (c) => {
+  try {
+    var info = c.requestInfo();
+    var d = info.data || info.body || {};
+    var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
+    if (existing.length === 0) {
+      if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
+      if (d.password !== d.passwordConfirm) return c.json(400, { error: 'Passwords do not match' });
+      var uc = $app.findCollectionByNameOrId('users');
+      var rec = new Record(uc);
+      rec.set('email', d.email); rec.set('password', d.password);
+      rec.set('passwordConfirm', d.passwordConfirm);
+      rec.set('name', d.name || d.email.split('@')[0]);
+      rec.set('role', 'admin'); rec.set('family_id', '');
+      $app.save(rec);
+      var fc = $app.findCollectionByNameOrId('families');
+      var fam = new Record(fc);
+      fam.set('name', d.family_name || 'My Family');
+      fam.set('created_by', rec.id); $app.save(fam);
+      rec.set('family_id', fam.id); $app.save(rec);
+      return c.json(201, rec);
+    }
+    var ic = String(d.invite_code || '').trim().toUpperCase();
+    if (!ic) throw new BadRequestError('Invite code required for registration.', {});
+    var now = new Date().toISOString();
+    var invites = $app.findRecordsByFilter('invite_codes', 'code="' + ic + '"&&used=false&&expires_at>"' + now + '"', '-created', 1, 0);
+    if (invites.length === 0) throw new BadRequestError('Invalid or expired invite code.', {});
+    var inviter = $app.findRecordById('users', String(invites[0].get('user') || ''));
+    var fid = inviter ? String(inviter.get('family_id') || '') : '';
+    var uc = $app.findCollectionByNameOrId('users');
+    var rec = new Record(uc);
+    rec.set('email', d.email); rec.set('password', d.password);
+    rec.set('passwordConfirm', d.passwordConfirm);
+    rec.set('name', d.name || d.email.split('@')[0]);
+    rec.set('role', 'user'); rec.set('family_id', fid);
+    $app.save(rec);
+    var inv = invites[0];
+    inv.set('used', true); inv.set('used_at', new Date().toISOString()); inv.set('used_by', rec.id);
+    $app.save(inv);
+    return c.json(201, rec);
+  } catch(e) { return c.json(400, { error: String(e) }); }
+});
 
-  const inviteCode = String(e.record.get('invite_code') || '').trim().toUpperCase().replace(/"/g, '');
-  if (!inviteCode) {
-    throw new BadRequestError('Invite code is required for registration.', {});
-  }
+// ── Entries: LIST (GET) ──
+routerAdd('GET', '/api/todoless/entries', (c) => {
+  try {
+    var info = c.requestInfo();
+    var auth = info && info.auth ? info.auth : null;
+    if (!auth) return c.json(401, { error: 'Unauthorized' });
+    var q = info.query || {};
+    var fid = String(auth.get('family_id') || '').trim();
+    var f = fid ? 'user.family_id = "' + fid + '"' : 'user = "' + auth.id + '"';
+    var tasks = $app.findRecordsByFilter('tasks', f, '-created', 0, 0).map(function(r) {
+      return { id:r.id, type:'task', title: (r.get('title')||''), description: (r.get('blocked_comment')||''), status: (r.get('status')||'todo'), assignee_id: (r.get('assigned_to')||''), labels: (r.get('labels')||[]), shop_id:'', quantity:null, created_by: (r.get('user')||''), completed_by:'', created_at: r.created, updated_at: r.updated };
+    });
+    var items = $app.findRecordsByFilter('items', f, '-created', 0, 0).map(function(r) {
+      return { id:r.id, type:'grocery', title: (r.get('title')||''), description:'', status: r.get('completed')?'done':'todo', assignee_id: (r.get('assigned_to')||''), labels: (r.get('labels')||[]), shop_id: (r.get('shop_id')||''), quantity: (r.get('quantity')||1), created_by: (r.get('user')||''), completed_by:'', created_at: r.created, updated_at: r.updated };
+    });
+    var all = tasks.concat(items);
+    var t = (q.type||'').trim(), s = (q.status||'').trim(), a = (q.assignee_id||'').trim(), l = (q.label||'').trim(), sh = (q.shop_id||'').trim();
+    var res = [];
+    for (var i=0;i<all.length;i++) { var e=all[i];
+      if (t && e.type!==t) continue; if (s && e.status!==s) continue; if (a && e.assignee_id!==a) continue;
+      if (l && (!Array.isArray(e.labels) || e.labels.indexOf(l)===-1)) continue; if (sh && e.shop_id!==sh) continue;
+      res.push(e);
+    }
+    return c.json(200, res);
+  } catch(e) { return c.json(400, { error: String(e) }); }
+});
 
-  const now = new Date().toISOString();
-  const inviteRecords = $app.findRecordsByFilter(
-    'invite_codes',
-    'code = "' + inviteCode + '" && used = false && expires_at > "' + now + '"',
-    '-created',
-    1,
-    0,
-  );
+// ── API v2: POST /api/todoless/api (unified action dispatcher) ──
+routerAdd('POST', '/api/todoless/api', (c) => {
+  try {
+    var info = c.requestInfo();
+    var body = info.data || info.body || {};
+    var d = body;
+    var action = (d.action || '').trim();
+    if (!action) return c.json(400, { error: 'action required' });
+    var auth = null;
 
-  if (inviteRecords.length === 0) {
-    throw new BadRequestError('Invalid or expired invite code.', {});
-  }
+    // Auth check — use info.auth (PB 0.34: c.auth is null without middleware)
+    var needsAuth = ['create','update','complete','assign','delete','list','filters'];
+    if (needsAuth.indexOf(action) >= 0) {
+      auth = info.auth;
+      if (!auth) return c.json(401, { error: 'Unauthorized' });
+    }
 
-  e.record.set('role', 'user');
-  e.record.set('family_id', '');
+    // Helper for safe field access (must be inside callback for PB 0.34 scope)
+    var gv = function(o,k,f) { if(f===undefined)f='';if(!o)return f;if(Object.prototype.hasOwnProperty.call(o,k)){var v=o[k];return(v===undefined||v===null)?f:v;}return f; };
 
-  if (typeof e.next === 'function') e.next();
-}, 'users');
+    if (action === 'list') {
+      var q = info.query || {};
+      var fid = String(auth.get('family_id') || '').trim();
+      var f = fid ? 'user.family_id = "' + fid + '"' : 'user = "' + auth.id + '"';
+      var tasks = $app.findRecordsByFilter('tasks', f, '-created', 0, 0).map(function(r) {
+        return { id:r.id, type:'task', title:(r.get('title')||''), description:(r.get('blocked_comment')||''), status:(r.get('status')||'todo'), assignee_id:(r.get('assigned_to')||''), labels:(r.get('labels')||[]), shop_id:'', quantity:null, created_by:(r.get('user')||''), completed_by:'', created_at:r.created, updated_at:r.updated };
+      });
+      var items = $app.findRecordsByFilter('items', f, '-created', 0, 0).map(function(r) {
+        return { id:r.id, type:'grocery', title:(r.get('title')||''), description:'', status:r.get('completed')?'done':'todo', assignee_id:(r.get('assigned_to')||''), labels:(r.get('labels')||[]), shop_id:(r.get('shop_id')||''), quantity:(r.get('quantity')||1), created_by:(r.get('user')||''), completed_by:'', created_at:r.created, updated_at:r.updated };
+      });
+      var all = tasks.concat(items);
+      var t=(q.type||'').trim(),s=(q.status||'').trim(),a=(q.assignee_id||'').trim(),l=(q.label||'').trim(),sh=(q.shop_id||'').trim();
+      var res = [];
+      for (var i=0;i<all.length;i++) { var e=all[i];
+        if(t&&e.type!==t)continue;if(s&&e.status!==s)continue;if(a&&e.assignee_id!==a)continue;
+        if(l&&(!Array.isArray(e.labels)||e.labels.indexOf(l)===-1))continue;if(sh&&e.shop_id!==sh)continue;
+        res.push(e);
+      }
+      return c.json(200, res);
+    }
 
-// Prevent direct collection API privilege escalation / family hopping.
-// Family membership changes must go through controlled server endpoints, not self PATCH.
-onRecordUpdateRequest((e) => {
-  if (e.hasSuperuserAuth && e.hasSuperuserAuth()) {
-    if (typeof e.next === 'function') e.next();
-    return;
-  }
+    if (action === 'create') {
+      var type = String(gv(d,'type','')).trim();
+      var title = String(gv(d,'title','')).trim();
+      if (!type || (type!=='task'&&type!=='grocery')) return c.json(400, { error: 'type must be task or grocery' });
+      if (!title) return c.json(400, { error: 'title required' });
+      if (type==='task') {
+        var rec = new Record($app.findCollectionByNameOrId('tasks'));
+        var rs = String(gv(d,'status','todo')||'todo');
+        var st = ['backlog','todo','in_progress','done'].indexOf(rs)>=0?rs:'todo';
+        if (st==='in_progress') st='todo';
+        rec.set('user',auth.id);rec.set('title',title);rec.set('status',st);
+        rec.set('blocked_comment',String(gv(d,'description','')||''));
+        rec.set('assigned_to',gv(d,'assignee_id',''));rec.set('labels',gv(d,'labels',[]));
+        rec.set('is_private',false);rec.set('completed_at',st==='done'?new Date().toISOString():null);
+        rec.set('flag',false);$app.save(rec);
+        return c.json(201,{id:rec.id,type:'task',title:rec.get('title')||'',description:rec.get('blocked_comment')||'',status:rec.get('status')||'todo',assignee_id:rec.get('assigned_to')||'',labels:rec.get('labels')||[],shop_id:'',quantity:null,created_by:rec.get('user')||'',completed_by:'',created_at:rec.created,updated_at:rec.updated});
+      }
+      rec = new Record($app.findCollectionByNameOrId('items'));
+      rec.set('user',auth.id);rec.set('title',title);rec.set('completed',String(gv(d,'status','todo')||'todo')==='done');
+      rec.set('assigned_to',gv(d,'assignee_id',''));rec.set('labels',gv(d,'labels',[]));
+      rec.set('shop_id',gv(d,'shop_id',''));rec.set('quantity',gv(d,'quantity',1));rec.set('is_private',false);
+      $app.save(rec);
+      return c.json(201,{id:rec.id,type:'grocery',title:rec.get('title')||'',description:'',status:rec.get('completed')?'done':'todo',assignee_id:rec.get('assigned_to')||'',labels:rec.get('labels')||[],shop_id:rec.get('shop_id')||'',quantity:rec.get('quantity')||1,created_by:rec.get('user')||'',completed_by:'',created_at:rec.created,updated_at:rec.updated});
+    }
 
-  const info = e.requestInfo();
-  const body = info && info.body ? info.body : {};
-  if (body.role !== undefined || body.family_id !== undefined || body.invite_code !== undefined) {
-    throw new BadRequestError('Protected user fields cannot be changed directly.', {});
-  }
+    if (action === 'update') {
+      var id = String(gv(d,'id','')).trim();
+      var type = String(gv(d,'type','')).trim();
+      if (!id) return c.json(400, { error: 'id required' });
+      if (!type||(type!=='task'&&type!=='grocery')) return c.json(400,{error:'type must be task or grocery'});
+      var rec = $app.findRecordById(type==='task'?'tasks':'items',id);
+      if (!rec) return c.json(404,{error:'Entry not found'});
+      if(Object.prototype.hasOwnProperty.call(d,'title')) rec.set('title',gv(d,'title',''));
+      if(Object.prototype.hasOwnProperty.call(d,'assignee_id')) rec.set('assigned_to',gv(d,'assignee_id',''));
+      if(Object.prototype.hasOwnProperty.call(d,'labels')) rec.set('labels',gv(d,'labels',[]));
+      if(type==='task') {
+        if(Object.prototype.hasOwnProperty.call(d,'description')) rec.set('blocked_comment',gv(d,'description',''));
+        if(Object.prototype.hasOwnProperty.call(d,'status')){var sr=String(gv(d,'status','todo'));if(sr==='in_progress')sr='todo';rec.set('status',sr);rec.set('completed_at',sr==='done'?new Date().toISOString():null);}
+        $app.save(rec);return c.json(200,{id:rec.id,type:'task',title:rec.get('title'),description:rec.get('blocked_comment'),status:rec.get('status'),assignee_id:rec.get('assigned_to'),labels:rec.get('labels'),shop_id:'',quantity:null,created_by:rec.get('user'),completed_by:'',created_at:rec.created,updated_at:rec.updated});
+      }
+      if(Object.prototype.hasOwnProperty.call(d,'status')) rec.set('completed',String(gv(d,'status','todo'))==='done');
+      if(Object.prototype.hasOwnProperty.call(d,'shop_id')) rec.set('shop_id',gv(d,'shop_id',''));
+      if(Object.prototype.hasOwnProperty.call(d,'quantity')) rec.set('quantity',gv(d,'quantity',1));
+      $app.save(rec);return c.json(200,{id:rec.id,type:'grocery',title:rec.get('title'),description:'',status:rec.get('completed')?'done':'todo',assignee_id:rec.get('assigned_to'),labels:rec.get('labels'),shop_id:rec.get('shop_id'),quantity:rec.get('quantity'),created_by:rec.get('user'),completed_by:'',created_at:rec.created,updated_at:rec.updated});
+    }
 
-  if (typeof e.next === 'function') e.next();
-}, 'users');
+    if (action === 'complete') {
+      var id = String(gv(d,'id','')).trim();
+      var type = String(gv(d,'type','')).trim();
+      var complete = String(gv(d,'complete','true'))!=='false';
+      if (!id) return c.json(400,{error:'id required'});
+      if(!type||(type!=='task'&&type!=='grocery')) return c.json(400,{error:'type must be task or grocery'});
+      var rec = $app.findRecordById(type==='task'?'tasks':'items',id);
+      if(!rec) return c.json(404,{error:'Entry not found'});
+      if(type==='task'){rec.set('status',complete?'done':'todo');rec.set('completed_at',complete?new Date().toISOString():null);}
+      else{rec.set('completed',complete);}
+      $app.save(rec);return c.json(200,{completed:true});
+    }
 
-onRecordAfterCreateSuccess((e) => {
-  const inviteCode = String(e.record.get('invite_code') || '').trim().toUpperCase().replace(/"/g, '');
-  if (!inviteCode) return;
+    if (action === 'assign') {
+      var id = String(gv(d,'id','')).trim();
+      var type = String(gv(d,'type','')).trim();
+      if(!id) return c.json(400,{error:'id required'});
+      if(!type||(type!=='task'&&type!=='grocery')) return c.json(400,{error:'type must be task or grocery'});
+      var rec = $app.findRecordById(type==='task'?'tasks':'items',id);
+      if(!rec) return c.json(404,{error:'Entry not found'});
+      rec.set('assigned_to',String(gv(d,'assignee_id','')));
+      $app.save(rec);return c.json(200,{assigned:true});
+    }
 
-  const inviteRecords = $app.findRecordsByFilter(
-    'invite_codes',
-    'code = "' + inviteCode + '" && used = false',
-    '-created',
-    1,
-    0,
-  );
-  if (inviteRecords.length === 0) return;
+    if (action === 'delete') {
+      var id = String(gv(d,'id','')).trim();
+      var type = String(gv(d,'type','')).trim();
+      if(!id) return c.json(400,{error:'id required'});
+      if(!type||(type!=='task'&&type!=='grocery')) return c.json(400,{error:'type must be task or grocery'});
+      var rec = $app.findRecordById(type==='task'?'tasks':'items',id);
+      if(!rec) return c.json(404,{error:'Entry not found'});
+      $app.delete(rec);return c.json(200,{deleted:true});
+    }
 
-  const inviteRecord = inviteRecords[0];
-  inviteRecord.set('used', true);
-  inviteRecord.set('used_at', new Date().toISOString());
-  inviteRecord.set('used_by', e.record.id);
-  $app.save(inviteRecord);
-}, 'users');
+    if (action === 'filters') {
+      var fid = String(auth.get('family_id')||'').trim();
+      var f = fid?'user.family_id = "'+fid+'"':'user = "'+auth.id+'"';
+      var labels = $app.findRecordsByFilter('labels',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
+      var shops = $app.findRecordsByFilter('shops',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
+      var users = [];
+      if(fid){users=$app.findRecordsByFilter('users','family_id = "'+fid+'"','name',0,0).map(function(r){return{id:r.id,name:r.get('name')||r.email};});}
+      return c.json(200,{labels:labels,shops:shops,users:users});
+    }
+
+    return c.json(400, { error: 'Unknown action: ' + action });
+  } catch(e) { return c.json(400, { error: String(e) }); }
+});

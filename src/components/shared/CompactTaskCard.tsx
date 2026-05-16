@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Task } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { Clock, Tag, User, Flag, Trash2, Zap, Lock, Unlock, Menu, X, ToggleLeft, ToggleRight, FolderOpen, Link as LinkIcon, StickyNote, ShoppingCart } from 'lucide-react';
+import { Clock, Tag, User, Flag, Trash2, Zap, Lock, Unlock, Menu, X, ToggleLeft, ToggleRight, FolderOpen, Link as LinkIcon, StickyNote, ShoppingCart, AlertCircle } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
 import { LabelSelector } from './LabelSelector';
 import { EditableText } from './EditableText';
-import { EntityLinkBadge, EntityLinkPicker } from './EntityLinkBadge';
 
 interface CompactTaskCardProps {
   task: Task;
@@ -13,7 +12,7 @@ interface CompactTaskCardProps {
 }
 
 export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardProps) => {
-  const { updateTask, deleteTask, labels, users, sprints, projects, items, notes, createLabel, convertTaskToItem } = useApp();
+  const { updateTask, deleteTask, labels, users, sprints } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -68,18 +67,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase())
   );
-
-  const handleCreateLabel = () => {
-    if (labelSearchQuery.trim() && !labels.find(l => l.name.toLowerCase() === labelSearchQuery.toLowerCase())) {
-      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      createLabel({
-        name: labelSearchQuery.trim(),
-        color: randomColor
-      });
-      setLabelSearchQuery('');
-    }
-  };
 
   return (
     <div 
@@ -211,18 +198,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               >
                 <Zap className={`w-4 h-4 ${showSprintSelector ? 'text-white' : task.sprintId ? 'text-green-500' : 'text-neutral-400'}`} />
               </button>
-
-              {/* FolderOpen - Project */}
-              <button
-                onClick={() => {
-                  closeAllPanels();
-                  setShowProjectSelector(!showProjectSelector);
-                }}
-                className={`p-1.5 rounded transition-colors ${showProjectSelector ? 'bg-black' : 'hover:bg-neutral-100'}`}
-                title="Project"
-              >
-                <FolderOpen className={`w-4 h-4 ${showProjectSelector ? 'text-white' : task.projectId ? 'text-indigo-500' : 'text-neutral-400'}`} />
-              </button>
               
               {/* Lock/Unlock - Privacy */}
               <button
@@ -235,15 +210,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 ) : (
                   <Unlock className="w-4 h-4 text-neutral-400" />
                 )}
-              </button>
-              
-              {/* Toggle Task/Item */}
-              <button
-                onClick={() => convertTaskToItem(task.id)}
-                className="p-1.5 rounded transition-colors hover:bg-neutral-100"
-                title="Convert to Item"
-              >
-                <ToggleRight className="w-4 h-4 text-neutral-400" />
               </button>
               
               <div className="flex-1" />
@@ -325,11 +291,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             type="text"
             value={labelSearchQuery}
             onChange={(e) => setLabelSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleCreateLabel();
-              }
-            }}
             placeholder="Search or create label..."
             className="w-full px-2 py-1.5 text-xs border border-neutral-200 rounded mb-2"
             autoFocus
@@ -345,14 +306,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               </button>
             ))}
           </div>
-          {labelSearchQuery && filteredLabels.length === 0 && (
-            <button
-              onClick={handleCreateLabel}
-              className="w-full mt-2 px-2 py-1.5 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Create "{labelSearchQuery}"
-            </button>
-          )}
         </div>
       )}
 
@@ -476,47 +429,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               </>
             ) : (
               <p className="text-xs text-neutral-400 italic">No active sprints</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Project selector */}
-      {showProjectSelector && (
-        <div className="mt-2 pt-2 border-t border-neutral-100">
-          <div className="text-xs text-neutral-600 mb-2">Assign to Project</div>
-          <div className="space-y-1">
-            {projects && projects.filter(p => p.status === 'active').length > 0 ? (
-              <>
-                {projects.filter(p => p.status === 'active').map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => {
-                      updateTask(task.id, { projectId: task.projectId === project.id ? undefined : project.id });
-                      setShowProjectSelector(false);
-                    }}
-                    className={`w-full px-2 py-1.5 text-left text-xs rounded flex items-center gap-2 ${
-                      task.projectId === project.id ? 'bg-indigo-100' : 'hover:bg-neutral-50'
-                    }`}
-                  >
-                    <div className="w-3 h-3 rounded shrink-0" style={{ backgroundColor: project.color }} />
-                    {project.title}
-                  </button>
-                ))}
-                {task.projectId && (
-                  <button
-                    onClick={() => {
-                      updateTask(task.id, { projectId: undefined });
-                      setShowProjectSelector(false);
-                    }}
-                    className="w-full px-2 py-1.5 text-left text-xs rounded hover:bg-neutral-50 text-neutral-500"
-                  >
-                    Remove from project
-                  </button>
-                )}
-              </>
-            ) : (
-              <p className="text-xs text-neutral-400 italic">No active projects</p>
             )}
           </div>
         </div>

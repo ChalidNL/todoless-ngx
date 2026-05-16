@@ -21,7 +21,56 @@ import type {
   Goal,
   Project,
   Reminder,
+  Entry,
 } from '../types';
+
+// Helper to convert Entry to Item
+const entryToItem = (entry: Entry): Item => ({
+  id: entry.id,
+  title: entry.title,
+  completed: entry.completed ?? false,
+  shopId: entry.shopId,
+  quantity: entry.quantity,
+  priority: entry.priority,
+  assignedTo: entry.assignedTo,
+  dueDate: entry.dueDate,
+  labels: entry.labels,
+  linkedTaskIds: entry.linkedItemIds,
+  linkedNoteIds: entry.linkedNoteIds,
+  createdAt: entry.createdAt,
+  createdBy: entry.createdBy,
+  isPrivate: entry.isPrivate,
+  category: entry.category,
+  location: entry.location,
+});
+
+// Helper to convert Entry to Task
+const entryToTask = (entry: Entry): Task => ({
+  id: entry.id,
+  title: entry.title,
+  status: entry.status ?? 'todo',
+  blocked: entry.blocked ?? false,
+  blockedComment: entry.blockedComment,
+  priority: entry.priority,
+  horizon: entry.horizon,
+  assignedTo: entry.assignedTo,
+  sprintId: entry.sprintId,
+  dueDate: entry.dueDate,
+  repeatInterval: entry.repeatInterval,
+  completedAt: entry.completedAt,
+  archived: entry.archived ?? false,
+  archivedAt: entry.archivedAt,
+  deleteAfter: entry.deleteAfter,
+  isPrivate: entry.isPrivate ?? false,
+  labels: entry.labels,
+  linkedItemIds: entry.linkedItemIds,
+  linkedNoteIds: entry.linkedNoteIds,
+  linkedTo: entry.linkedTo,
+  linkedType: entry.linkedType,
+  flag: entry.flag ?? false,
+  createdAt: entry.createdAt,
+  createdBy: entry.createdBy,
+});
 
 interface AppContextType {
   items: Item[];
@@ -44,6 +93,15 @@ interface AppContextType {
   activeLabelFilters: string[];
   completionMessage: string | null;
   currentSprint: Sprint | null;
+  // Entry model
+  entries: Entry[];
+  addEntry: (entry: Omit<Entry, 'id' | 'createdAt'>) => void;
+  updateEntry: (id: string, updates: Partial<Entry>) => void;
+  deleteEntry: (id: string) => void;
+  completeEntry: (id: string) => void;
+  assignEntry: (id: string, userId: string) => void;
+  refreshEntries: () => Promise<void>;
+  // Legacy methods
   addItem: (item: Omit<Item, 'id' | 'createdAt'>) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>) => void;
   addNote: (note: Omit<Note, 'id' | 'createdAt'>) => void;
@@ -172,6 +230,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [currentSprint, setCurrentSprint] = useState<Sprint | null>(null);
 
+  // Entry model state
+  const [entries, setEntries] = useState<Entry[]>([]);
+
+  // Derive tasks/items from entries via useMemo
+  const derivedTasks = useMemo(() => entries.filter(e => e.type === 'task').map(entryToTask), [entries]);
+  const derivedItems = useMemo(() => entries.filter(e => e.type === 'item').map(entryToItem), [entries]);
+
+  // Use derived or direct state - prefer entries data when available, fallback to legacy state
+  const effectiveTasks = derivedTasks.length > 0 ? derivedTasks : tasks;
+  const effectiveItems = derivedItems.length > 0 ? derivedItems : items;
+
   const refreshItems = async () => setItems(await api.getItems());
   const refreshTasks = async () => setTasks(await api.getTasks());
   const refreshNotes = async () => setNotes(await api.getNotes());
@@ -185,6 +254,80 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const refreshGoals = async () => setGoals(await api.getGoals());
   const refreshProjects = async () => setProjects(await api.getProjects());
   const refreshReminders = async () => setReminders(await api.getReminders());
+
+  // Entry model refresh - combines tasks + items into unified list
+  const refreshEntries = async () => {
+    const [fetchedTasks, fetchedItems] = await Promise.all([
+      api.getTasks(),
+      api.getItems(),
+    ]);
+    const taskEntries: Entry[] = fetchedTasks.map(t => ({
+      ...t,
+      type: 'task' as const,
+      completed: t.status === 'done',
+    }));
+    const itemEntries: Entry[] = fetchedItems.map(i => ({
+      ...i,
+      type: 'item' as const,
+      status: i.completed ? 'done' as const : 'todo' as const,
+      blocked: false,
+      flag: false,
+      completed: i.completed,
+    }));
+    setEntries([...taskEntries, ...itemEntries]);
+  };
+
+  const addEntry = (entry: Omit<Entry, 'id' | 'createdAt'>) => {
+    void (async () => {
+      if (entry.type === 'task') {
+        const { type, completed, ...taskData } = entry;
+        await api.createTask({ ...taskData, status: completed ? 'done' : 'todo' });
+      } else {
+        const { type, status, blocked, blockedComment, flag, ...itemData } = entry;
+        await api.createItem(itemData);
+      }
+      await refreshEntries();
+    })();
+  };
+
+  const updateEntry = (id: string, updates: Partial<Entry>) => {
+    void (async () => {
+      setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+      // Also update underlying data source
+      const entry = entries.find(e => e.id === id);
+      if (entry?.type === 'task') {
+        const { type, completed, ...taskUpdates } = updates;
+        await api.updateTask(id, taskUpdates);
+        await refreshTasks();
+      } else if (entry?.type === 'item') {
+        const { type, status, blocked, blockedComment, flag, ...itemUpdates } = updates;
+        await api.updateItem(id, itemUpdates);
+        await refreshItems();
+      }
+    })();
+  };
+
+  const deleteEntry = (id: string) => {
+    void (async () => {
+      const entry = entries.find(e => e.id === id);
+      if (entry?.type === 'task') {
+        await api.deleteTask(id);
+        await refreshTasks();
+      } else {
+        await api.deleteItem(id);
+        await refreshItems();
+      }
+      setEntries(prev => prev.filter(e => e.id !== id));
+    })();
+  };
+
+  const completeEntry = (id: string) => {
+    void updateEntry(id, { completed: true, status: 'done', completedAt: Date.now() });
+  };
+
+  const assignEntry = (id: string, userId: string) => {
+    void updateEntry(id, { assignedTo: userId });
+  };
 
   const refreshSettings = async () => {
     const settings = await api.getSettings();
@@ -212,6 +355,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setGoals([]);
       setProjects([]);
       setReminders([]);
+      setEntries([]);
       setAppSettings(defaultSettings);
       return;
     }
@@ -231,6 +375,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       refreshProjects(),
       refreshReminders(),
       refreshSettings(),
+      refreshEntries(),
     ]);
   };
 
@@ -262,14 +407,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         pb.collection('notes').subscribe('*', () => void refreshNotes()),
         pb.collection('labels').subscribe('*', () => void refreshLabels()),
         pb.collection('shops').subscribe('*', () => void refreshShops()),
-        pb.collection('calendar_events').subscribe('*', () => void refreshCalendarEvents()),
-        pb.collection('sprints').subscribe('*', () => void refreshSprints()),
         pb.collection('invite_codes').subscribe('*', () => void refreshInvites()),
         pb.collection('app_settings').subscribe('*', () => void refreshSettings()),
-        pb.collection('projects').subscribe('*', () => void refreshProjects()),
-        pb.collection('rewards').subscribe('*', () => void refreshRewards()),
-        pb.collection('goals').subscribe('*', () => void refreshGoals()),
-        pb.collection('reminders').subscribe('*', () => void refreshReminders()),
       ]);
     };
 
@@ -281,14 +420,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       pb.collection('notes').unsubscribe();
       pb.collection('labels').unsubscribe();
       pb.collection('shops').unsubscribe();
-      pb.collection('calendar_events').unsubscribe();
-      pb.collection('sprints').unsubscribe();
       pb.collection('invite_codes').unsubscribe();
       pb.collection('app_settings').unsubscribe();
-      pb.collection('projects').unsubscribe();
-      pb.collection('rewards').unsubscribe();
-      pb.collection('goals').unsubscribe();
-      pb.collection('reminders').unsubscribe();
     };
   }, [pb.authStore.isValid]);
 
@@ -334,7 +467,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         await refreshTasks();
       } catch (error) {
         console.error('addTask failed:', error);
-        // Error toast is shown by pocketbase-client
       }
     })();
   };
@@ -529,7 +661,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const sprint = sprintId ? sprints.find((s) => s.id === sprintId) : currentSprint;
     if (!sprint) return;
 
-    tasks
+    effectiveTasks
       .filter((task) => task.status === 'done' && task.sprintId === sprint.id)
       .forEach((task) => updateTask(task.id, { archived: true, archivedAt: now, deleteAfter }));
   };
@@ -539,18 +671,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const retention = appSettings.archiveRetention || 0;
     const deleteAfter = retention > 0 ? now + retention * 24 * 60 * 60 * 1000 : undefined;
 
-    tasks.filter((task) => task.status === 'done' && !task.archived).forEach((task) => {
+    effectiveTasks.filter((task) => task.status === 'done' && !task.archived).forEach((task) => {
       updateTask(task.id, { archived: true, archivedAt: now, deleteAfter });
     });
   };
 
   const deleteArchivedTasks = () => {
-    tasks.filter((task) => task.archived).forEach((task) => deleteTask(task.id));
+    effectiveTasks.filter((task) => task.archived).forEach((task) => deleteTask(task.id));
   };
 
   const cleanupExpiredArchives = () => {
     const now = Date.now();
-    tasks.filter((task) => task.archived && task.deleteAfter && task.deleteAfter < now).forEach((task) => deleteTask(task.id));
+    effectiveTasks.filter((task) => task.archived && task.deleteAfter && task.deleteAfter < now).forEach((task) => deleteTask(task.id));
   };
 
   const moveFilterUp = (id: string) => {
@@ -619,14 +751,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const convertTaskToItem = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
+    const task = effectiveTasks.find((t) => t.id === taskId);
     if (!task) return;
     addItem({ title: task.title, completed: false, labels: task.labels });
     deleteTask(taskId);
   };
 
   const convertItemToTask = (itemId: string) => {
-    const item = items.find((i) => i.id === itemId);
+    const item = effectiveItems.find((i) => i.id === itemId);
     if (!item) return;
     addTask({ title: item.title, status: 'todo', blocked: false, labels: item.labels, flag: false });
     deleteItem(itemId);
@@ -664,13 +796,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const uncheckAllDoneTasks = () => {
-    tasks.filter((task) => task.status === 'done').forEach((task) => {
+    effectiveTasks.filter((task) => task.status === 'done').forEach((task) => {
       updateTask(task.id, { status: 'todo', completedAt: undefined });
     });
   };
 
   const uncheckAllDoneItems = () => {
-    items.filter((item) => item.completed).forEach((item) => updateItem(item.id, { completed: false }));
+    effectiveItems.filter((item) => item.completed).forEach((item) => updateItem(item.id, { completed: false }));
   };
 
   const addReward = (reward: Omit<Reward, 'id'>) => {
@@ -783,8 +915,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue = useMemo(
     () => ({
-      items,
-      tasks,
+      items: effectiveItems,
+      tasks: effectiveTasks,
       notes,
       labels,
       shops,
@@ -799,6 +931,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       activeLabelFilters,
       completionMessage,
       currentSprint,
+      // Entry model
+      entries,
+      addEntry,
+      updateEntry,
+      deleteEntry,
+      completeEntry,
+      assignEntry,
+      refreshEntries,
+      // Legacy methods
       addItem,
       addTask,
       addNote,
@@ -873,8 +1014,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       refreshReminders,
     }),
     [
-      items,
-      tasks,
+      effectiveItems,
+      effectiveTasks,
       notes,
       labels,
       shops,
@@ -895,6 +1036,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       completionMessage,
       currentSprint,
       reminders,
+      entries,
     ],
   );
 

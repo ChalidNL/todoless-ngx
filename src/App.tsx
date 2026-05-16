@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './components/AuthProvider';
@@ -9,17 +9,10 @@ import { Register } from './components/Register';
 import { InboxBacklog } from './components/InboxBacklog';
 import { TasksView } from './components/TasksView';
 import { GroceriesView } from './components/groceries/GroceriesView';
-import { Notes } from './components/Notes';
 import { Settings } from './components/Settings';
-import { Calendar } from './components/Calendar';
-import { Rewards } from './components/Rewards';
-import { Dashboard } from './components/Dashboard';
-import { ProjectsView } from './components/ProjectsView';
-import { MobileHome } from './components/MobileHome';
-import { TabletDashboard } from './components/TabletDashboard';
 import { pb } from './lib/pocketbase';
 import { api } from './lib/pocketbase-client';
-import { Inbox as InboxIcon, CheckSquare, ShoppingCart, FileText, Settings as SettingsIcon, CalendarDays, RefreshCw, FolderOpen, LayoutDashboard } from 'lucide-react';
+import { Inbox as InboxIcon, CheckSquare, ShoppingCart, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { getOnboardingMode, OnboardingMode } from './lib/onboarding-gate';
 import { fetchSetupStatus } from './lib/bootstrap-status';
 
@@ -76,7 +69,6 @@ function AppContent() {
   const [onboardingMode, setOnboardingMode] = useState<OnboardingMode>('none');
   const { completionMessage } = useApp();
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -172,7 +164,7 @@ function AppContent() {
   if (appScreen === 'onboarding') {
     return (
       <Onboarding
-        mode={onboardingMode}
+        mode={onboardingMode as 'admin' | 'user' | 'info'}
         onComplete={() => {
           localStorage.setItem(ONBOARDING_SEEN_KEY, getOnboardingSeenValueForUser((user as any)?.id ?? null));
 
@@ -187,23 +179,21 @@ function AppContent() {
   }
 
   if (appScreen === 'register') {
-    return <Register onRegister={() => { setAppScreen('app'); navigate('/'); }} />;
+    return <Register onRegister={() => { setAppScreen('app'); }} />;
   }
 
   if (appScreen === 'login') {
-    return <Login onLogin={() => { setAppScreen('app'); navigate('/'); }} onSwitchToRegister={() => setAppScreen('register')} />;
+    return <Login onLogin={() => { setAppScreen('app'); }} onSwitchToRegister={() => setAppScreen('register')} />;
   }
 
   if (!pb.authStore.isValid) {
-    return <Login onLogin={() => { setAppScreen('app'); navigate('/'); }} onSwitchToRegister={() => setAppScreen('register')} />;
+    return <Login onLogin={() => { setAppScreen('app'); }} onSwitchToRegister={() => setAppScreen('register')} />;
   }
 
-  const navItems: { to: string; label: string; icon: React.ReactNode; mobileOnly?: boolean }[] = [
+  const navItems: { to: string; label: string; icon: React.ReactNode }[] = [
     { to: '/', label: 'Inbox', icon: <InboxIcon className="w-5 h-5" /> },
     { to: '/tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
-    { to: '/calendar', label: 'Calendar', icon: <CalendarDays className="w-5 h-5" /> },
-    { to: '/items', label: 'Groceries', icon: <ShoppingCart className="w-5 h-5" /> },
-    { to: '/notes', label: 'Notes', icon: <FileText className="w-5 h-5" /> },
+    { to: '/groceries', label: 'Groceries', icon: <ShoppingCart className="w-5 h-5" /> },
     { to: '/settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" /> },
   ];
 
@@ -211,18 +201,11 @@ function AppContent() {
     <div className="min-h-screen bg-neutral-50">
       <main>
         <Routes>
-          <Route path="/home" element={<MobileHome />} />
           <Route path="/" element={<InboxBacklog />} />
           <Route path="/tasks" element={<TasksView />} />
-          <Route path="/items" element={<GroceriesView />} />
-          <Route path="/notes" element={<Notes />} />
-          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/groceries" element={<GroceriesView />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/rewards" element={<Rewards />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/tablet" element={<TabletDashboard />} />
-          <Route path="/projects" element={<ProjectsView />} />
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
@@ -234,7 +217,7 @@ function AppContent() {
         </div>
       )}
 
-      <nav className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-neutral-200 z-40 ${location.pathname === '/tablet' ? 'hidden' : ''}`}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-neutral-200 z-40"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
       >
         <div className="max-w-lg mx-auto flex justify-around">

@@ -25,6 +25,7 @@ export const TasksView = () => {
       status: 'todo',
       blocked: false,
       labels: [],
+      flag: false,
     });
   };
 
@@ -32,9 +33,11 @@ export const TasksView = () => {
     addTask({
       title: value,
       status: 'todo',
+      blocked: false,
       labels: metadata?.labels || [],
       assignedTo: metadata?.assignee,
       dueDate: metadata?.dueDate,
+      flag: false,
     });
   };
 

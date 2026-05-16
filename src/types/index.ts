@@ -64,6 +64,8 @@ export interface Item {
   createdAt: number;
   createdBy?: string;
   isPrivate?: boolean;
+  category?: string;
+  location?: string;
 }
 
 export interface Task {
@@ -234,4 +236,39 @@ export interface Reminder {
   fired?: boolean;
   createdAt: number;
   createdBy?: string;
+}
+
+// Unified Entry model combining Task and Item
+export interface Entry {
+  id: string;
+  title: string;
+  type: 'task' | 'item';
+  status?: TaskStatus;
+  completed?: boolean;
+  blocked?: boolean;
+  blockedComment?: string;
+  priority?: Priority;
+  horizon?: Horizon;
+  assignedTo?: string;
+  sprintId?: string;
+  dueDate?: number;
+  repeatInterval?: RepeatInterval;
+  completedAt?: number;
+  archived?: boolean;
+  archivedAt?: number;
+  deleteAfter?: number;
+  isPrivate?: boolean;
+  labels: string[];
+  linkedItemIds?: string[];
+  linkedNoteIds?: string[];
+  linkedTo?: string;
+  linkedType?: 'task' | 'item' | 'note';
+  flag?: boolean;
+  createdAt: number;
+  createdBy?: string;
+  // Item-specific fields
+  shopId?: string;
+  quantity?: number;
+  category?: string;
+  location?: string;
 }

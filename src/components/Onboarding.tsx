@@ -3,6 +3,7 @@ import { Brain, Inbox, Calendar, Check, Eye, EyeOff, ShoppingCart, StickyNote, U
 import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
 import { api } from '../lib/pocketbase-client';
+import { pb } from '../lib/pocketbase';
 import { AppLogo } from './shared/AppLogo';
 
 interface OnboardingProps {
@@ -143,7 +144,7 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
         if (isEmailConflict) {
           try {
             await api.login(email, password);
-            newUser = (await import('../lib/pocketbase-client')).default.authStore.record;
+            newUser = pb.authStore.record;
           } catch {
             setError('Dit e-mailadres is al in gebruik. Probeer in te loggen.');
             return;

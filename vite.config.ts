@@ -94,7 +94,12 @@ export default defineConfig({
       outDir: 'build',
     },
     server: {
-      port: 3000,
-      open: true,
+      port: 7071,
+      proxy: {
+        '/api/': {
+          target: 'http://localhost:8091',
+          changeOrigin: true,
+        },
+      },
     },
   });

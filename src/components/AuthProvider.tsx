@@ -1,20 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/pocketbase-client'; // Changed from api-client to pocketbase-client
-import { pb } from '../lib/pocketbase'; // Added PocketBase instance for auth state
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  avatar_url?: string;
-}
+import { api } from '../lib/pocketbase-client';
+import { pb } from '../lib/pocketbase';
+import type { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, inviteCode: string) => Promise<{ error: Error | null; user: { id: string; email: string; name: string; role: string } | null }>;
+  signUp: (email: string, password: string, name: string, inviteCode: string) => Promise<{ error: Error | null; user: User | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -45,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: record.email,
             name: record.name,
             role: record.role,
-            avatar_url: record.avatar,
+            avatarUrl: record.avatar,
           });
         } catch (error) {
           // Token expired or invalid
@@ -65,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: record.email,
           name: record.name,
           role: record.role,
-          avatar_url: record.avatar,
+          avatarUrl: record.avatar,
         });
       } else {
         setUser(null);

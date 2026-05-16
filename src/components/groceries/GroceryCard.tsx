@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Item, ItemLinkedType } from '../../types';
+import { Item } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { LabelBadge } from '../shared/LabelBadge';
 import {
@@ -9,7 +9,6 @@ import {
   X,
   Plus,
   Minus,
-  Link as LinkIcon,
   Lock,
   PackageOpen,
   Package,
@@ -23,7 +22,7 @@ interface GroceryCardProps {
 
 /**
  * Grocy-inspired grocery item card.
- * Shows stock status, quantity controls, shop badge, linked entity, and privacy indicator.
+ * Shows stock status, quantity controls, shop badge, and privacy indicator.
  */
 export const GroceryCard = ({ item }: GroceryCardProps) => {
   const { updateItem, deleteItem, shops } = useApp();
@@ -76,13 +75,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
     s.name.toLowerCase().includes(shopSearchQuery.toLowerCase())
   );
 
-  // Linked entity display
-  const linkedLabel = (() => {
-    if (!item.linkedType || !item.linkedTo) return null;
-    const typeLabel: Record<ItemLinkedType, string> = { task: 'Task', item: 'Item' };
-    return `${typeLabel[item.linkedType]}: ${item.linkedTo.slice(0, 8)}...`;
-  })();
-
   return (
     <div
       className={`rounded-lg border-2 transition-all bg-white ${
@@ -109,7 +101,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
 
           {/* Private indicator */}
           {item.isPrivate && (
-            <Lock className="w-3.5 h-3.5 text-neutral-400" title="Private" />
+            <Lock className="w-3.5 h-3.5 text-neutral-400" aria-label="Private" />
           )}
 
           {/* Hamburger menu */}
@@ -149,14 +141,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
           {/* Shop badge */}
           {currentShop && (
             <LabelBadge label={currentShop} size="sm" />
-          )}
-
-          {/* Linked entity badge */}
-          {linkedLabel && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-purple-50 text-purple-700 border border-purple-200">
-              <LinkIcon className="w-3 h-3" />
-              {linkedLabel}
-            </span>
           )}
         </div>
 
