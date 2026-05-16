@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ── Shared mock factory ──────────────────────────────────────
 const createMockCollection = () => ({
   authWithPassword: vi.fn(),
+  authRefresh: vi.fn(),
   getList: vi.fn(),
   getFullList: vi.fn(),
   getOne: vi.fn(),
@@ -62,6 +63,7 @@ vi.mock('../pocketbase', () => ({
         family_id: 'fam-1',
       },
       clear: vi.fn(),
+      save: vi.fn(),
     },
   },
 }));
@@ -284,74 +286,72 @@ describe('Multi-user: Invite flow', () => {
   });
 
   it('first user registers as admin without invite code', async () => {
-    mockUsersCollection.getList.mockResolvedValue({ totalItems: 0, items: [] });
-    mockUsersCollection.create.mockResolvedValue({
-      id: 'user-admin', email: 'admin@test.com', name: 'Admin', role: 'admin',
-    });
-    // authWithPassword updates pb.authStore.record in real PocketBase
-    mockUsersCollection.authWithPassword.mockImplementation(async () => {
-      (pb.authStore as any).record = { id: 'user-admin', email: 'admin@test.com', name: 'Admin', role: 'admin' };
-      return { record: (pb.authStore as any).record };
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        token: 'admin-token',
+        user: { id: 'user-admin', email: 'admin@test.com', name: 'Admin', role: 'admin', family_id: 'fam-1' },
+      }),
     });
 
     const { api: freshApi } = await import('../pocketbase-client');
     const result = await freshApi.register('admin@test.com', 'pass', 'Admin');
 
     expect(result.user.role).toBe('admin');
-    expect(mockUsersCollection.create).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'admin' }),
-    );
-    // Invite codes should NOT be touched for first user
-    expect(mockInviteCodesCollection.update).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith('/api/todoless/register', expect.objectContaining({ method: 'POST' }));
+    const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+    expect(body.email).toBe('admin@test.com');
+    expect(body.user_type).toBe('family_member');
   });
 
   it('non-first user without invite code throws error', async () => {
-    mockUsersCollection.getList.mockResolvedValue({ totalItems: 3, items: [] });
+    (fetch as any).mockResolvedValueOnce({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ error: 'Invite code required for registration.' }),
+    });
 
     const { api: freshApi } = await import('../pocketbase-client');
-    await expect(freshApi.register('newbie@test.com', 'pass', 'Newbie')).rejects.toThrow('Invite code is required');
-    expect(mockUsersCollection.create).not.toHaveBeenCalled();
+    await expect(freshApi.register('newbie@test.com', 'pass', 'Newbie')).rejects.toThrow('Invite code required');
+    // Should NOT try to create user directly
+    expect((fetch as any).mock.calls[0][0]).toBe('/api/todoless/register');
   });
 
   it('non-first user with invalid invite code throws error', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ items: [] }) });
+    (fetch as any).mockResolvedValueOnce({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ error: 'Invalid or expired invite code.' }),
+    });
 
     const { api: freshApi } = await import('../pocketbase-client');
     await expect(freshApi.register('newbie@test.com', 'pass', 'Newbie', 'BAD_CODE')).rejects.toThrow('Invalid or expired invite code');
   });
 
-  it('non-first user with valid invite code registers as user and consumes invite', async () => {
-    mockUsersCollection.getList.mockResolvedValue({ totalItems: 3, items: [] });
+  it('non-first user with valid invite code registers as user', async () => {
     (fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: vi.fn().mockResolvedValue({ items: [{ id: 'inv-1', code: 'ABC123' }] }),
-    });
-    mockUsersCollection.create.mockResolvedValue({
-      id: 'user-newbie', email: 'newbie@test.com', name: 'Newbie', role: 'user',
-    });
-    mockUsersCollection.authWithPassword.mockImplementation(async () => {
-      (pb.authStore as any).record = { id: 'user-newbie', email: 'newbie@test.com', name: 'Newbie', role: 'user' };
-      return { record: (pb.authStore as any).record };
+      json: vi.fn().mockResolvedValue({
+        token: 'user-token',
+        user: { id: 'user-newbie', email: 'newbie@test.com', name: 'Newbie', role: 'user', family_id: 'fam-1' },
+      }),
     });
 
     const { api: freshApi } = await import('../pocketbase-client');
-    const result = await freshApi.register('newbie@test.com', 'pass', 'Newbie', 'abc123');
+    const result = await freshApi.register('newbie@test.com', 'pass', 'Newbie', 'VALIDCODE');
 
     expect(result.user.role).toBe('user');
-    expect(mockUsersCollection.create).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'user' }),
-    );
-    // Invite should be consumed
-    expect(mockInviteCodesCollection.update).toHaveBeenCalledWith(
-      'inv-1',
-      expect.objectContaining({ used: true, used_by: 'user-newbie' }),
-    );
+    expect(result.user.family_id).toBe('fam-1');
+    const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+    expect(body.invite_code).toBe('VALIDCODE');
   });
 
-  it('validateInviteCode normalizes code to uppercase and checks used=false', async () => {
+  it('validateInviteCode normalizes code to uppercase', async () => {
     (fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: vi.fn().mockResolvedValue({ items: [{ id: 'inv-2', code: 'XYZ789' }] }),
+      json: vi.fn().mockResolvedValue({
+        status: 'valid',
+        message: 'Invite code is valid',
+        invite: { id: 'inv-2', code: 'XYZ789', created_by: 'admin-1' },
+      }),
     });
 
     const { api: freshApi } = await import('../pocketbase-client');
@@ -359,7 +359,7 @@ describe('Multi-user: Invite flow', () => {
 
     expect(result.code).toBe('XYZ789');
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('used%20%3D%20false'),
+      expect.stringContaining('/api/todoless/validate-invite?code=XYZ789'),
     );
   });
 });

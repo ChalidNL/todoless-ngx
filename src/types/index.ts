@@ -28,12 +28,15 @@ export type SprintStatus = 'planned' | 'active' | 'completed';
 export type RepeatInterval = 'week' | 'month' | 'year';
 export type ReminderRepeatInterval = 'hour' | 'day' | 'week' | 'month' | 'year';
 
+export type UserRole = 'admin' | 'user' | 'assistant' | 'child';
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatarUrl?: string;
-  role?: 'admin' | 'user' | 'child';
+  role?: UserRole;
+  family_id?: string;
 }
 
 export interface InviteCode {

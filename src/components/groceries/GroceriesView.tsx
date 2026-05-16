@@ -3,12 +3,12 @@ import { useApp } from '../../context/AppContext';
 import { GroceryCard } from './GroceryCard';
 import { NewGlobalHeader } from '../shared/NewGlobalHeader';
 import { TopBar } from '../shared/TopBar';
-import { LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { LayoutGrid, List, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
 
 export const GroceriesView = () => {
-  const { items, addItem } = useApp();
+  const { items, addItem, uncheckAllDoneItems, showCompletionMessage } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showBought, setShowBought] = useState(false);
@@ -92,13 +92,28 @@ export const GroceriesView = () => {
         {/* Bought items (collapsed by default) */}
         {boughtItems.length > 0 && (
           <div className="mt-6 border-t border-neutral-200 pt-4">
-            <button
-              onClick={() => setShowBought(!showBought)}
-              className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900"
-            >
-              {showBought ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              Bought ({boughtItems.length})
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowBought(!showBought)}
+                className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900"
+              >
+                {showBought ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Bought ({boughtItems.length})
+              </button>
+              {boughtItems.length > 0 && (
+                <button
+                  onClick={() => {
+                    uncheckAllDoneItems();
+                    showCompletionMessage('All groceries unchecked');
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded transition-colors"
+                  title="Uncheck all"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Uncheck All
+                </button>
+              )}
+            </div>
 
             {showBought && (
               <div className={`mt-3 ${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'space-y-2 max-w-2xl'}`}>

@@ -24,6 +24,7 @@ const normalizeUser = (record: any): User => ({
   name: record.name || record.email,
   avatarUrl: record.avatar,
   role: (record.role || 'user') as User['role'],
+  family_id: record.family_id || undefined,
 });
 
 const normalizeTask = (record: any): Task => ({
@@ -224,25 +225,19 @@ class PocketBaseClient {
     setTimeout(() => toast.remove(), 5000);
   }
 
-  async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string }> {
+  async validateInviteCode(inviteCode: string): Promise<{ id: string; code: string; status: string; message: string }> {
     const normalizedCode = inviteCode.trim().toUpperCase();
-    const filter = encodeURIComponent(`code = "${normalizedCode}" && used = false`);
-    const response = await fetch(
-      `/api/collections/invite_codes/records?perPage=1&page=1&filter=${filter}&fields=id,code`,
-    );
+    const response = await fetch(`/api/todoless/validate-invite?code=${encodeURIComponent(normalizedCode)}`);
 
     if (!response.ok) {
-      throw new Error('Invalid or expired invite code');
+      throw new Error('Failed to validate invite code');
     }
 
     const data = await response.json();
-    const invite = Array.isArray(data?.items) ? data.items[0] : null;
-
-    if (!invite?.id || !invite?.code) {
-      throw new Error('Invalid or expired invite code');
+    if (data.status === 'valid') {
+      return { id: data.invite.id, code: data.invite.code, status: 'valid', message: data.message };
     }
-
-    return { id: invite.id, code: invite.code };
+    throw new Error(data.message || `Invite code is ${data.status}`);
   }
 
   async login(email: string, password: string) {
@@ -250,63 +245,64 @@ class PocketBaseClient {
     return { token: pb.authStore.token, user: normalizeUser(authData.record) };
   }
 
-  async registerAdmin(email: string, password: string, name: string) {
-    const created = await pb.collection('users').create({
-      email,
-      password,
-      passwordConfirm: password,
-      name,
-      username: email.split('@')[0],
-      role: 'admin',
+  async registerAdmin(email: string, password: string, name: string, familyName?: string) {
+    const response = await fetch('/api/todoless/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        passwordConfirm: password,
+        name,
+        family_name: familyName || 'My Family',
+        user_type: 'family_member',
+      }),
     });
-    await pb.collection('users').authWithPassword(email, password);
-    return { token: pb.authStore.token, user: normalizeUser(pb.authStore.record) };
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Admin registration failed');
+    }
+
+    // Set auth token in PocketBase
+    pb.authStore.save(data.token, data.user);
+    await pb.collection('users').authRefresh();
+
+    return { token: data.token, user: normalizeUser(data.user) };
   }
 
-  async register(email: string, password: string, name: string, inviteCode?: string) {
-    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
-
-    let isFirstUser = false;
-    try {
-      const data = await pb.collection('users').getList(1, 1, { fields: 'id', $autoCancel: false });
-      isFirstUser = data.totalItems === 0;
-    } catch {
-      isFirstUser = false;
-    }
-
-    let invite: { id: string; code: string } | null = null;
-
-    // If invite code is provided, treat as non-first user regardless of fetch result
-    if (normalizedInviteCode) {
-      invite = await this.validateInviteCode(normalizedInviteCode);
-      isFirstUser = false;
-    } else if (!isFirstUser) {
-      // No invite code and not first user => error
-      throw new Error('Invite code is required');
-    }
-
-    const created = await pb.collection('users').create({
+  async register(email: string, password: string, name: string, inviteCode?: string, userType: string = 'family_member') {
+    const body: Record<string, any> = {
       email,
       password,
       passwordConfirm: password,
       name,
-      username: email.split('@')[0],
-      role: isFirstUser ? 'admin' : 'user',
-      invite_code: normalizedInviteCode || undefined,
-    });
+      user_type: userType,
+    };
 
-    if (!isFirstUser && invite) {
-      await pb.collection('users').authWithPassword(email, password);
-      await pb.collection('invite_codes').update(invite.id, {
-        used: true,
-        used_by: created.id,
-        used_at: new Date().toISOString(),
-      });
-    } else {
-      await pb.collection('users').authWithPassword(email, password);
+    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
+    if (normalizedInviteCode) {
+      body.invite_code = normalizedInviteCode;
     }
 
-    return { token: pb.authStore.token, user: normalizeUser(pb.authStore.record) };
+    const response = await fetch('/api/todoless/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Registration failed');
+    }
+
+    // Set auth token in PocketBase
+    pb.authStore.save(data.token, data.user);
+    await pb.collection('users').authRefresh();
+
+    return { token: data.token, user: normalizeUser(data.user) };
   }
 
   async logout() {

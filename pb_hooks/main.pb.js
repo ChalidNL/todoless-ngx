@@ -16,13 +16,63 @@ routerAdd('GET', '/api/todoless/setup-status', (c) => {
   } catch(e) { return c.json(200, { has_users: false, setup_complete: false }); }
 });
 
+// ── Validate invite code (no auth required, public) ──
+routerAdd('GET', '/api/todoless/validate-invite', (c) => {
+  try {
+    var q = c.requestInfo().query || {};
+    var code = String(q.code || '').trim().toUpperCase();
+    if (!code) return c.json(400, { status: 'error', message: 'code required' });
+
+    var now = new Date().toISOString();
+    var invites = $app.findRecordsByFilter('invite_codes', 'code="' + code + '"', '-created', 1, 0);
+
+    if (invites.length === 0) return c.json(200, { status: 'not_found', message: 'Invite code not found' });
+
+    var inv = invites[0];
+    var used = inv.get('used') || false;
+    var expiresAt = inv.get('expires_at') || '';
+    var isExpired = expiresAt && expiresAt < now;
+
+    if (used) return c.json(200, { status: 'used', message: 'Invite code has already been used' });
+    if (isExpired) return c.json(200, { status: 'expired', message: 'Invite code has expired' });
+
+    // Get inviter info
+    var inviterId = String(inv.get('user') || '');
+    var inviter = null;
+    try {
+      if (inviterId) {
+        var r = $app.findRecordById('users', inviterId);
+        inviter = { id: r.id, name: r.get('name') || r.email };
+      }
+    } catch(e) {}
+
+    return c.json(200, {
+      status: 'valid',
+      message: 'Invite code is valid',
+      invite: {
+        id: inv.id,
+        code: inv.get('code'),
+        created_by: inviterId,
+        inviter: inviter,
+      }
+    });
+  } catch(e) { return c.json(500, { status: 'error', message: String(e) }); }
+});
+
 // ── User registration (no auth required) ──
 routerAdd('POST', '/api/todoless/register', (c) => {
   try {
     var info = c.requestInfo();
     var d = info.data || info.body || {};
+    var userType = String(d.user_type || 'family_member').trim();
+    // Validate user_type
+    if (['family_member', 'family_assistant'].indexOf(userType) === -1) {
+      return c.json(400, { error: 'Invalid user_type. Must be family_member or family_assistant.' });
+    }
+
     var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     if (existing.length === 0) {
+      // FIRST USER — admin, creates family
       if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
       if (d.password !== d.passwordConfirm) return c.json(400, { error: 'Passwords do not match' });
       var uc = $app.findCollectionByNameOrId('users');
@@ -37,8 +87,15 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       fam.set('name', d.family_name || 'My Family');
       fam.set('created_by', rec.id); $app.save(fam);
       rec.set('family_id', fam.id); $app.save(rec);
-      return c.json(201, rec);
+      // Auth as the new user
+      var token = $app.createAuthToken(rec, 'users');
+      return c.json(201, {
+        token: token,
+        user: { id: rec.id, email: rec.email, name: rec.get('name') || '', role: 'admin', family_id: fam.id }
+      });
     }
+
+    // SUBSEQUENT USER — require valid invite
     var ic = String(d.invite_code || '').trim().toUpperCase();
     if (!ic) throw new BadRequestError('Invite code required for registration.', {});
     var now = new Date().toISOString();
@@ -46,17 +103,30 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     if (invites.length === 0) throw new BadRequestError('Invalid or expired invite code.', {});
     var inviter = $app.findRecordById('users', String(invites[0].get('user') || ''));
     var fid = inviter ? String(inviter.get('family_id') || '') : '';
+    if (!fid) throw new BadRequestError('Inviter has no family — ask admin to create one.', {});
+
     var uc = $app.findCollectionByNameOrId('users');
     var rec = new Record(uc);
     rec.set('email', d.email); rec.set('password', d.password);
     rec.set('passwordConfirm', d.passwordConfirm);
     rec.set('name', d.name || d.email.split('@')[0]);
-    rec.set('role', 'user'); rec.set('family_id', fid);
+
+    // Set role based on user_type
+    var role = userType === 'family_assistant' ? 'assistant' : 'user';
+    rec.set('role', role);
+    rec.set('family_id', fid);
     $app.save(rec);
+
+    // Mark invite as used
     var inv = invites[0];
     inv.set('used', true); inv.set('used_at', new Date().toISOString()); inv.set('used_by', rec.id);
     $app.save(inv);
-    return c.json(201, rec);
+
+    var token = $app.createAuthToken(rec, 'users');
+    return c.json(201, {
+      token: token,
+      user: { id: rec.id, email: rec.email, name: rec.get('name') || '', role: role, family_id: fid }
+    });
   } catch(e) { return c.json(400, { error: String(e) }); }
 });
 

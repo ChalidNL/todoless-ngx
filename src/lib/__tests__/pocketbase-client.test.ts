@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock PocketBase SDK
 const mockCollection = {
   authWithPassword: vi.fn(),
+  authRefresh: vi.fn(),
   getList: vi.fn(),
   getFullList: vi.fn(),
   getFirstListItem: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock('../pocketbase', () => ({
       isValid: true,
       record: { id: 'user1', email: 'test@test.com', name: 'Test', role: 'admin' },
       clear: vi.fn(),
+      save: vi.fn(),
     },
   },
 }));
@@ -54,56 +56,48 @@ describe('PocketBaseClient', () => {
   });
 
   describe('register', () => {
-    it('creates user and handles first user as admin', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 0, items: [] });
-      mockCollection.create.mockResolvedValue({ id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' });
-      mockCollection.authWithPassword.mockResolvedValue({
-        record: { id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin' },
+    it('posts to todoless/register endpoint', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          token: 'mock-token',
+          user: { id: 'u1', email: 'admin@test.com', name: 'Admin', role: 'admin', family_id: 'fam1' },
+        }),
       });
 
       const result = await api.register('admin@test.com', 'pass', 'Admin');
 
-      expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'admin' }));
-      expect(mockCollection.authWithPassword).toHaveBeenCalledWith('admin@test.com', 'pass');
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/todoless/register',
+        expect.objectContaining({ method: 'POST' }),
+      );
+      expect(result).toHaveProperty('token');
       expect(result).toHaveProperty('user');
+      expect(result.user.role).toBe('admin');
     });
 
-    it('requires invite code for non-first user', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 1, items: [] });
+    it('throws on registration failure', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn().mockResolvedValue({ error: 'Invalid or expired invite code.' }),
+      });
 
-      await expect(api.register('user@test.com', 'pass', 'User')).rejects.toThrow('Invite code is required');
+      await expect(api.register('user@test.com', 'pass', 'User', 'BADCODE')).rejects.toThrow('Invalid or expired invite code');
     });
 
-    it('validates invite code for non-first user', async () => {
+    it('accepts user_type parameter', async () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: vi.fn().mockResolvedValue({ items: [] }),
+        json: vi.fn().mockResolvedValue({
+          token: 'mock-token',
+          user: { id: 'u2', email: 'assistant@test.com', name: 'Assistant', role: 'assistant', family_id: 'fam1' },
+        }),
       });
 
-      await expect(api.register('user@test.com', 'pass', 'User', 'BAD_CODE')).rejects.toThrow('Invalid or expired invite code');
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/collections/invite_codes/records?perPage=1&page=1&filter='),
-      );
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('code%20%3D%20%22BAD_CODE%22'));
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('used%20%3D%20false'));
-    });
-
-    it('consumes invite after successful non-first-user registration', async () => {
-      mockCollection.getList.mockResolvedValue({ totalItems: 3, items: [] });
-      (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ items: [{ id: 'inv1', code: 'ABC123' }] }) });
-      mockCollection.create.mockResolvedValue({ id: 'u2', email: 'user@test.com', name: 'User', role: 'user' });
-      mockCollection.authWithPassword.mockResolvedValue({
-        record: { id: 'u2', email: 'user@test.com', name: 'User', role: 'user' },
-      });
-
-      await api.register('user@test.com', 'pass', 'User', 'abc123');
-
-      expect(mockCollection.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'user' }));
-      expect(mockCollection.update).toHaveBeenCalledWith(
-        'inv1',
-        expect.objectContaining({ used: true, used_by: 'u2' }),
-      );
+      const result = await api.register('assistant@test.com', 'pass', 'Assistant', 'VALIDCODE', 'family_assistant');
+      const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+      expect(body.user_type).toBe('family_assistant');
+      expect(result.user.role).toBe('assistant');
     });
   });
 

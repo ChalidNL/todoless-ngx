@@ -131,39 +131,7 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
     }
 
     try {
-      let newUser: any;
-      try {
-        const result = await api.registerAdmin(email, password, name);
-        newUser = result.user;
-      } catch (createErr: any) {
-        // Email bestaat al — probeer in te loggen met hetzelfde wachtwoord
-        const isEmailConflict =
-          createErr?.message?.includes('Failed to create record') ||
-          createErr?.status === 400 ||
-          createErr?.response?.data?.email;
-        if (isEmailConflict) {
-          try {
-            await api.login(email, password);
-            newUser = pb.authStore.record;
-          } catch {
-            setError('Dit e-mailadres is al in gebruik. Probeer in te loggen.');
-            return;
-          }
-        } else {
-          throw createErr;
-        }
-      }
-
-      // Maak family aan en koppel admin
-      try {
-        const family = await api.createFamily(familyName.trim(), newUser.id);
-        await api.updateUserFamily(newUser.id, family.id);
-      } catch (e: any) {
-        console.error('Family aanmaken mislukt:', e);
-        setError('Kon familie niet aanmaken. Controleer de familienaam of probeer opnieuw.');
-        return;
-      }
-
+      const result = await api.registerAdmin(email, password, name, familyName.trim());
       await api.markOnboardingSeen(true);
       updateAppSettings({ hasCompletedOnboarding: true, setupComplete: true });
       onComplete();

@@ -36,9 +36,8 @@ describe('Onboarding admin flow', () => {
     vi.clearAllMocks();
   });
 
-  it('does not mark setup complete when family creation fails', async () => {
-    registerAdminMock.mockResolvedValueOnce({ user: { id: 'admin-1' } });
-    createFamilyMock.mockRejectedValueOnce(new Error('Family service unavailable'));
+  it('does not mark setup complete when registration fails', async () => {
+    registerAdminMock.mockRejectedValueOnce(new Error('Registration failed'));
 
     const onComplete = vi.fn();
     render(<Onboarding mode="admin" onComplete={onComplete} />);
@@ -69,13 +68,12 @@ describe('Onboarding admin flow', () => {
     fireEvent.click(screen.getByText('Account aanmaken'));
 
     await waitFor(() => {
-      expect(createFamilyMock).toHaveBeenCalledWith('Familie Test', 'admin-1');
+      expect(registerAdminMock).toHaveBeenCalled();
     });
 
     expect(markOnboardingSeenMock).not.toHaveBeenCalled();
     expect(updateAppSettingsMock).not.toHaveBeenCalled();
     expect(onComplete).not.toHaveBeenCalled();
-    expect(updateUserFamilyMock).not.toHaveBeenCalled();
-    expect(screen.getByText('Kon familie niet aanmaken. Controleer de familienaam of probeer opnieuw.')).toBeTruthy();
+    expect(screen.getByText('Registration failed')).toBeTruthy();
   });
 });
