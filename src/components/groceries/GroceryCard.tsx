@@ -9,8 +9,6 @@ import {
   Menu,
   X,
   Trash2,
-  ShoppingCart,
-  User,
 } from 'lucide-react';
 
 interface GroceryCardProps {
@@ -18,20 +16,24 @@ interface GroceryCardProps {
 }
 
 /**
- * Grocery card: todo-style with checkbox, title, quantity +/-,
- * and inline shop badge + assignee badges.
+ * Simple grocery card: checkbox, title, quantity +/-,
+ * shop badge, and delete.
+ * Unchecking resets quantity to 0.
  */
 export const GroceryCard = ({ item }: GroceryCardProps) => {
-  const { updateItem, deleteItem, shops, users } = useApp();
+  const { updateItem, deleteItem, shops } = useApp();
   const [showMenu, setShowMenu] = useState(false);
-  const [showShopSelector, setShowShopSelector] = useState(false);
 
   const quantity = item.quantity ?? 0;
   const currentShop = item.shopId ? shops.find((s) => s.id === item.shopId) : null;
-  const currentAssignee = item.assignedTo ? users.find((u) => u.id === item.assignedTo) : null;
 
   const handleToggle = () => {
-    updateItem(item.id, { completed: !item.completed });
+    if (item.completed) {
+      // Unchecking: reset quantity to 0
+      updateItem(item.id, { completed: false, quantity: 0 });
+    } else {
+      updateItem(item.id, { completed: true });
+    }
   };
 
   const increaseQuantity = () => {
@@ -44,7 +46,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
 
   const handleSelectShop = (shopId: string) => {
     updateItem(item.id, { shopId: item.shopId === shopId ? undefined : shopId });
-    setShowShopSelector(false);
   };
 
   return (
@@ -80,7 +81,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
             {item.title}
           </span>
 
-          {/* Quantity controls */}
+          {/* Quantity controls (unchecked only) */}
           {!item.completed && (
             <div className="flex items-center gap-1 bg-neutral-100 rounded-md px-2 py-1">
               <button
@@ -121,23 +122,12 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
           </button>
         </div>
 
-        {/* Badges row: shop + assignee */}
-        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          {currentShop && (
+        {/* Shop badge row */}
+        {currentShop && (
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             <LabelBadge label={currentShop} size="sm" />
-          )}
-          {currentAssignee && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600">
-              <User className="w-3 h-3" />
-              {currentAssignee.name}
-            </span>
-          )}
-          {item.labels && item.labels.length > 0 && (
-            <span className="text-[10px] text-neutral-400">
-              {item.labels.length} label{item.labels.length > 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Expanded menu: shop selector + delete */}
         {showMenu && (
