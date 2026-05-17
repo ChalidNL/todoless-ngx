@@ -222,20 +222,20 @@ export const NewGlobalHeader = ({
   return (
     <>
       {/* Header Bar */}
-      <div className="bg-white border-b border-neutral-200 sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 text-neutral-900 pr-1.5">
-              <CheckSquare className="w-5 h-5" strokeWidth={2.5} />
-              <span className="text-base font-semibold tracking-tight">todoless</span>
-            </div>
+      <div className="bg-black border-b border-neutral-800 sticky top-0 z-40">
+        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
+          <div className="inline-flex items-center gap-2 text-white">
+            <CheckSquare className="w-6 h-6" strokeWidth={2.5} />
+            <span className="text-lg font-semibold tracking-tight">todoless</span>
+          </div>
 
+          <div className="flex items-center gap-2">
             {/* Filter Icon */}
             {showFilters && (
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className={`p-2 hover:bg-neutral-100 rounded-md flex-shrink-0 ${
-                  showFilterPanel ? 'bg-neutral-100' : ''
+                className={`p-2 rounded-md flex-shrink-0 text-white hover:bg-neutral-800 ${
+                  showFilterPanel ? 'bg-neutral-800' : ''
                 }`}
                 title="Filters"
               >
@@ -253,7 +253,7 @@ export const NewGlobalHeader = ({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder={searchPlaceholder}
-                  className="w-full pl-9 pr-3 py-2 border border-neutral-200 rounded-md focus:outline-none focus:border-neutral-400 text-sm"
+                  className="w-full pl-9 pr-3 py-2 bg-neutral-900 text-white border border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm"
                 />
               </div>
             )}
@@ -262,7 +262,7 @@ export const NewGlobalHeader = ({
             {showAdd && (
               <button
                 onClick={handleAdd}
-                className="p-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 flex-shrink-0"
+                className="p-2 bg-white text-black rounded-md hover:bg-neutral-200 flex-shrink-0"
                 title="Add"
               >
                 <Plus className="w-4 h-4" />
