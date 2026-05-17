@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, X, Check, Circle, AlertCircle, Flag, User, Tag, Zap, ShoppingCart, MapPin, CalendarDays, Repeat, CheckSquare } from 'lucide-react';
+import { Plus, Filter, X, Check, Circle, AlertCircle, Flag, User, Tag, Zap, ShoppingCart, MapPin, CalendarDays, Repeat, CheckSquare } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { LabelBadge } from './LabelBadge';
 import { Priority, Horizon, TaskStatus } from '../../types';
@@ -224,7 +224,7 @@ export const NewGlobalHeader = ({
       {/* Header Bar */}
       <div className="bg-black border-b border-neutral-800 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
-          <div className="inline-flex items-center gap-2 text-white">
+          <div className="flex items-center justify-center gap-2 text-white w-full">
             <CheckSquare className="w-6 h-6" strokeWidth={2.5} />
             <span className="text-lg font-semibold tracking-tight">todoless</span>
           </div>
@@ -246,14 +246,13 @@ export const NewGlobalHeader = ({
             {/* Search/Input Bar */}
             {showSearch && (
               <div className="flex-1 relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
                 <input
                   type="text"
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder={searchPlaceholder}
-                  className="w-full pl-9 pr-3 py-2 bg-neutral-900 text-white border border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm"
+                  className="w-full px-3 py-2 bg-neutral-900 text-white border border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm"
                 />
               </div>
             )}

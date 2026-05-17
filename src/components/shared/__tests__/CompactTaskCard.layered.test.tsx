@@ -46,22 +46,29 @@ describe('CompactTaskCard layered attributes', () => {
     expect(screen.getByLabelText('Edit labels')).toBeTruthy();
     expect(screen.getByLabelText('Edit assignee')).toBeTruthy();
     expect(screen.getByLabelText('Edit due date and recurring')).toBeTruthy();
+    expect(screen.getByLabelText('Edit task text')).toBeTruthy();
     expect(screen.getByLabelText('Toggle flag')).toBeTruthy();
     expect(screen.getByLabelText('Delete task')).toBeTruthy();
   });
 
-  it('opens assignee selector from @ icon and only one detail row is active', () => {
+  it('opens task text editor from menu and updates title on Enter', () => {
     render(<CompactTaskCard task={baseTask as any} />);
     fireEvent.click(screen.getByLabelText('Open task attributes'));
+    fireEvent.click(screen.getByLabelText('Edit task text'));
 
-    fireEvent.click(screen.getByLabelText('Edit assignee'));
-    expect(screen.getByText('Chalid')).toBeTruthy();
+    const input = screen.getByLabelText('Task text input');
+    fireEvent.change(input, { target: { value: 'Pay rent' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
+    expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { title: 'Pay rent' });
+  });
+
+  it('shows label text input in layer 3 when label icon is tapped', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
     fireEvent.click(screen.getByLabelText('Edit labels'));
-    // assignee row closed when switching active editor
-    expect(screen.queryByText('Chalid')).toBeNull();
-    // label row visible
-    expect(screen.getByText('home')).toBeTruthy();
+
+    expect(screen.getByLabelText('Label input')).toBeTruthy();
   });
 
   it('flag toggles blocked visual state and does not open detail row', () => {
