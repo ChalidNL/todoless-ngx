@@ -202,6 +202,15 @@ export const Settings = () => {
           </div>
         </div>
 
+        {/* Quick Logout */}
+        <button
+          onClick={handleLogout}
+          className="w-full px-4 py-3 border-2 border-red-200 text-red-700 rounded-lg bg-red-50 hover:bg-red-100 transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </button>
+
         {/* Team Members */}
         <div className="mb-6 border-b border-neutral-200 pb-6">
           <button
