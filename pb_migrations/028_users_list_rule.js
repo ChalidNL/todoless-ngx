@@ -1,0 +1,15 @@
+/// <reference path="../pb_data/types.d.ts" />
+migrate(
+  (app) => {
+    const users = app.findCollectionByNameOrId('users');
+    users.listRule = '@request.auth.id != ""';
+    users.viewRule = '@request.auth.id != ""';
+    app.save(users);
+  },
+  (app) => {
+    const users = app.findCollectionByNameOrId('users');
+    users.listRule = '';
+    users.viewRule = '';
+    app.save(users);
+  },
+);

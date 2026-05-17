@@ -23,7 +23,7 @@ routerAdd('POST', '/api/todoless/invites/create', (c) => {
     }
 
     var now = new Date();
-    var expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
+    var expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
 
     var coll = $app.findCollectionByNameOrId('invite_codes');
     var rec = new Record(coll);
@@ -60,15 +60,24 @@ routerAdd('GET', '/api/todoless/validate-invite', (c) => {
     var code = String(q.code || '').trim().toUpperCase();
     if (!code) return c.json(400, { status: 'error', message: 'code required' });
 
-    var now = new Date().toISOString();
+    var now = new Date().getTime();
     var invites = $app.findRecordsByFilter('invite_codes', 'code="' + code + '"', '-created', 1, 0);
 
     if (invites.length === 0) return c.json(200, { status: 'not_found', message: 'Invite code not found' });
 
     var inv = invites[0];
     var used = inv.get('used') || false;
-    var expiresAt = inv.get('expires_at') || '';
-    var isExpired = expiresAt && expiresAt < now;
+    var expiresAt = inv.get('expires_at');
+    var expiryTime = 0;
+    if (typeof expiresAt === 'string') {
+      expiryTime = new Date(expiresAt).getTime();
+    } else if (expiresAt && typeof expiresAt.getTime === 'function') {
+      expiryTime = expiresAt.getTime();
+    } else if (expiresAt) {
+      // Goja/PB 0.34: try converting to string first
+      expiryTime = new Date(String(expiresAt)).getTime();
+    }
+    var isExpired = expiryTime > 0 && expiryTime < now;
 
     if (used) return c.json(200, { status: 'used', message: 'Invite code has already been used' });
     if (isExpired) return c.json(200, { status: 'expired', message: 'Invite code has expired' });
@@ -79,7 +88,7 @@ routerAdd('GET', '/api/todoless/validate-invite', (c) => {
     try {
       if (inviterId) {
         var r = $app.findRecordById('users', inviterId);
-        inviter = { id: r.id, name: r.get('name') || r.email };
+        inviter = { id: r.id, name: r.get('name') || String(r.get('email')||'') };
       }
     } catch(e) {}
 
@@ -117,7 +126,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       rec.set('email', d.email); rec.set('password', d.password);
       rec.set('passwordConfirm', d.passwordConfirm);
       rec.set('name', d.name || d.email.split('@')[0]);
-      rec.set('role', 'admin'); rec.set('family_id', '');
+      rec.set('role', 'admin'); rec.set('family_id', ''); rec.set('emailVisibility', true);
       $app.save(rec);
       var fc = $app.findCollectionByNameOrId('families');
       var fam = new Record(fc);
@@ -125,7 +134,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       fam.set('created_by', rec.id); $app.save(fam);
       rec.set('family_id', fam.id); $app.save(rec);
       return c.json(201, {
-        user: { id: rec.id, email: rec.email, name: rec.get('name') || '', role: 'admin', family_id: fam.id }
+        user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: 'admin', family_id: fam.id }
       });
     }
 
@@ -148,16 +157,16 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     // Set role based on user_type
     var role = userType === 'family_assistant' ? 'assistant' : 'user';
     rec.set('role', role);
-    rec.set('family_id', fid);
+    rec.set('family_id', fid); rec.set('emailVisibility', true);
     $app.save(rec);
 
-    // Mark invite as used
-    var inv = invites[0];
-    inv.set('used', true); inv.set('used_at', new Date().toISOString()); inv.set('used_by', rec.id);
-    $app.save(inv);
+    // Mark invite as used — disabled for now: same invite can be shared
+    // var inv = invites[0];
+    // inv.set('used', true); inv.set('used_at', new Date().toISOString()); inv.set('used_by', rec.id);
+    // $app.save(inv);
 
     return c.json(201, {
-      user: { id: rec.id, email: rec.email, name: rec.get('name') || '', role: role, family_id: fid }
+      user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: role, family_id: fid }
     });
   } catch(e) { return c.json(400, { error: String(e) }); }
 });
