@@ -3,14 +3,11 @@ import { useApp } from '../../context/AppContext';
 import { GroceryCard } from './GroceryCard';
 import { NewGlobalHeader } from '../shared/NewGlobalHeader';
 import { TopBar } from '../shared/TopBar';
-import { LayoutGrid, List, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
-
-type ViewMode = 'grid' | 'list';
+import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 
 export const GroceriesView = () => {
   const { items, addItem, uncheckAllDoneItems, showCompletionMessage } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showBought, setShowBought] = useState(false);
 
   const activeItems = useMemo(() => {
@@ -36,7 +33,7 @@ export const GroceriesView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24">
+    <div className="min-h-screen bg-neutral-50 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
       <TopBar />
       <NewGlobalHeader
         onSearch={setSearchQuery}
@@ -45,28 +42,6 @@ export const GroceriesView = () => {
         type="item"
       />
 
-      {/* View controls */}
-      <div className="max-w-6xl mx-auto px-4 py-3">
-        <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex items-center gap-1 bg-white rounded-lg border border-neutral-200 p-1 ml-auto">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-neutral-100' : ''}`}
-              title="Grid view"
-            >
-              <LayoutGrid className="w-4 h-4 text-neutral-600" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-neutral-100' : ''}`}
-              title="List view"
-            >
-              <List className="w-4 h-4 text-neutral-600" />
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Active items */}
       <div className="max-w-6xl mx-auto px-4">
@@ -75,14 +50,8 @@ export const GroceriesView = () => {
             <p className="text-sm">No grocery items</p>
             <p className="text-xs mt-1">Add items using the search bar above</p>
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeItems.map((item) => (
-              <GroceryCard key={item.id} item={item} />
-            ))}
-          </div>
         ) : (
-          <div className="space-y-2 max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {activeItems.map((item) => (
               <GroceryCard key={item.id} item={item} />
             ))}
@@ -116,7 +85,7 @@ export const GroceriesView = () => {
             </div>
 
             {showBought && (
-              <div className={`mt-3 ${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'space-y-2 max-w-2xl'}`}>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {boughtItems.map((item) => (
                   <GroceryCard key={item.id} item={item} />
                 ))}

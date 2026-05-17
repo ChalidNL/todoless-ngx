@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Task } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { User, Trash2, Menu, X } from 'lucide-react';
+import { User, Trash2, Menu, X, CalendarDays, Flag, Tag, AlertCircle, CheckSquare } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
 
 interface CompactTaskCardProps {
@@ -37,19 +37,29 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             type="checkbox"
             checked={task.status === 'done'}
             onChange={handleToggleComplete}
-            className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-blue-600 accent-blue-600 flex-shrink-0 cursor-pointer"
+            className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-blue-600 accent-blue-600 flex-shrink-0 self-start cursor-pointer"
           />
         )}
 
         {/* Task content */}
         <div className="flex-1 min-w-0">
-          {/* Title row */}
-          <div className="flex items-center gap-2">
-            <span className={`text-sm flex-1 ${
+          {/* Primary row */}
+          <div className="flex items-start gap-2">
+            <span className={`text-sm leading-5 flex-1 ${
               task.status === 'done' ? 'line-through text-neutral-400' : 'text-neutral-900'
             }`}>
               {task.title}
             </span>
+          </div>
+
+          {/* Attribute icon row */}
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap text-neutral-500">
+            <span className="inline-flex items-center"><CheckSquare className="w-3 h-3" /></span>
+            {task.priority && <span className="inline-flex items-center"><Flag className="w-3 h-3" /></span>}
+            {task.blocked && <span className="inline-flex items-center text-amber-600"><AlertCircle className="w-3 h-3" /></span>}
+            {task.dueDate && <span className="inline-flex items-center"><CalendarDays className="w-3 h-3" /></span>}
+            {taskLabels.length > 0 && <span className="inline-flex items-center"><Tag className="w-3 h-3" /></span>}
+            {user && <span className="inline-flex items-center"><User className="w-3 h-3" /></span>}
           </div>
 
           {/* Attributes row — compact */}
@@ -134,7 +144,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
         </div>
 
         {/* Menu button */}
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex items-center gap-0.5 flex-shrink-0 self-start">
           {!showMenu && (
             <button
               onClick={() => { setShowActions(true); }}

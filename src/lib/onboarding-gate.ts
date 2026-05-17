@@ -20,12 +20,16 @@ export function getOnboardingMode(input: {
   // Scenario 1: very first install — no users yet
   if (!hasUsers) return 'admin'
 
-  // Scenario 2: setup done, not logged in → info mode (slides + go to login)
+  // Scenario 2: setup not complete and not authenticated → onboarding required
+  // This keeps first-run UX consistent even when a bootstrap user already exists.
+  if (!isAuthenticated && !setupComplete) return 'admin'
+
+  // Scenario 3: setup complete, not logged in → info mode (slides + go to login)
   if (!isAuthenticated && setupComplete) return 'info'
 
-  // Scenario 3: authenticated but hasn't seen onboarding
+  // Scenario 4: authenticated but hasn't seen onboarding
   if (isAuthenticated && !hasUserSeenOnboarding) return 'user'
 
-  // Scenario 4: already onboarded or not authenticated without setup (→ show login directly)
+  // Scenario 5: already onboarded
   return 'none'
 }

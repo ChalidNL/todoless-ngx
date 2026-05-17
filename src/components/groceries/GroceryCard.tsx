@@ -9,6 +9,10 @@ import {
   Menu,
   X,
   Trash2,
+  CalendarDays,
+  Tag,
+  ShoppingCart,
+  User
 } from 'lucide-react';
 
 interface GroceryCardProps {
@@ -57,11 +61,11 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
     >
       <div className="p-2.5">
         {/* Top row: checkbox + title + quantity + menu */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           {/* Checkbox */}
           <button
             onClick={handleToggle}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+            className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 self-start transition-colors ${
               item.completed
                 ? 'bg-neutral-900 border-neutral-900 text-white'
                 : 'border-neutral-300 hover:border-neutral-500'
@@ -111,7 +115,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
           {/* Menu button */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0"
+            className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0 self-start"
           >
             {showMenu ? (
               <X className="w-4 h-4 text-neutral-600" />
@@ -121,7 +125,15 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
           </button>
         </div>
 
-        {/* Attributes row — shop + assignee + labels */}
+        {/* Attributes row — icon row + badges */}
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap text-neutral-500">
+          <span className="inline-flex items-center"><ShoppingCart className="w-3 h-3" /></span>
+          {quantity > 0 && <span className="inline-flex items-center"><Tag className="w-3 h-3" /></span>}
+          {currentShop && <span className="inline-flex items-center"><Tag className="w-3 h-3" /></span>}
+          {assignee && <span className="inline-flex items-center"><User className="w-3 h-3" /></span>}
+          <span className="inline-flex items-center"><CalendarDays className="w-3 h-3" /></span>
+        </div>
+
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {currentShop && (
             <LabelBadge label={currentShop} size="sm" />
@@ -135,8 +147,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
             </span>
           )}
         </div>
-
-        {/* Expanded menu */}
         {showMenu && (
           <div className="mt-2 pt-2 border-t border-neutral-100 space-y-2">
             {/* Shop selector */}

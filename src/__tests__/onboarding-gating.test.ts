@@ -16,11 +16,18 @@ describe('onboarding gate', () => {
     ).toBe('user')
   })
 
-  // Scenario 3: users exist, not authenticated → show login (no onboarding)
-  it('returns none when users exist but not authenticated', () => {
+  // Scenario 3: users exist but setup not complete, not authenticated → admin onboarding
+  it('returns admin mode when users exist but setup is incomplete and user is logged out', () => {
     expect(
-      getOnboardingMode({ hasUsers: true, isAuthenticated: false, hasUserSeenOnboarding: false })
-    ).toBe('none')
+      getOnboardingMode({ hasUsers: true, isAuthenticated: false, hasUserSeenOnboarding: false, setupComplete: false })
+    ).toBe('admin')
+  })
+
+  // Scenario 3b: users exist, setup complete, not authenticated → info onboarding
+  it('returns info mode when users exist, setup complete, and user is logged out', () => {
+    expect(
+      getOnboardingMode({ hasUsers: true, isAuthenticated: false, hasUserSeenOnboarding: false, setupComplete: true })
+    ).toBe('info')
   })
 
   // Scenario 4: already onboarded

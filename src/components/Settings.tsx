@@ -9,7 +9,7 @@ import { TopBar } from './shared/TopBar';
 import { InviteManager } from './InviteManager';
 
 export const Settings = () => {
-  const { users, appSettings, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, filters, deleteFilter, tasks, showCompletionMessage } = useApp();
+  const { users, appSettings, updateAppSettings, updateUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, tasks, showCompletionMessage } = useApp();
   const { signOut } = useAuth();
   const appVersion = 'mvp';
   const appCommit = 'local';
@@ -19,7 +19,6 @@ export const Settings = () => {
   const [showAccount, setShowAccount] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
   const [showShops, setShowShops] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
@@ -99,10 +98,6 @@ export const Settings = () => {
     deleteShop(id);
   };
 
-  const handleDeleteFilter = (id: string) => {
-    deleteFilter(id);
-  };
-
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -112,13 +107,13 @@ export const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24">
+    <div className="min-h-screen bg-neutral-50 pb-[calc(env(safe-area-inset-bottom,0px)+112px)]">
       <TopBar />
       
       {/* Header */}
       <NewGlobalHeader />
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-10 space-y-6">
         {/* User Profile */}
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
           <h2 className="text-lg font-semibold mb-4">Your Profile</h2>
@@ -369,51 +364,6 @@ export const Settings = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteShop(shop.id)}
-                        className="p-1 hover:bg-neutral-100 rounded text-red-500"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Filters Section */}
-        <div className="mb-6 border-b border-neutral-200 pb-6">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center justify-between w-full mb-3"
-          >
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              Filters
-            </h2>
-            {showFilters ? (
-              <ChevronUp className="w-5 h-5 text-neutral-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-neutral-500" />
-            )}
-          </button>
-
-          {showFilters && (
-            <>
-              <div>Filter builder coming soon</div>
-
-              <div className="space-y-3">
-                {filters.map(filter => (
-                  <div key={filter.id} className="flex items-center gap-3 p-3 border border-neutral-200 rounded">
-                    <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-sm font-semibold">
-                      {filter.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{filter.name}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDeleteFilter(filter.id)}
                         className="p-1 hover:bg-neutral-100 rounded text-red-500"
                         title="Delete"
                       >
