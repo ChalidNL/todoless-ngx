@@ -147,9 +147,8 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   };
 
   const handleSkip = () => {
-    if (isAdmin) return; // kan niet skippen
-    if (isInfo) {
-      onComplete(); // direct naar login
+    if (isInfo || isAdmin) {
+      onComplete();
       return;
     }
     handleUserOnboardingComplete();
@@ -160,16 +159,14 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       {/* Skip button */}
-      {!isAdmin && (
-        <div className="p-4 flex justify-end">
-          <button
-            onClick={handleSkip}
-            className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
-          >
-            {isInfo ? 'Ga naar inloggen' : 'Overslaan'}
-          </button>
-        </div>
-      )}
+      <div className="p-4 flex justify-end">
+        <button
+          onClick={handleSkip}
+          className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+        >
+          {isInfo ? 'Ga naar inloggen' : 'Overslaan'}
+        </button>
+      </div>
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
