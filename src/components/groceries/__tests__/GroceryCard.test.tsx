@@ -44,15 +44,16 @@ describe('GroceryCard layered attributes', () => {
     render(<GroceryCard item={createItem()} />);
     expect(screen.getByText('Milk')).toBeTruthy();
     expect(screen.getByLabelText('Mark as bought')).toBeTruthy();
-    expect(screen.getByLabelText('Open item menu')).toBeTruthy();
+    expect(screen.getByLabelText('Open item attributes')).toBeTruthy();
   });
 
   it('shows only grocery attribute icons in layer 2', () => {
     render(<GroceryCard item={createItem()} />);
-    fireEvent.click(screen.getByLabelText('Open item menu'));
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
 
     expect(screen.getByLabelText('Edit shop')).toBeTruthy();
     expect(screen.getByLabelText('Edit quantity')).toBeTruthy();
+    expect(screen.getByLabelText('Delete item')).toBeTruthy();
 
     expect(screen.queryByLabelText('Edit assignee')).toBeNull();
     expect(screen.queryByLabelText('Edit due date and recurring')).toBeNull();
@@ -61,7 +62,7 @@ describe('GroceryCard layered attributes', () => {
 
   it('opens quantity editor in layer 3 and updates quantity', () => {
     render(<GroceryCard item={createItem({ quantity: 2 })} />);
-    fireEvent.click(screen.getByLabelText('Open item menu'));
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
     fireEvent.click(screen.getByLabelText('Edit quantity'));
 
     fireEvent.click(screen.getByLabelText('Increase quantity'));
@@ -70,17 +71,17 @@ describe('GroceryCard layered attributes', () => {
 
   it('opens shop editor and selects shop', () => {
     render(<GroceryCard item={createItem()} />);
-    fireEvent.click(screen.getByLabelText('Open item menu'));
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
     fireEvent.click(screen.getByLabelText('Edit shop'));
 
     fireEvent.click(screen.getByText('AH'));
     expect(mockUpdateItem).toHaveBeenCalledWith('item-1', { shopId: 'shop-1' });
   });
 
-  it('deletes from menu', () => {
+  it('deletes from attribute delete button', () => {
     render(<GroceryCard item={createItem()} />);
-    fireEvent.click(screen.getByLabelText('Open item menu'));
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
+    fireEvent.click(screen.getByLabelText('Delete item'));
     expect(mockDeleteItem).toHaveBeenCalledWith('item-1');
   });
 });

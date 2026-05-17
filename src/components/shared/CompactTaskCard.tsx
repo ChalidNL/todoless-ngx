@@ -85,19 +85,18 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   <Flag className="w-5 h-5" />
                 </button>
 
-                <div className="ml-auto">
-                  <button
-                    onClick={() => {
-                      deleteTask(task.id);
-                      setShowMenu(false);
-                      setActiveEditor(null);
-                    }}
-                    className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    deleteTask(task.id);
+                    setShowMenu(false);
+                    setActiveEditor(null);
+                  }}
+                  className="p-2 rounded-md transition-colors min-w-[36px] min-h-[36px] text-red-600 hover:bg-red-50 hover:text-red-700"
+                  title="delete"
+                  aria-label="Delete task"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Layer 3 */}
@@ -168,7 +167,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             setActiveEditor(next ? activeEditor : null);
           }}
           className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0 self-start"
-          aria-label="Open task menu"
+          aria-label="Open task attributes"
         >
           {showMenu ? <X className="w-4 h-4 text-neutral-600" /> : <Menu className="w-4 h-4 text-neutral-400" />}
         </button>

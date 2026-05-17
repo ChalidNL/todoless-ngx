@@ -62,7 +62,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
               setActiveEditor(next ? activeEditor : null);
             }}
             className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0 self-start"
-            aria-label="Open item menu"
+            aria-label="Open item attributes"
           >
             {showMenu ? <X className="w-4 h-4 text-neutral-600" /> : <Menu className="w-4 h-4 text-neutral-400" />}
           </button>
@@ -88,19 +88,18 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
               >
                 <Hash className="w-4 h-4" />
               </button>
-              <div className="ml-auto">
-                <button
-                  onClick={() => {
-                    deleteItem(item.id);
-                    setShowMenu(false);
-                    setActiveEditor(null);
-                  }}
-                  className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  deleteItem(item.id);
+                  setShowMenu(false);
+                  setActiveEditor(null);
+                }}
+                className="p-1.5 rounded transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
+                title="delete"
+                aria-label="Delete item"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Layer 3: selected attribute editor */}

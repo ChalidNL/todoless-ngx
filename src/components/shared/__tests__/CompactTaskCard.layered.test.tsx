@@ -41,17 +41,18 @@ describe('CompactTaskCard layered attributes', () => {
     expect(screen.queryByLabelText('Edit due date and recurring')).toBeNull();
     expect(screen.queryByLabelText('Toggle flag')).toBeNull();
 
-    fireEvent.click(screen.getByLabelText('Open task menu'));
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
 
     expect(screen.getByLabelText('Edit labels')).toBeTruthy();
     expect(screen.getByLabelText('Edit assignee')).toBeTruthy();
     expect(screen.getByLabelText('Edit due date and recurring')).toBeTruthy();
     expect(screen.getByLabelText('Toggle flag')).toBeTruthy();
+    expect(screen.getByLabelText('Delete task')).toBeTruthy();
   });
 
   it('opens assignee selector from @ icon and only one detail row is active', () => {
     render(<CompactTaskCard task={baseTask as any} />);
-    fireEvent.click(screen.getByLabelText('Open task menu'));
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
 
     fireEvent.click(screen.getByLabelText('Edit assignee'));
     expect(screen.getByText('Chalid')).toBeTruthy();
@@ -65,7 +66,7 @@ describe('CompactTaskCard layered attributes', () => {
 
   it('flag toggles blocked visual state and does not open detail row', () => {
     const { container } = render(<CompactTaskCard task={baseTask as any} />);
-    fireEvent.click(screen.getByLabelText('Open task menu'));
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
     fireEvent.click(screen.getByLabelText('Toggle flag'));
 
     expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { flag: true, blocked: true });
