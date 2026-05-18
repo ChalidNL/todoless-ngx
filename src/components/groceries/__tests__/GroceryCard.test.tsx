@@ -36,6 +36,8 @@ describe('GroceryCard layered attributes', () => {
         { id: 'shop-1', name: 'AH', color: '#3b82f6' },
         { id: 'shop-2', name: 'Jumbo', color: '#10b981' },
       ],
+      labels: [],
+      addLabel: vi.fn(),
       users: [],
     });
   });
@@ -51,13 +53,14 @@ describe('GroceryCard layered attributes', () => {
     render(<GroceryCard item={createItem()} />);
     fireEvent.click(screen.getByLabelText('Open item attributes'));
 
+    expect(screen.getByLabelText('Edit labels')).toBeTruthy();
     expect(screen.getByLabelText('Edit shop')).toBeTruthy();
     expect(screen.getByLabelText('Edit quantity')).toBeTruthy();
     expect(screen.getByLabelText('Delete item')).toBeTruthy();
 
     expect(screen.queryByLabelText('Edit assignee')).toBeNull();
     expect(screen.queryByLabelText('Edit due date and recurring')).toBeNull();
-    expect(screen.queryByLabelText('Edit flag')).toBeNull();
+    expect(screen.queryByLabelText('Toggle flag')).toBeNull();
   });
 
   it('opens quantity editor in layer 3 and updates quantity', () => {

@@ -80,8 +80,8 @@ describe('CompactTaskCard compact layout (GroceryCard style)', () => {
       <CompactTaskCard task={{ ...baseTask, flag: true, blocked: true } as any} />
     );
     const root = container.firstChild as HTMLElement;
-    expect(root.className.includes('bg-red-50')).toBeTruthy();
-    expect(root.className.includes('border-red-200')).toBeTruthy();
+    expect(root.className.includes('!bg-red-50')).toBeTruthy();
+    expect(root.className.includes('border-red-300')).toBeTruthy();
   });
 
   it('shows due date badge when task has dueDate', () => {
@@ -91,11 +91,11 @@ describe('CompactTaskCard compact layout (GroceryCard style)', () => {
     expect(screen.getByText(/jun/i)).toBeTruthy();
   });
 
-  it('shows flag icon when task is flagged', () => {
+  it('shows flag chip when task is flagged', () => {
     const flagged = { ...baseTask, flag: true };
-    const { container } = render(<CompactTaskCard task={flagged as any} />);
+    render(<CompactTaskCard task={flagged as any} />);
 
-    // Flag icon (lucide) renders as inline SVG
-    expect(container.querySelector('svg.text-red-500')).toBeTruthy();
+    // Flag appears as an AttributeChip labeled "Flagged" in line 2
+    expect(screen.getByText('Flagged')).toBeTruthy();
   });
 });

@@ -22,6 +22,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
 
   const isDone = task.status === 'done';
   const assignedUser = task.assignedTo ? users.find((u) => u.id === task.assignedTo) : null;
+  const isFlagged = task.flag && !isDone;
   const dateStr = task.dueDate
     ? new Date(task.dueDate).toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' })
     : null;
@@ -43,6 +44,16 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
     setActiveEditor(null);
   };
 
+  const clearAssignee = () => {
+    updateTask(task.id, { assignedTo: undefined });
+    setAssigneeSearch('');
+    setActiveEditor(null);
+  };
+
+  const clearAllSchedule = () => {
+    updateTask(task.id, { dueDate: undefined, repeatInterval: undefined });
+  };
+
   const dateValue = task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '';
   const timeValue = task.dueDate ? new Date(task.dueDate).toTimeString().slice(0, 5) : '';
   const filteredUsers = users.filter((u) =>
@@ -52,13 +63,18 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const visibleLabels = labels.filter((l) =>
     l.name.toLowerCase().includes(labelInput.trim().toLowerCase())
   );
+  const hasLabels = task.labels.length > 0;
+  const hasAssignee = !!task.assignedTo;
+  const hasSchedule = !!task.dueDate || !!task.repeatInterval;
 
   return (
-    <div className={`rounded-lg border bg-white transition-colors ${
+    <div className={`rounded-lg border transition-colors ${
       isDone ? 'border-neutral-200 opacity-75' : 'border-neutral-200 hover:border-neutral-300'
-    } ${task.flag && !isDone ? 'border-red-200 bg-red-50' : ''}`}>
+    } ${
+      isFlagged ? 'border-red-300 !bg-red-50' : 'bg-white'
+    }`}>
       <div className="p-2.5">
-        {/* Line 1: checkbox + title + badge + hamburger */}
+        {/* Line 1: checkbox + title + hamburger */}
         <div className="flex items-center gap-2">
           {showCheckbox && (
             <button
@@ -75,15 +91,10 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           )}
 
           <span className={`text-sm font-medium flex-1 truncate ${
-            isDone ? 'line-through text-neutral-400' : 'text-neutral-900'
+            isDone ? 'line-through text-neutral-400' : isFlagged ? 'text-red-900' : 'text-neutral-900'
           }`}>
             {task.title}
           </span>
-
-          {/* Flag indicator */}
-          {task.flag && !isDone && (
-            <Flag className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-          )}
 
           {/* Hamburger */}
           <button
@@ -98,23 +109,44 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           </button>
         </div>
 
-        {/* Line 2: chips — labels, assignee, date, repeat */}
-        {(task.labels.length > 0 || assignedUser || (dateStr && !isDone) || (repeatLabel && !isDone)) && !isDone && (
+        {/* Line 2: chips — flag, labels, assignee, date, repeat */}
+        {(isFlagged || hasLabels || assignedUser || (dateStr && !isDone) || (repeatLabel && !isDone)) && !isDone && (
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
+            {isFlagged && (
+              <AttributeChip
+                icon={<Flag className="w-3.5 h-3.5" />}
+                label="Flagged"
+                color="#ef4444"
+                active
+              />
+            )}
             {task.labels.map((labelId) => {
               const label = labels.find((l) => l.id === labelId);
               return label ? (
-                <AttributeChip key={label.id} icon={<Tag className="w-3.5 h-3.5" />} label={label.name} color={label.color} />
+                <AttributeChip
+                  key={label.id}
+                  icon={<Tag className="w-3.5 h-3.5" />}
+                  label={label.name}
+                  color={label.color}
+                  onRemove={() => updateTask(task.id, {
+                    labels: task.labels.filter((id) => id !== label.id),
+                  })}
+                />
               ) : null;
             })}
             {assignedUser && (
-              <AttributeChip icon={<User className="w-3.5 h-3.5" />} label={assignedUser.name} color={entityColor(assignedUser.id)} />
+              <AttributeChip
+                icon={<User className="w-3.5 h-3.5" />}
+                label={assignedUser.name}
+                color={entityColor(assignedUser.id)}
+                onRemove={() => updateTask(task.id, { assignedTo: undefined })}
+              />
             )}
             {dateStr && !isDone && (
-              <AttributeChip icon={<CalendarDays className="w-3.5 h-3.5" />} label={dateStr} color="#6b7280" />
+              <AttributeChip icon={<CalendarDays className="w-3.5 h-3.5" />} label={dateStr} color="#6b7280" active />
             )}
             {repeatLabel && !isDone && (
-              <AttributeChip icon={<RotateCcw className="w-3.5 h-3.5" />} label={repeatLabel} color="#6b7280" />
+              <AttributeChip icon={<RotateCcw className="w-3.5 h-3.5" />} label={repeatLabel} color="#6b7280" active />
             )}
           </div>
         )}
@@ -126,7 +158,11 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveEditor(activeEditor === 'labels' ? null : 'labels')}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'labels' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                className={`p-1.5 rounded transition-colors ${
+                  hasLabels || activeEditor === 'labels'
+                    ? 'bg-neutral-900 text-white'
+                    : 'hover:bg-neutral-100 text-neutral-500'
+                }`}
                 title="#label"
                 aria-label="Edit labels"
               >
@@ -138,7 +174,11 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   setActiveEditor(next);
                   if (next) setAssigneeSearch(assignedUser?.name || '');
                 }}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'assignee' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                className={`p-1.5 rounded transition-colors ${
+                  hasAssignee || activeEditor === 'assignee'
+                    ? 'bg-neutral-900 text-white'
+                    : 'hover:bg-neutral-100 text-neutral-500'
+                }`}
                 title="@assignee"
                 aria-label="Edit assignee"
               >
@@ -146,7 +186,11 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               </button>
               <button
                 onClick={() => setActiveEditor(activeEditor === 'schedule' ? null : 'schedule')}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'schedule' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                className={`p-1.5 rounded transition-colors ${
+                  hasSchedule || activeEditor === 'schedule'
+                    ? 'bg-neutral-900 text-white'
+                    : 'hover:bg-neutral-100 text-neutral-500'
+                }`}
                 title="//schedule"
                 aria-label="Edit schedule"
               >
@@ -214,16 +258,8 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                     className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
                     aria-label="Label input"
                   />
-                  {/* Show assigned labels inline */}
-                  {task.labels.length > 0 && (
-                    <div className="flex gap-1">
-                      {task.labels.slice(-3).map((labelId) => {
-                        const l = labels.find((lb) => lb.id === labelId);
-                        return l ? <LabelBadge key={l.id} label={l} size="sm" /> : null;
-                      })}
-                    </div>
-                  )}
                 </div>
+                {/* Label options — same size as chips */}
                 <div className="flex flex-wrap gap-1">
                   {visibleLabels.map((label) => (
                     <button
@@ -234,9 +270,21 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                           labels: has ? task.labels.filter((id) => id !== label.id) : [...task.labels, label.id],
                         });
                       }}
-                      className={task.labels.includes(label.id) ? 'ring-2 ring-neutral-900 rounded' : ''}
                     >
-                      <LabelBadge label={label} size="sm" />
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 h-7 rounded-full text-xs font-normal leading-none border ${
+                          task.labels.includes(label.id)
+                            ? 'ring-2 ring-neutral-900'
+                            : 'hover:border-neutral-400'
+                        }`}
+                        style={{
+                          backgroundColor: task.labels.includes(label.id) ? `${label.color}20` : undefined,
+                          color: task.labels.includes(label.id) ? label.color : undefined,
+                          borderColor: task.labels.includes(label.id) ? `${label.color}40` : '#e5e7eb',
+                        }}
+                      >
+                        {label.name}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -246,20 +294,32 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             {/* Assignee editor */}
             {activeEditor === 'assignee' && (
               <div className="mt-2 relative">
-                <input
-                  type="text"
-                  value={assigneeSearch}
-                  onChange={(e) => setAssigneeSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && filteredUsers.length === 1) {
-                      commitAssignee(filteredUsers[0].id);
-                    }
-                    if (e.key === 'Escape') setActiveEditor(null);
-                  }}
-                  placeholder="Search team..."
-                  className="w-full text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                  aria-label="Search assignee"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={assigneeSearch}
+                    onChange={(e) => setAssigneeSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && filteredUsers.length === 1) {
+                        commitAssignee(filteredUsers[0].id);
+                      }
+                      if (e.key === 'Escape') setActiveEditor(null);
+                    }}
+                    placeholder="Search team..."
+                    className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
+                    aria-label="Search assignee"
+                  />
+                  {task.assignedTo && (
+                    <button
+                      onClick={clearAssignee}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded text-sm"
+                      aria-label="Clear assignee"
+                      title="Remove assignee"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 {assigneeSearch !== undefined && filteredUsers.length > 0 && (
                   <div className="absolute z-10 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
                     {filteredUsers.map((u) => (
@@ -287,43 +347,55 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
 
             {/* Schedule editor */}
             {activeEditor === 'schedule' && (
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  type="date"
-                  value={dateValue}
-                  onChange={(e) => {
-                    if (!e.target.value) {
-                      updateTask(task.id, { dueDate: undefined });
-                      return;
-                    }
-                    const t = timeValue || '00:00';
-                    updateTask(task.id, { dueDate: new Date(`${e.target.value}T${t}:00`).getTime() });
-                  }}
-                  className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                  aria-label="Due date"
-                />
-                <input
-                  type="time"
-                  value={timeValue}
-                  onChange={(e) => {
-                    if (!dateValue) return;
-                    updateTask(task.id, { dueDate: new Date(`${dateValue}T${e.target.value || '00:00'}:00`).getTime() });
-                  }}
-                  className="text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                  aria-label="Due time"
-                />
-                <select
-                  value={task.repeatInterval || ''}
-                  onChange={(e) => updateTask(task.id, { repeatInterval: (e.target.value || undefined) as RepeatInterval | undefined })}
-                  className="text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                  aria-label="Recurring interval"
-                >
-                  <option value="">No repeat</option>
-                  <option value="day">Daily</option>
-                  <option value="week">Weekly</option>
-                  <option value="month">Monthly</option>
-                  <option value="year">Yearly</option>
-                </select>
+              <div className="mt-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateValue}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        updateTask(task.id, { dueDate: undefined });
+                        return;
+                      }
+                      const t = timeValue || '00:00';
+                      updateTask(task.id, { dueDate: new Date(`${e.target.value}T${t}:00`).getTime() });
+                    }}
+                    className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
+                    aria-label="Due date"
+                  />
+                  <input
+                    type="time"
+                    value={timeValue}
+                    onChange={(e) => {
+                      if (!dateValue) return;
+                      updateTask(task.id, { dueDate: new Date(`${dateValue}T${e.target.value || '00:00'}:00`).getTime() });
+                    }}
+                    className="text-sm px-2 py-1.5 border border-neutral-200 rounded"
+                    aria-label="Due time"
+                  />
+                  <select
+                    value={task.repeatInterval || ''}
+                    onChange={(e) => updateTask(task.id, { repeatInterval: (e.target.value || undefined) as RepeatInterval | undefined })}
+                    className="text-sm px-2 py-1.5 border border-neutral-200 rounded"
+                    aria-label="Recurring interval"
+                  >
+                    <option value="">No repeat</option>
+                    <option value="day">Daily</option>
+                    <option value="week">Weekly</option>
+                    <option value="month">Monthly</option>
+                    <option value="year">Yearly</option>
+                  </select>
+                  {hasSchedule && (
+                    <button
+                      onClick={clearAllSchedule}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded flex-shrink-0"
+                      aria-label="Clear schedule"
+                      title="Clear date and repeat"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
