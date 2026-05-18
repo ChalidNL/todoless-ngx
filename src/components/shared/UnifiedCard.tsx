@@ -193,9 +193,12 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                     const name = e.target.value.trim();
                     if (!name) return;
                     const existing = labels.find(l => l.name.toLowerCase() === name.toLowerCase());
-                    const label = existing || addLabel({ name, color: '#3b82f6' });
-                    if (!entity.labels.includes(label.id)) {
-                      setValue({ labels: [...entity.labels, label.id] });
+                    if (existing) {
+                      if (!entity.labels.includes(existing.id)) {
+                        setValue({ labels: [...entity.labels, existing.id] });
+                      }
+                    } else {
+                      addLabel({ name, color: '#3b82f6' });
                     }
                     e.target.value = '';
                   }}

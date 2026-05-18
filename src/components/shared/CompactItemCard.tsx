@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Item } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { ShoppingCart, Trash2, Menu, X, RotateCcw, Plus, Minus, ToggleLeft, Lock, Unlock, User } from 'lucide-react';
+import { AttributeChip } from './AttributeChip';
 import { LabelBadge } from './LabelBadge';
-import { entityColor, entityBg } from '../../lib/entity-colors';
+import { entityColor } from '../../lib/entity-colors';
 
 interface CompactItemCardProps {
   item: Item;
@@ -113,25 +114,13 @@ export const CompactItemCard = ({ item }: CompactItemCardProps) => {
           {(item.createdBy || (item.assignedTo && item.assignedTo !== item.createdBy) || currentShop) && (
             <div className="flex flex-wrap items-center gap-1 mb-2">
               {item.createdBy && (
-                <span
-                  className="chip"
-                  style={{ backgroundColor: entityBg(item.createdBy), color: entityColor(item.createdBy) }}
-                >
-                  <User className="w-4 h-4" strokeWidth={1.5} />
-                  {users.find(u => u.id === item.createdBy)?.name || 'Unknown'}
-                </span>
+                <AttributeChip icon={<User className="w-3.5 h-3.5" />} label={users.find(u => u.id === item.createdBy)?.name || 'Unknown'} color={entityColor(item.createdBy)} />
               )}
               {item.assignedTo && item.assignedTo !== item.createdBy && (
-                <span
-                  className="chip"
-                  style={{ backgroundColor: entityBg(item.assignedTo), color: entityColor(item.assignedTo) }}
-                >
-                  <User className="w-4 h-4" strokeWidth={1.5} />
-                  {users.find(u => u.id === item.assignedTo)?.name || 'Unknown'}
-                </span>
+                <AttributeChip icon={<User className="w-3.5 h-3.5" />} label={users.find(u => u.id === item.assignedTo)?.name || 'Unknown'} color={entityColor(item.assignedTo)} />
               )}
               {currentShop && (
-                <LabelBadge label={currentShop} size="sm" />
+                <AttributeChip icon={<ShoppingCart className="w-3.5 h-3.5" />} label={currentShop.name} color={currentShop.color} />
               )}
               {item.isPrivate && (
                 <Lock className="w-3 h-3 text-purple-400" />

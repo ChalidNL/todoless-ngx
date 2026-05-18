@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Task, RepeatInterval } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag } from 'lucide-react';
+import { AttributeChip } from './AttributeChip';
 import { LabelBadge } from './LabelBadge';
-import { entityColor, entityBg } from '../../lib/entity-colors';
+import { entityColor } from '../../lib/entity-colors';
 
 interface CompactTaskCardProps {
   task: Task;
@@ -105,16 +106,12 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
             {task.labels.map((labelId) => {
               const label = labels.find((l) => l.id === labelId);
-              return label ? <LabelBadge key={label.id} label={label} size="sm" /> : null;
+              return label ? (
+                <AttributeChip key={label.id} icon={<Tag className="w-3.5 h-3.5" />} label={label.name} color={label.color} />
+              ) : null;
             })}
             {assignedUser && (
-              <span
-                className="chip"
-                style={{ backgroundColor: entityBg(assignedUser.id), color: entityColor(assignedUser.id) }}
-              >
-                <User className="w-4 h-4" strokeWidth={1.5} />
-                {assignedUser.name}
-              </span>
+              <AttributeChip icon={<User className="w-3.5 h-3.5" />} label={assignedUser.name} color={entityColor(assignedUser.id)} />
             )}
           </div>
         )}
@@ -188,9 +185,12 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                         const name = labelInput.trim();
                         if (!name) return;
                         const existing = labels.find((l) => l.name.toLowerCase() === name.toLowerCase());
-                        const label = existing || addLabel({ name, color: '#3b82f6' });
-                        if (!task.labels.includes(label.id)) {
-                          updateTask(task.id, { labels: [...task.labels, label.id] });
+                        if (existing) {
+                          if (!task.labels.includes(existing.id)) {
+                            updateTask(task.id, { labels: [...task.labels, existing.id] });
+                          }
+                        } else {
+                          addLabel({ name, color: '#3b82f6' });
                         }
                         setLabelInput('');
                       }

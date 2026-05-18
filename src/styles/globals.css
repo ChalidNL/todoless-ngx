@@ -251,7 +251,7 @@ html {
 
   /* Shared chip sizing — all inline badges follow this */
   .chip {
-    @apply inline-flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-normal;
+    @apply inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-normal leading-none;
   }
 
   /* Bottom sheet snap points */
