@@ -271,7 +271,7 @@ routerAdd('POST', '/api/todoless/api', (c) => {
     var auth = null;
 
     // Auth check — use info.auth (PB 0.34: c.auth is null without middleware)
-    var needsAuth = ['create','update','complete','assign','delete','list','filters','set_role','set_user_block'];
+    var needsAuth = ['create','update','complete','assign','delete','list','filters','set_role','set_user_block','delete_user'];
     if (needsAuth.indexOf(action) >= 0) {
       auth = info.auth;
       if (!auth) return c.json(401, { error: 'Unauthorized' });
@@ -420,6 +420,50 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       blockTarget.set('active', shouldBlock ? false : true);
       $app.save(blockTarget);
       return c.json(200, { ok: true, user: { id: blockTarget.id, active: !!blockTarget.get('active') } });
+    }
+
+    if (action === 'delete_user') {
+      var delActorRole = String(auth.get('role') || 'user');
+      if (delActorRole !== 'admin') return c.json(403, { error: 'Admin only' });
+
+      var delTargetId = String(gv(d,'user_id','')).trim();
+      if (!delTargetId) return c.json(400, { error: 'user_id required' });
+      if (delTargetId === auth.id) return c.json(409, { error: 'cannot delete yourself' });
+
+      var delActorFamilyId = String(auth.get('family_id') || '');
+      var delTarget = $app.findRecordById('users', delTargetId);
+      if (!delTarget) return c.json(404, { error: 'user not found' });
+      var delTargetFamilyId = String(delTarget.get('family_id') || '');
+      if (!delActorFamilyId || delActorFamilyId !== delTargetFamilyId) return c.json(403, { error: 'cross-family delete denied' });
+
+      var delTargetRole = String(delTarget.get('role') || 'user');
+      if (delTargetRole === 'admin') return c.json(409, { error: 'cannot delete admin account' });
+
+      // Transfer ownership to acting admin to prevent FK constraint issues.
+      var transferCollections = ['tasks','items','notes','labels','shops','rewards','goals','projects','reminders','calendar_events'];
+      for (var tc = 0; tc < transferCollections.length; tc++) {
+        var collName = transferCollections[tc];
+        var owned = $app.findRecordsByFilter(collName, 'user = "' + delTargetId + '"', '-created', 0, 0);
+        for (var oi = 0; oi < owned.length; oi++) {
+          owned[oi].set('user', auth.id);
+          $app.save(owned[oi]);
+        }
+      }
+
+      // Clear assignee references in task/item records.
+      var assignedTasks = $app.findRecordsByFilter('tasks', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0);
+      for (var ti = 0; ti < assignedTasks.length; ti++) {
+        assignedTasks[ti].set('assigned_to', '');
+        $app.save(assignedTasks[ti]);
+      }
+      var assignedItems = $app.findRecordsByFilter('items', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0);
+      for (var ii = 0; ii < assignedItems.length; ii++) {
+        assignedItems[ii].set('assigned_to', '');
+        $app.save(assignedItems[ii]);
+      }
+
+      $app.delete(delTarget);
+      return c.json(200, { ok: true, deleted_user_id: delTargetId });
     }
 
     if (action === 'set_role') {

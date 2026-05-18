@@ -746,12 +746,64 @@ class PocketBaseClient {
   }
 
   async updateUser(id: string, updates: any) {
+    // Role changes must go through secured hook action (single-admin guardrails).
+    if (typeof updates.role !== 'undefined') {
+      const response = await fetch('/api/todoless/api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': pb.authStore.token ? `Bearer ${pb.authStore.token}` : '',
+        },
+        body: JSON.stringify({ action: 'set_role', user_id: id, role: updates.role }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Failed to update role' }));
+        throw new Error(err.error || 'Failed to update role');
+      }
+      return response.json();
+    }
+
+    // Active/block changes must go through secured hook action.
+    if (typeof updates.active !== 'undefined') {
+      const response = await fetch('/api/todoless/api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': pb.authStore.token ? `Bearer ${pb.authStore.token}` : '',
+        },
+        body: JSON.stringify({ action: 'set_user_block', user_id: id, blocked: !updates.active }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Failed to update user status' }));
+        throw new Error(err.error || 'Failed to update user status');
+      }
+      return response.json();
+    }
+
+    // Self profile/password updates still use SDK directly.
     return pb.collection('users').update(id, {
       name: updates.name,
-      role: updates.role,
       password: updates.password,
       passwordConfirm: updates.password,
     });
+  }
+
+  async deleteUser(id: string) {
+    const response = await fetch('/api/todoless/api', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': pb.authStore.token ? `Bearer ${pb.authStore.token}` : '',
+      },
+      body: JSON.stringify({ action: 'delete_user', user_id: id }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Failed to delete user' }));
+      throw new Error(err.error || 'Failed to delete user');
+    }
+
+    return response.json();
   }
 
   // Rewards CRUD
