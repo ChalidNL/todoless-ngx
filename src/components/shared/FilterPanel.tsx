@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X, Edit2, Trash2, Tag } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { LabelBadge } from './LabelBadge';
+import { entityColor, entityBg, entityInitials } from '../../lib/entity-colors';
 
 interface FilterPanelProps {
   type: 'task' | 'item';
@@ -209,19 +210,23 @@ export const FilterPanel = ({
         {type === 'task' && users.length > 0 && (
           <div>
             <p className="text-xs text-neutral-500 mb-2">Filter by Assignee</p>
-            <div className="flex flex-wrap gap-2">
-              {users.map(user => (
-                <button
-                  key={user.id}
-                  className="px-3 py-1.5 bg-white border border-neutral-200 rounded text-xs hover:border-neutral-300 flex items-center gap-2"
-                >
-                  <div className="w-4 h-4 rounded-full bg-neutral-200 flex items-center justify-center text-xs">
-                    {user.name.charAt(0)}
-                  </div>
-                  {user.name}
-                </button>
-              ))}
-            </div>
+              <div className="flex flex-wrap gap-2">
+                {users.map(user => (
+                  <span
+                    key={user.id}
+                    className="chip cursor-pointer"
+                    style={{ backgroundColor: entityBg(user.id), color: entityColor(user.id) }}
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
+                      style={{ backgroundColor: entityColor(user.id) }}
+                    >
+                      {entityInitials(user.name)}
+                    </span>
+                    {user.name}
+                  </span>
+                ))}
+              </div>
           </div>
         )}
 

@@ -3,6 +3,7 @@ import { Task, RepeatInterval } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { User, Trash2, Menu, X, CalendarDays, Flag, Tag } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
+import { entityColor, entityBg, entityBorder, entityInitials } from '../../lib/entity-colors';
 
 interface CompactTaskCardProps {
   task: Task;
@@ -109,8 +110,16 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           {/* Assignee chip */}
           {assignedUser && (
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="chip bg-blue-50 text-blue-700 font-medium border border-blue-200">
-                <User className="w-3 h-3" strokeWidth={2} />
+              <span
+                className="chip font-medium border"
+                style={{ backgroundColor: entityBg(assignedUser.id), borderColor: entityBorder(assignedUser.id), color: entityColor(assignedUser.id) }}
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
+                  style={{ backgroundColor: entityColor(assignedUser.id) }}
+                >
+                  {entityInitials(assignedUser.name)}
+                </span>
                 {assignedUser.name}
               </span>
             </div>
