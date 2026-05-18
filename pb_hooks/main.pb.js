@@ -118,10 +118,11 @@ routerAdd('POST', '/api/todoless/register', (c) => {
 
     var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     var setupDone = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0).length > 0;
-    if (existing.length === 0 || !setupDone) {
-      // BOOTSTRAP WINDOW — no invite required until setup is completed
-      if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
-      if (d.password !== d.passwordConfirm) return c.json(400, { error: 'Passwords do not match' });
+    if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
+    if (d.password !== d.passwordConfirm) return c.json(400, { error: 'Passwords do not match' });
+
+    // FIRST USER ONLY: bootstrap admin + family
+    if (existing.length === 0) {
       var uc = $app.findCollectionByNameOrId('users');
       var rec = new Record(uc);
       rec.set('email', d.email); rec.set('password', d.password);
@@ -136,6 +137,28 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       rec.set('family_id', fam.id); $app.save(rec);
       return c.json(201, {
         user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: 'admin', family_id: fam.id }
+      });
+    }
+
+    // BOOTSTRAP WINDOW: before setup_complete, allow registration without invite,
+    // but NEVER create additional admins.
+    if (!setupDone) {
+      var seedUser = existing[0];
+      var fidBootstrap = seedUser ? String(seedUser.get('family_id') || '') : '';
+      if (!fidBootstrap) throw new BadRequestError('Bootstrap family not ready. Please retry.', {});
+
+      var ucBootstrap = $app.findCollectionByNameOrId('users');
+      var recBootstrap = new Record(ucBootstrap);
+      recBootstrap.set('email', d.email); recBootstrap.set('password', d.password);
+      recBootstrap.set('passwordConfirm', d.passwordConfirm);
+      recBootstrap.set('name', d.name || d.email.split('@')[0]);
+      var roleBootstrap = userType === 'family_assistant' ? 'assistant' : 'user';
+      recBootstrap.set('role', roleBootstrap);
+      recBootstrap.set('family_id', fidBootstrap);
+      recBootstrap.set('emailVisibility', true);
+      $app.save(recBootstrap);
+      return c.json(201, {
+        user: { id: recBootstrap.id, email: String(recBootstrap.get('email')||''), name: String(recBootstrap.get('name')||''), role: roleBootstrap, family_id: fidBootstrap }
       });
     }
 
@@ -210,7 +233,7 @@ routerAdd('POST', '/api/todoless/api', (c) => {
     var auth = null;
 
     // Auth check — use info.auth (PB 0.34: c.auth is null without middleware)
-    var needsAuth = ['create','update','complete','assign','delete','list','filters'];
+    var needsAuth = ['create','update','complete','assign','delete','list','filters','set_role'];
     if (needsAuth.indexOf(action) >= 0) {
       auth = info.auth;
       if (!auth) return c.json(401, { error: 'Unauthorized' });
@@ -326,8 +349,43 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       var labels = $app.findRecordsByFilter('labels',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
       var shops = $app.findRecordsByFilter('shops',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
       var users = [];
-      if(fid){users=$app.findRecordsByFilter('users','family_id = "'+fid+'"','name',0,0).map(function(r){return{id:r.id,name:r.get('name')||r.email};});}
+      if(fid){users=$app.findRecordsByFilter('users','family_id = "'+fid+'"','name',0,0).map(function(r){return{id:r.id,name:r.get('name')||r.email,role:r.get('role')||'user'};});}
       return c.json(200,{labels:labels,shops:shops,users:users});
+    }
+
+    if (action === 'set_role') {
+      var roleActor = String(auth.get('role') || 'user');
+      if (roleActor !== 'admin') return c.json(403, { error: 'Admin only' });
+
+      var targetId = String(gv(d,'user_id','')).trim();
+      var nextRole = String(gv(d,'role','')).trim();
+      if (!targetId) return c.json(400, { error: 'user_id required' });
+      if (['admin','user','assistant','child'].indexOf(nextRole) === -1) return c.json(400, { error: 'invalid role' });
+
+      var actorFamilyId = String(auth.get('family_id') || '');
+      var target = $app.findRecordById('users', targetId);
+      if (!target) return c.json(404, { error: 'user not found' });
+      var targetFamilyId = String(target.get('family_id') || '');
+      if (!actorFamilyId || actorFamilyId !== targetFamilyId) return c.json(403, { error: 'cross-family role change denied' });
+
+      var admins = $app.findRecordsByFilter('users', 'family_id = "' + actorFamilyId + '" && role = "admin"', '-created', 0, 0);
+      var targetCurrentRole = String(target.get('role') || 'user');
+
+      // single-admin: no second admin
+      if (nextRole === 'admin') {
+        var otherAdmins = admins.filter(function(u){ return u.id !== target.id; });
+        if (otherAdmins.length > 0) return c.json(409, { error: 'single-admin enforced: family already has an admin' });
+      }
+
+      // single-admin: cannot demote last admin
+      if (targetCurrentRole === 'admin' && nextRole !== 'admin') {
+        var adminCount = admins.length;
+        if (adminCount <= 1) return c.json(409, { error: 'cannot demote last admin' });
+      }
+
+      target.set('role', nextRole);
+      $app.save(target);
+      return c.json(200, { ok: true, user: { id: target.id, role: String(target.get('role')||'user') } });
     }
 
     return c.json(400, { error: 'Unknown action: ' + action });
