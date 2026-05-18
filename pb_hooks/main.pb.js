@@ -15,12 +15,33 @@ routerAdd('POST', '/api/todoless/invites/create', (c) => {
     var auth = info && info.auth ? info.auth : null;
     if (!auth) return c.json(401, { error: 'Unauthorized' });
 
-    // Generate 6-digit code
-    var code = '';
+    // Generate UNIQUE 6-digit code (avoid active duplicate codes)
     var digits = '0123456789';
-    for (var i = 0; i < 6; i++) {
-      code += digits.charAt(Math.floor(Math.random() * digits.length));
+    var code = '';
+    var attempts = 0;
+    var nowMs = new Date().getTime();
+    var maxAttempts = 25;
+    while (attempts < maxAttempts) {
+      attempts += 1;
+      code = '';
+      for (var i = 0; i < 6; i++) code += digits.charAt(Math.floor(Math.random() * digits.length));
+
+      var existingCode = $app.findRecordsByFilter('invite_codes', 'code="' + code + '"', '-created', 1, 0);
+      if (existingCode.length === 0) break;
+
+      var r0 = existingCode[0];
+      var used0 = !!r0.get('used');
+      var raw0 = r0.get('expires_at');
+      var exp0 = 0;
+      if (typeof raw0 === 'string') exp0 = new Date(raw0).getTime();
+      else if (raw0 && typeof raw0.getTime === 'function') exp0 = raw0.getTime();
+      else if (raw0) exp0 = new Date(String(raw0)).getTime();
+
+      // Reuse code only if previous invite is terminal (used or expired)
+      if (used0 || (exp0 > 0 && exp0 <= nowMs)) break;
     }
+
+    if (!code) return c.json(500, { error: 'Failed to generate invite code. Retry.' });
 
     var now = new Date();
     var expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
@@ -162,13 +183,31 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       });
     }
 
-    // SUBSEQUENT USER — require valid invite
+    // SUBSEQUENT USER — require valid, single-use invite
     var ic = String(d.invite_code || '').trim().toUpperCase();
     if (!ic) throw new BadRequestError('Invite code required for registration.', {});
-    var now = new Date().toISOString();
-    var invites = $app.findRecordsByFilter('invite_codes', 'code="' + ic + '"&&used=false&&expires_at>"' + now + '"', '-created', 1, 0);
-    if (invites.length === 0) throw new BadRequestError('Invalid or expired invite code.', {});
-    var inviter = $app.findRecordById('users', String(invites[0].get('user') || ''));
+
+    var invites = $app.findRecordsByFilter('invite_codes', 'code="' + ic + '"', '-created', 1, 0);
+    if (invites.length === 0) throw new BadRequestError('Invite code not found.', {});
+
+    var inv = invites[0];
+    var used = !!inv.get('used');
+    if (used) throw new BadRequestError('Invite code has already been used.', {});
+
+    var rawExp = inv.get('expires_at');
+    var expMs = 0;
+    if (typeof rawExp === 'string') expMs = new Date(rawExp).getTime();
+    else if (rawExp && typeof rawExp.getTime === 'function') expMs = rawExp.getTime();
+    else if (rawExp) expMs = new Date(String(rawExp)).getTime();
+
+    var nowMs = new Date().getTime();
+    var isExpired = expMs > 0 && expMs <= nowMs;
+    if (isExpired) throw new BadRequestError('Invite code has expired.', {});
+
+    var inviterId = String(inv.get('user') || '');
+    if (!inviterId) throw new BadRequestError('Invite code is invalid (missing inviter).', {});
+
+    var inviter = $app.findRecordById('users', inviterId);
     var fid = inviter ? String(inviter.get('family_id') || '') : '';
     if (!fid) throw new BadRequestError('Inviter has no family — ask admin to create one.', {});
 
@@ -184,10 +223,9 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     rec.set('family_id', fid); rec.set('emailVisibility', true);
     $app.save(rec);
 
-    // Mark invite as used — disabled for now: same invite can be shared
-    // var inv = invites[0];
-    // inv.set('used', true); inv.set('used_at', new Date().toISOString()); inv.set('used_by', rec.id);
-    // $app.save(inv);
+    // Mark invite as used to prevent reuse
+    inv.set('used', true);
+    $app.save(inv);
 
     return c.json(201, {
       user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: role, family_id: fid }
