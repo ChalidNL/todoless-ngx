@@ -39,6 +39,10 @@ describe('GroceryCard layered attributes', () => {
       labels: [],
       addLabel: vi.fn(),
       users: [],
+      toggleChipFilter: vi.fn(),
+      isChipFilterActive: vi.fn(() => false),
+      clearChipFilters: vi.fn(),
+      activeChipFilters: [],
     });
   });
 
@@ -85,6 +89,8 @@ describe('GroceryCard layered attributes', () => {
     render(<GroceryCard item={createItem()} />);
     fireEvent.click(screen.getByLabelText('Open item attributes'));
     fireEvent.click(screen.getByLabelText('Delete item'));
+    // Confirmation dialog
+    fireEvent.click(screen.getByText('Ja, verwijderen'));
     expect(mockDeleteItem).toHaveBeenCalledWith('item-1');
   });
 });

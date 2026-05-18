@@ -3,25 +3,45 @@ import { useApp } from '../../context/AppContext';
 import { GroceryCard } from './GroceryCard';
 import { NewGlobalHeader } from '../shared/NewGlobalHeader';
 import { TopBar } from '../shared/TopBar';
-import { ChevronDown, ChevronUp, RotateCcw, ShoppingCart } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, ShoppingCart, X as XIcon, Save } from 'lucide-react';
 
 export const GroceriesView = () => {
-  const { items, addItem, uncheckAllDoneItems, showCompletionMessage } = useApp();
+  const { items, addItem, uncheckAllDoneItems, showCompletionMessage, activeChipFilters, toggleChipFilter, clearChipFilters } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showBought, setShowBought] = useState(false);
 
+  const filteredItems = useMemo(() => {
+    let result = items;
+
+    // Chip filters (labels, shop)
+    for (const f of activeChipFilters) {
+      switch (f.type) {
+        case 'label':
+          result = result.filter((item) => (item.labels || []).includes(f.id));
+          break;
+        case 'shop':
+          result = result.filter((item) => item.shopId === f.id);
+          break;
+      }
+    }
+
+    // Search
+    if (searchQuery) {
+      result = result.filter((item) =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [items, activeChipFilters, searchQuery]);
+
   const activeItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      return !item.completed && matchesSearch;
-    });
-  }, [items, searchQuery]);
+    return filteredItems.filter((item) => !item.completed);
+  }, [filteredItems]);
 
   const boughtItems = useMemo(() => {
-    return items.filter(
-      (item) => item.completed && item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [items, searchQuery]);
+    return filteredItems.filter((item) => item.completed);
+  }, [filteredItems]);
 
   const handleAddItem = (value: string) => {
     addItem({
@@ -31,6 +51,8 @@ export const GroceriesView = () => {
       labels: [],
     });
   };
+
+  const hasAnyFilter = activeChipFilters.length > 0;
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
@@ -42,6 +64,51 @@ export const GroceriesView = () => {
         type="item"
       />
 
+      {/* Filter bar */}
+      {hasAnyFilter && (
+        <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 shadow-sm">
+          <div className="max-w-lg mx-auto px-4 py-2 flex items-center gap-2">
+            <span className="text-xs font-semibold text-neutral-600">
+              {activeItems.length > 0
+                ? `Groceries (${activeItems.length + boughtItems.length})`
+                : 'No results'}
+            </span>
+            <div className="flex gap-1 flex-1 flex-wrap">
+              {activeChipFilters.map((f) => (
+                <span
+                  key={`${f.type}-${f.id}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                  style={{
+                    backgroundColor: f.color ? `${f.color}20` : undefined,
+                    color: f.color ? f.color : undefined,
+                    borderColor: f.color ? `${f.color}40` : '#e5e7eb',
+                  }}
+                >
+                  {f.label || f.id}
+                  <button onClick={() => toggleChipFilter(f.type, f.id)} className="ml-0.5 hover:opacity-70">
+                    <XIcon className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={clearChipFilters}
+              className="flex-shrink-0 p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded"
+              title="Clear all filters"
+            >
+              <XIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => showCompletionMessage('Filter saved (not yet implemented)')}
+              className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded"
+              title="Save filter"
+              aria-label="Save filter"
+            >
+              <Save className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Active items */}
       <div className="max-w-6xl mx-auto px-4 pt-4">

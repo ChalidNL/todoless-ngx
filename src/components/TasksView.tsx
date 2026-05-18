@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { ChevronDown, ChevronUp, RotateCcw, CheckSquare } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, CheckSquare, X as XIcon, Save } from 'lucide-react';
 import { CompactTaskCard } from './shared/CompactTaskCard';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { TopBar } from './shared/TopBar';
 import { DueDateNotifications } from './shared/DueDateNotifications';
 
 export const TasksView = () => {
-  const { tasks, activeLabelFilters, addTask, uncheckAllDoneTasks, showCompletionMessage } = useApp();
+  const { tasks, activeLabelFilters, activeChipFilters, toggleChipFilter, clearChipFilters, addTask, uncheckAllDoneTasks, showCompletionMessage } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCheckedOut, setShowCheckedOut] = useState(false);
 
@@ -23,15 +23,41 @@ export const TasksView = () => {
     });
   };
 
-
   const getFilteredTasks = () => {
     let filtered = tasks;
 
-    // Label filters
+    // Label filters (existing)
     if (activeLabelFilters.length > 0) {
       filtered = filtered.filter(task =>
         activeLabelFilters.every(filterId => task.labels.includes(filterId))
       );
+    }
+
+    // Chip filters (labels, assignee, shop, date, repeat, status)
+    for (const f of activeChipFilters) {
+      switch (f.type) {
+        case 'label':
+          filtered = filtered.filter((t) => t.labels.includes(f.id));
+          break;
+        case 'assignee':
+          filtered = filtered.filter((t) => t.assignedTo === f.id);
+          break;
+        case 'date':
+          filtered = filtered.filter((t) => {
+            if (!t.dueDate) return false;
+            const ds = new Date(t.dueDate).toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' });
+            return ds === f.id;
+          });
+          break;
+        case 'repeat':
+          filtered = filtered.filter((t) => {
+            const rl = t.repeatInterval
+              ? { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }[t.repeatInterval]
+              : null;
+            return rl === f.id;
+          });
+          break;
+      }
     }
 
     // Search filter
@@ -45,12 +71,12 @@ export const TasksView = () => {
   };
 
   const filteredTasks = getFilteredTasks();
-  
+
   // Separate active and checked out tasks
   const activeTasks = filteredTasks.filter(task => task.status !== 'done');
   const checkedOutTasks = filteredTasks.filter(task => task.status === 'done');
 
-  // Sort active tasks: urgent priority first, then normal, then low, then no priority
+  // Sort active tasks
   const sortedActiveTasks = [...activeTasks].sort((a, b) => {
     const priorityOrder = { urgent: 0, normal: 1, low: 2, undefined: 3 };
     const aPriority = a.priority || 'undefined';
@@ -58,18 +84,65 @@ export const TasksView = () => {
     return priorityOrder[aPriority] - priorityOrder[bPriority];
   });
 
+  const hasAnyFilter = activeChipFilters.length > 0;
+
   return (
     <div className="min-h-screen bg-neutral-50 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
       <TopBar />
-      {/* Global Header */}
       <NewGlobalHeader
         onAdd={handleAddTaskWithValue}
         onSearch={setSearchQuery}
         searchPlaceholder="Search tasks..."
       />
 
+      {/* Filter bar */}
+      {hasAnyFilter && (
+        <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 shadow-sm">
+          <div className="max-w-lg mx-auto px-4 py-2 flex items-center gap-2">
+            <span className="text-xs font-semibold text-neutral-600">
+              {activeTasks.length > 0
+                ? `Tasks (${activeTasks.length + checkedOutTasks.length})`
+                : 'No results'}
+            </span>
+            <div className="flex gap-1 flex-1 flex-wrap">
+              {activeChipFilters.map((f) => (
+                <span
+                  key={`${f.type}-${f.id}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                  style={{
+                    backgroundColor: f.color ? `${f.color}20` : undefined,
+                    color: f.color ? f.color : undefined,
+                    borderColor: f.color ? `${f.color}40` : '#e5e7eb',
+                  }}
+                >
+                  {f.label || f.id}
+                  <button onClick={() => toggleChipFilter(f.type, f.id)} className="ml-0.5 hover:opacity-70">
+                    <XIcon className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={clearChipFilters}
+              className="flex-shrink-0 p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded"
+              title="Clear all filters"
+            >
+              <XIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                showCompletionMessage('Filter saved (not yet implemented)');
+              }}
+              className="flex-shrink-0 p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded"
+              title="Save filter"
+              aria-label="Save filter"
+            >
+              <Save className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Tasks list */}
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
         {/* Active Tasks */}
         <div>
@@ -86,9 +159,9 @@ export const TasksView = () => {
           ) : (
             <div className="space-y-2">
               {sortedActiveTasks.map((task) => (
-                <CompactTaskCard 
-                  key={task.id} 
-                  task={task} 
+                <CompactTaskCard
+                  key={task.id}
+                  task={task}
                   showCheckbox={true}
                 />
               ))}
@@ -113,7 +186,7 @@ export const TasksView = () => {
                   <ChevronDown className="w-4 h-4 text-neutral-500" />
                 )}
               </button>
-              
+
               <button
                 onClick={() => {
                   uncheckAllDoneTasks();
@@ -130,9 +203,9 @@ export const TasksView = () => {
             {showCheckedOut && (
               <div className="space-y-2">
                 {checkedOutTasks.map((task) => (
-                  <CompactTaskCard 
-                    key={task.id} 
-                    task={task} 
+                  <CompactTaskCard
+                    key={task.id}
+                    task={task}
                     showCheckbox={task.status === 'done'}
                   />
                 ))}

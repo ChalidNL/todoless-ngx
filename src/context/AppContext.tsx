@@ -141,6 +141,10 @@ interface AppContextType {
   moveFilterDown: (id: string) => void;
   toggleLabelFilter: (labelId: string) => void;
   clearLabelFilters: () => void;
+  activeChipFilters: {type: string; id: string; label?: string; color?: string}[];
+  toggleChipFilter: (type: string, id: string, label?: string, color?: string) => void;
+  clearChipFilters: () => void;
+  isChipFilterActive: (type: string, id: string) => boolean;
   showCompletionMessage: (message: string) => void;
   moveTaskToStatus: (taskId: string, status: 'backlog' | 'todo' | 'done') => void;
   createNewSprint: () => void;
@@ -227,6 +231,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     lastWeekReset: getWeekStart(),
   });
   const [activeLabelFilters, setActiveLabelFilters] = useState<string[]>([]);
+  const [activeChipFilters, setActiveChipFilters] = useState<{type: string; id: string; label?: string; color?: string}[]>([]);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [currentSprint, setCurrentSprint] = useState<Sprint | null>(null);
 
@@ -708,6 +713,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const clearLabelFilters = () => setActiveLabelFilters([]);
 
+  const toggleChipFilter = (type: string, id: string, label?: string, color?: string) => {
+    setActiveChipFilters((prev) => {
+      const exists = prev.find((f) => f.type === type && f.id === id);
+      if (exists) return prev.filter((f) => f !== exists);
+      return [...prev, { type, id, label, color }];
+    });
+  };
+
+  const clearChipFilters = () => setActiveChipFilters([]);
+
+  const isChipFilterActive = (type: string, id: string) =>
+    activeChipFilters.some((f) => f.type === type && f.id === id);
+
   const showCompletionMessage = (message: string) => setCompletionMessage(message);
 
   const moveTaskToStatus = (taskId: string, status: 'backlog' | 'todo' | 'done') => {
@@ -968,6 +986,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       moveFilterDown,
       toggleLabelFilter,
       clearLabelFilters,
+      activeChipFilters,
+      toggleChipFilter,
+      clearChipFilters,
+      isChipFilterActive,
       showCompletionMessage,
       moveTaskToStatus,
       createNewSprint,
