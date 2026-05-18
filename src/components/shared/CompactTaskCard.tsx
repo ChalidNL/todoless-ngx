@@ -220,7 +220,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 <AttributeChip
                   icon={<CalendarDays className="w-3.5 h-3.5" />}
                   label={dateStr}
-                  color="#d97706"
+                  color="#ea580c"
                   active={isDateFiltered(dateStr)}
                   onClick={showMenu ? clearAllSchedule : () => openEditor('schedule')}
                 />
@@ -229,7 +229,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 <AttributeChip
                   icon={<RotateCcw className="w-3.5 h-3.5" />}
                   label={repeatLabel}
-                  color="#7c3aed"
+                  color="#ea580c"
                   active={isRepeatFiltered(repeatLabel)}
                   onClick={showMenu ? clearAllSchedule : () => openEditor('schedule')}
                 />
