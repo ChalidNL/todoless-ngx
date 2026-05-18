@@ -44,7 +44,12 @@ export const GroceriesView = () => {
 
 
       {/* Active items */}
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm text-neutral-600 flex items-center gap-1.5">
+            Groceries ({activeItems.length})
+          </h2>
+        </div>
         {activeItems.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingCart className="w-12 h-12 text-neutral-200 mx-auto mb-3" />

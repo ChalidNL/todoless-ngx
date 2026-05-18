@@ -73,6 +73,11 @@ export const TasksView = () => {
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
         {/* Active Tasks */}
         <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm text-neutral-600 flex items-center gap-1.5">
+              Tasks ({activeTasks.length})
+            </h2>
+          </div>
           {activeTasks.length === 0 && checkedOutTasks.length === 0 ? (
             <div className="text-center py-16">
               <CheckSquare className="w-12 h-12 text-neutral-200 mx-auto mb-3" />
