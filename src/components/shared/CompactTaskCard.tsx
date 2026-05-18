@@ -3,7 +3,7 @@ import { Task, RepeatInterval } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { User, Trash2, Menu, X, CalendarDays, Flag, Tag } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
-import { entityColor, entityBg, entityBorder, entityInitials } from '../../lib/entity-colors';
+import { entityColor, entityBg, entityBorder } from '../../lib/entity-colors';
 
 interface CompactTaskCardProps {
   task: Task;
@@ -98,30 +98,22 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               {task.title}
             </span>
           )}
-          {/* Label feed — toon alle labels als badges */}
-          {task.labels.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-0.5">
+          {/* Chip row — labels + assignee side by side */}
+          {(task.labels.length > 0 || assignedUser) && (
+            <div className="flex flex-wrap items-center gap-1 mt-1">
               {task.labels.map((labelId) => {
                 const label = labels.find((l) => l.id === labelId);
                 return label ? <LabelBadge key={label.id} label={label} size="sm" /> : null;
               })}
-            </div>
-          )}
-          {/* Assignee chip */}
-          {assignedUser && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <span
-                className="chip font-medium border"
-                style={{ backgroundColor: entityBg(assignedUser.id), borderColor: entityBorder(assignedUser.id), color: entityColor(assignedUser.id) }}
-              >
+              {assignedUser && (
                 <span
-                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
-                  style={{ backgroundColor: entityColor(assignedUser.id) }}
+                  className="chip font-medium border"
+                  style={{ backgroundColor: entityBg(assignedUser.id), borderColor: entityBorder(assignedUser.id), color: entityColor(assignedUser.id) }}
                 >
-                  {entityInitials(assignedUser.name)}
+                  <User className="w-3 h-3" strokeWidth={2} />
+                  {assignedUser.name}
                 </span>
-                {assignedUser.name}
-              </span>
+              )}
             </div>
           )}
 

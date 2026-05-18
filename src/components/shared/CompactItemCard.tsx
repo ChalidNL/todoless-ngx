@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Item } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { ShoppingCart, Trash2, Menu, X, RotateCcw, Plus, Minus, ToggleLeft, Lock, Unlock } from 'lucide-react';
+import { ShoppingCart, Trash2, Menu, X, RotateCcw, Plus, Minus, ToggleLeft, Lock, Unlock, User } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
-import { entityColor, entityBg, entityBorder, entityInitials } from '../../lib/entity-colors';
+import { entityColor, entityBg, entityBorder } from '../../lib/entity-colors';
 
 interface CompactItemCardProps {
   item: Item;
@@ -109,20 +109,15 @@ export const CompactItemCard = ({ item }: CompactItemCardProps) => {
             )}
           </div>
 
-          {/* Owner & Assignee badges */}
-          {(item.createdBy || item.assignedTo) && (
-            <div className="flex items-center gap-1 mb-2 flex-wrap">
+          {/* Chips row — owner + assignee + shop */}
+          {(item.createdBy || (item.assignedTo && item.assignedTo !== item.createdBy) || currentShop) && (
+            <div className="flex flex-wrap items-center gap-1 mb-2">
               {item.createdBy && (
                 <span
                   className="chip"
                   style={{ backgroundColor: entityBg(item.createdBy), borderColor: entityBorder(item.createdBy), color: entityColor(item.createdBy) }}
                 >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
-                    style={{ backgroundColor: entityColor(item.createdBy) }}
-                  >
-                    {entityInitials(users.find(u => u.id === item.createdBy)?.name || '?')}
-                  </span>
+                  <User className="w-3 h-3" strokeWidth={2} />
                   {users.find(u => u.id === item.createdBy)?.name || 'Unknown'}
                 </span>
               )}
@@ -131,24 +126,16 @@ export const CompactItemCard = ({ item }: CompactItemCardProps) => {
                   className="chip"
                   style={{ backgroundColor: entityBg(item.assignedTo), borderColor: entityBorder(item.assignedTo), color: entityColor(item.assignedTo) }}
                 >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
-                    style={{ backgroundColor: entityColor(item.assignedTo) }}
-                  >
-                    {entityInitials(users.find(u => u.id === item.assignedTo)?.name || '?')}
-                  </span>
+                  <User className="w-3 h-3" strokeWidth={2} />
+                  {users.find(u => u.id === item.assignedTo)?.name || 'Unknown'}
                 </span>
+              )}
+              {currentShop && (
+                <LabelBadge label={currentShop} size="sm" />
               )}
               {item.isPrivate && (
                 <Lock className="w-3 h-3 text-purple-400" />
               )}
-            </div>
-          )}
-
-          {/* Shop badge if selected */}
-          {currentShop && (
-            <div className="mb-2">
-              <LabelBadge label={currentShop} size="sm" />
             </div>
           )}
 
