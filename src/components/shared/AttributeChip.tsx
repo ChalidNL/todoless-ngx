@@ -25,7 +25,7 @@ interface AttributeChipProps {
  */
 export const AttributeChip = ({ icon, label, color, muted, active, onClick, onRemove }: AttributeChipProps) => {
   const isActive = active ?? (!muted && !!color);
-  const backgroundColor = color && isActive ? `${color}20` : undefined;
+  const backgroundColor = color && isActive ? `${color}30` : undefined;
   const textColor = color && isActive ? color : undefined;
   const borderColor = color && isActive ? `${color}40` : '#e5e7eb';
 
