@@ -10,7 +10,6 @@ import type {
   Shop,
   CalendarEvent,
   Filter,
-  FilterView,
   AppSettings,
   ProgressStats,
   Sprint,
@@ -80,7 +79,6 @@ interface AppContextType {
   shops: Shop[];
   calendarEvents: CalendarEvent[];
   filters: Filter[];
-  filterViews: FilterView[];
   sprints: Sprint[];
   users: User[];
   inviteCodes: InviteCode[];
@@ -111,7 +109,6 @@ interface AppContextType {
   createShop: (shop: Omit<Shop, 'id'>) => void;
   addCalendarEvent: (event: Omit<CalendarEvent, 'id' | 'createdAt'>) => void;
   addFilter: (filter: Omit<Filter, 'id'>) => void;
-  addFilterView: (view: Omit<FilterView, 'id'>) => void;
   addSprint: (sprint: Omit<Sprint, 'id'>) => void;
   addUser: (user: User) => void;
   updateItem: (id: string, updates: Partial<Item>) => void;
@@ -216,7 +213,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [filters, setFilters] = useState<Filter[]>([]);
-  const [filterViews, setFilterViews] = useState<FilterView[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
@@ -505,10 +501,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addFilter = (filter: Omit<Filter, 'id'>) => {
     setFilters((prev) => [...prev, { ...filter, id: crypto.randomUUID() }]);
-  };
-
-  const addFilterView = (view: Omit<FilterView, 'id'>) => {
-    setFilterViews((prev) => [...prev, { ...view, id: crypto.randomUUID() }]);
   };
 
   const addSprint = (sprint: Omit<Sprint, 'id'>) => {
@@ -929,7 +921,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       shops,
       calendarEvents,
       filters,
-      filterViews,
       sprints,
       users,
       inviteCodes,
@@ -956,7 +947,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       createShop,
       addCalendarEvent,
       addFilter,
-      addFilterView,
       addSprint,
       addUser,
       updateItem,
@@ -1032,7 +1022,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       shops,
       calendarEvents,
       filters,
-      filterViews,
       sprints,
       users,
       inviteCodes,

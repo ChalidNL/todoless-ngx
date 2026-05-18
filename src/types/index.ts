@@ -154,12 +154,6 @@ export interface Filter {
   query?: string; // JQL query string
 }
 
-export interface FilterView {
-  id: string;
-  name: string;
-  filterIds: string[];
-}
-
 export interface AppSettings {
   hasCompletedOnboarding?: boolean;
   setupComplete?: boolean;

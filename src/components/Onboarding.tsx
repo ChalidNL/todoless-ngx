@@ -21,6 +21,7 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   const [name, setName] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isAdmin = mode === 'admin';
   const isInfo = mode === 'info';
 
@@ -110,25 +111,38 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
   };
 
   const handleCreateAdmin = async () => {
-    if (!email || !password || !passwordConfirm || !name) {
-      setError('Alle velden zijn verplicht');
+    // Validate all fields upfront with clear messages
+    if (!name.trim()) {
+      setError('Vul je volledige naam in');
       return;
     }
-
+    if (!email.trim()) {
+      setError('Vul je e-mailadres in');
+      return;
+    }
+    if (!password) {
+      setError('Vul een wachtwoord in');
+      return;
+    }
     if (password.length < 8) {
       setError('Wachtwoord moet minimaal 8 tekens zijn');
       return;
     }
-
+    if (!passwordConfirm) {
+      setError('Vul het wachtwoord opnieuw in ter bevestiging');
+      return;
+    }
     if (password !== passwordConfirm) {
       setError('Wachtwoorden komen niet overeen');
       return;
     }
-
     if (!familyName.trim()) {
       setError('Familienaam ontbreekt — ga terug en vul hem in');
       return;
     }
+
+    setError('');
+    setIsSubmitting(true);
 
     try {
       const result = await api.registerAdmin(email, password, name, familyName.trim());
@@ -136,7 +150,16 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
       updateAppSettings({ hasCompletedOnboarding: true, setupComplete: true });
       onComplete();
     } catch (e: any) {
-      setError(e?.message || 'Aanmaken account mislukt');
+      const msg = e?.message || '';
+      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('already')) {
+        setError('Dit e-mailadres is al in gebruik. Probeer in te loggen.');
+      } else if (msg.toLowerCase().includes('password')) {
+        setError('Wachtwoord voldoet niet aan de eisen: min 8 tekens');
+      } else {
+        setError(msg || 'Account aanmaken mislukt. Probeer het opnieuw.');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -243,9 +266,10 @@ export const Onboarding = ({ mode, onComplete }: OnboardingProps) => {
 
               <button
                 onClick={handleCreateAdmin}
-                className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium"
+                disabled={isSubmitting}
+                className="w-full bg-neutral-900 text-white py-3 rounded-lg hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Account aanmaken
+                {isSubmitting ? 'Bezig met aanmaken…' : 'Account aanmaken'}
               </button>
 
               <p className="text-xs text-neutral-500 text-center">
