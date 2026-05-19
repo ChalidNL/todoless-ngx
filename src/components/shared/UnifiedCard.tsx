@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, Item } from '../../types';
+import { Task, Item, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, Hash } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
@@ -16,6 +16,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
   const { updateTask, updateItem, deleteTask, deleteItem, labels, users, shops, addLabel } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<UnifiedEditor>(null);
+  const [titleDraft, setTitleDraft] = useState('');
 
   const isTask = type === 'task';
   const task = isTask ? (entity as Task) : null;
@@ -70,11 +71,39 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
           </button>
 
           {/* Title */}
+          {showMenu ? (
+            <input
+              type="text"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={() => {
+                const trimmed = titleDraft.trim();
+                if (trimmed && trimmed !== entity.title) {
+                  setValue({ title: trimmed });
+                } else if (!trimmed) {
+                  setTitleDraft(entity.title);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === 'Escape') {
+                  setTitleDraft(entity.title);
+                }
+              }}
+              autoFocus
+              className={`text-sm font-medium flex-1 min-w-0 px-1.5 py-0.5 border border-neutral-300 rounded bg-white ${
+                isDone ? 'line-through text-neutral-400' : 'text-neutral-900'
+              }`}
+              aria-label="Edit title"
+            />
+          ) : (
           <span className={`text-sm font-medium flex-1 truncate ${
             isDone ? 'line-through text-neutral-400' : 'text-neutral-900'
           }`}>
             {entity.title}
           </span>
+          )}
 
           {/* Flag badge (tasks) */}
           {isTask && task!.flag && (
@@ -100,6 +129,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
             onClick={() => {
               setShowMenu(!showMenu);
               setActiveEditor(!showMenu ? activeEditor : null);
+              if (!showMenu) setTitleDraft(entity.title);
             }}
             className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0"
             aria-label="Open attributes"
@@ -118,7 +148,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
             {assignedUser && (
               <span className="chip" style={{ backgroundColor: entityBg(assignedUser.id), color: entityColor(assignedUser.id) }}>
                 <User className="w-3 h-3" strokeWidth={2} />
-                {assignedUser.name}
+                {userDisplayName(assignedUser)}
               </span>
             )}
           </div>
@@ -254,7 +284,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   type="text"
                   onChange={(e) => {
                     const q = e.target.value.toLowerCase();
-                    const match = users.find(u => u.name.toLowerCase().includes(q));
+                    const match = users.find(u => userDisplayName(u).toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
                     if (match && e.target.value.length > 0) {
                       setValue({ assignedTo: match.id });
                       setActiveEditor(null);

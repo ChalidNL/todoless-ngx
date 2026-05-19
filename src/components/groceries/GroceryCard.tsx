@@ -38,6 +38,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
   const [activeEditor, setActiveEditor] = useState<GroceryEditor>(null);
   const [shopInput, setShopInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
 
   const quantity = item.quantity ?? 1;
   const currentShop = item.shopId ? shops.find((s) => s.id === item.shopId) : null;
@@ -78,11 +79,38 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
                   ? 'bg-neutral-900 border-neutral-900 text-white'
                   : 'border-neutral-300 hover:border-neutral-500'
               }`}
-              aria-label={item.completed ? 'Mark as not bought' : 'Mark as bought'}
+              aria-label={item.completed ? 'Mark as not in stock' : 'Mark as in stock'}
             >
               {item.completed && <Check className="w-3 h-3" />}
             </button>
 
+            {showMenu ? (
+              <input
+                type="text"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => {
+                  const trimmed = titleDraft.trim();
+                  if (trimmed && trimmed !== item.title) {
+                    updateItem(item.id, { title: trimmed });
+                  } else if (!trimmed) {
+                    setTitleDraft(item.title);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  } else if (e.key === 'Escape') {
+                    setTitleDraft(item.title);
+                  }
+                }}
+                autoFocus
+                className={`text-sm font-medium flex-1 min-w-0 px-1.5 py-0.5 border border-neutral-300 rounded bg-white ${
+                  item.completed ? 'line-through text-neutral-400' : 'text-neutral-900'
+                }`}
+                aria-label="Edit item title"
+              />
+            ) : (
             <span
               className={`text-sm font-medium flex-1 truncate ${
                 item.completed ? 'line-through text-neutral-400' : 'text-neutral-900'
@@ -90,6 +118,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
             >
               {item.title}
             </span>
+            )}
 
             <div className="flex items-center gap-1">
               <button
@@ -116,6 +145,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
                 const next = !showMenu;
                 setShowMenu(next);
                 setActiveEditor(next ? activeEditor : null);
+                if (next) setTitleDraft(item.title);
               }}
               className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0"
               aria-label="Open item attributes"

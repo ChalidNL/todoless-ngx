@@ -151,4 +151,63 @@ describe('CompactTaskCard compact layout (GroceryCard style)', () => {
 
     expect(screen.getByLabelText('Clear all labels')).toBeTruthy();
   });
+
+  // --- Inline title editing tests ---
+
+  it('shows editable title input when hamburger is opened (Edit Mode)', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    expect(screen.queryByLabelText('Edit task title')).toBeNull();
+
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
+
+    const input = screen.getByLabelText('Edit task title') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    expect(input.value).toBe('Pay bills');
+  });
+
+  it('saves edited title on blur', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
+
+    const input = screen.getByLabelText('Edit task title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Pay all bills' } });
+    fireEvent.blur(input);
+
+    expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { title: 'Pay all bills' });
+  });
+
+  it('saves edited title on Enter key', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
+
+    const input = screen.getByLabelText('Edit task title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Pay all bills' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { title: 'Pay all bills' });
+  });
+
+  it('reverts title on Escape key', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
+
+    const input = screen.getByLabelText('Edit task title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Pay all bills' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(mockUpdateTask).not.toHaveBeenCalled();
+    expect(input.value).toBe('Pay bills');
+  });
+
+  it('restores original title when input is cleared and blurred', () => {
+    render(<CompactTaskCard task={baseTask as any} />);
+    fireEvent.click(screen.getByLabelText('Open task attributes'));
+
+    const input = screen.getByLabelText('Edit task title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+
+    expect(mockUpdateTask).not.toHaveBeenCalled();
+    expect(input.value).toBe('Pay bills');
+  });
 });

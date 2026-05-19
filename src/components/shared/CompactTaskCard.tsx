@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, RepeatInterval } from '../../types';
+import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ToggleLeft, RotateCcw } from 'lucide-react';
 import { AttributeChip } from './AttributeChip';
@@ -65,6 +65,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showConvertConfirm, setShowConvertConfirm] = useState(false);
   const [isDeleteHover, setIsDeleteHover] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
 
   const isDone = task.status === 'done';
   const assignedUser = task.assignedTo ? users.find((u) => u.id === task.assignedTo) : null;
@@ -128,7 +129,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const dateValue = task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '';
   const timeValue = task.dueDate ? new Date(task.dueDate).toTimeString().slice(0, 5) : '';
   const filteredUsers = users.filter((u) =>
-    u.name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+    userDisplayName(u).toLowerCase().includes(assigneeSearch.toLowerCase()) ||
     u.email?.toLowerCase().includes(assigneeSearch.toLowerCase())
   );
   const visibleLabels = labels.filter((l) =>
@@ -172,17 +173,47 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               </button>
             )}
 
+            {showMenu ? (
+              <input
+                type="text"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => {
+                  const trimmed = titleDraft.trim();
+                  if (trimmed && trimmed !== task.title) {
+                    updateTask(task.id, { title: trimmed });
+                  } else if (!trimmed) {
+                    setTitleDraft(task.title);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  } else if (e.key === 'Escape') {
+                    setTitleDraft(task.title);
+                  }
+                }}
+                autoFocus
+                className={`text-sm font-medium flex-1 min-w-0 px-1.5 py-0.5 border border-neutral-300 rounded bg-white ${
+                  isDone ? 'line-through text-neutral-400' : isFlagged ? 'text-red-900' : 'text-neutral-900'
+                }`}
+                aria-label="Edit task title"
+              />
+            ) : (
             <span className={`text-sm font-medium flex-1 truncate ${
               isDone ? 'line-through text-neutral-400' : isFlagged ? 'text-red-900' : 'text-neutral-900'
             }`}>
               {task.title}
             </span>
+            )}
 
             {/* Hamburger */}
             <button
               onClick={() => {
-                setShowMenu(!showMenu);
-                setActiveEditor(!showMenu ? activeEditor : null);
+                const next = !showMenu;
+                setShowMenu(next);
+                setActiveEditor(next ? activeEditor : null);
+                if (next) setTitleDraft(task.title);
               }}
               className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0"
               aria-label="Open task attributes"
@@ -208,9 +239,9 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 ) : null;
               })}
               {assignedUser && (
-                <AttributeChip
-                  icon={<User className="w-3.5 h-3.5" />}
-                  label={assignedUser.name}
+                  <AttributeChip
+                    icon={<User className="w-3.5 h-3.5" />}
+                    label={userDisplayName(assignedUser)}
                   color="#10b981"
                   active={isAssigneeFiltered(assignedUser.id)}
                   onClick={showMenu ? clearAssignee : () => openEditor('assignee')}
@@ -428,7 +459,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                           >
                             {u.name.charAt(0).toUpperCase()}
                           </span>
-                          <span>{u.name}</span>
+                          <span>{userDisplayName(u)}</span>
                           {u.role && <span className="text-xs text-neutral-400 ml-auto">{u.role}</span>}
                         </button>
                       ))}

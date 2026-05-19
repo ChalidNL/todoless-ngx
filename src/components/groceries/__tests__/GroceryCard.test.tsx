@@ -49,7 +49,7 @@ describe('GroceryCard layered attributes', () => {
   it('renders layer 1 with checkbox + description + hamburger', () => {
     render(<GroceryCard item={createItem()} />);
     expect(screen.getByText('Milk')).toBeTruthy();
-    expect(screen.getByLabelText('Mark as bought')).toBeTruthy();
+    expect(screen.getByLabelText('Mark as in stock')).toBeTruthy();
     expect(screen.getByLabelText('Open item attributes')).toBeTruthy();
   });
 
@@ -102,5 +102,41 @@ describe('GroceryCard layered attributes', () => {
     // Confirmation dialog
     fireEvent.click(screen.getByText('Ja, verwijderen'));
     expect(mockDeleteItem).toHaveBeenCalledWith('item-1');
+  });
+
+  // --- Inline title editing tests ---
+
+  it('shows editable title input when hamburger is opened (Edit Mode)', () => {
+    render(<GroceryCard item={createItem()} />);
+    expect(screen.queryByLabelText('Edit item title')).toBeNull();
+
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
+
+    const input = screen.getByLabelText('Edit item title') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    expect(input.value).toBe('Milk');
+  });
+
+  it('saves edited title on Enter', () => {
+    render(<GroceryCard item={createItem()} />);
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
+
+    const input = screen.getByLabelText('Edit item title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Soy Milk' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(mockUpdateItem).toHaveBeenCalledWith('item-1', { title: 'Soy Milk' });
+  });
+
+  it('reverts title on Escape', () => {
+    render(<GroceryCard item={createItem()} />);
+    fireEvent.click(screen.getByLabelText('Open item attributes'));
+
+    const input = screen.getByLabelText('Edit item title') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Soy Milk' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(mockUpdateItem).not.toHaveBeenCalled();
+    expect(input.value).toBe('Milk');
   });
 });
