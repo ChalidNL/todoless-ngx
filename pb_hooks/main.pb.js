@@ -20,13 +20,14 @@ routerAdd('GET', '/api/todoless/openapi.json', (c) => {
     tags: [
       { name: 'public', description: 'No auth required' },
       { name: 'auth', description: 'Bearer token required' },
-      { name: 'admin', description: 'Admin role required for specific actions' }
+      { name: 'admin', description: 'Admin role required for specific actions' },
+      { name: 'agent', description: 'Agent API key authentication (X-Api-Key header)' }
     ],
     paths: {
       '/api/todoless/hook-health': { get: { tags:['public'], summary:'Hook health', responses:{ '200': { description:'OK' } } } },
       '/api/todoless/setup-status': { get: { tags:['public'], summary:'Setup bootstrap status', responses:{ '200': { description:'Status payload' } } } },
       '/api/todoless/validate-invite': { get: { tags:['public'], summary:'Validate invite code', parameters:[{name:'code',in:'query',required:true,schema:{type:'string'}}], responses:{ '200': { description:'Invite valid' }, '400': {description:'Invite invalid'} } } },
-      '/api/todoless/register': { post: { tags:['public'], summary:'Register user', requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ email:{type:'string'}, password:{type:'string'}, passwordConfirm:{type:'string'}, name:{type:'string'}, invite_code:{type:'string'}, user_type:{type:'string', enum:['family_member','family_assistant']} }, required:['email','password','passwordConfirm','name'] } } } }, responses:{ '201':{description:'User created'}, '400':{description:'Validation error'} } } },
+      '/api/todoless/register': { post: { tags:['public'], summary:'Register user', requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ email:{type:'string'}, password:{type:'string'}, passwordConfirm:{type:'string'}, name:{type:'string'}, firstName:{type:'string'}, lastName:{type:'string'}, invite_code:{type:'string'}, user_type:{type:'string', enum:['family_member','family_assistant']} }, required:['email','password','passwordConfirm'] } } } }, responses:{ '201':{description:'User created'}, '400':{description:'Validation error'} } } },
       '/api/todoless/auth-with-password': { post: { tags:['public'], summary:'Authenticate with email/password', requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ email:{type:'string'}, password:{type:'string'} }, required:['email','password'] } } } }, responses:{ '200':{description:'Token + user'}, '400':{description:'Auth failed'} } } },
       '/api/todoless/invites/create': { post: { tags:['auth','admin'], summary:'Create invite code', security:[{ bearerAuth: [] }], responses:{ '200':{description:'Invite created'}, '401':{description:'Unauthorized'}, '403':{description:'Admin only'} } } },
       '/api/todoless/entries': { get: { tags:['auth'], summary:'Unified entries feed', security:[{ bearerAuth: [] }], responses:{ '200':{description:'Entries list'}, '401':{description:'Unauthorized'} } } },
@@ -39,11 +40,85 @@ routerAdd('GET', '/api/todoless/openapi.json', (c) => {
           requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ action:{type:'string'}, data:{type:'object'} }, required:['action'] } } } },
           responses:{ '200':{description:'Action result'}, '201':{description:'Created'}, '400':{description:'Invalid request'}, '401':{description:'Unauthorized'}, '403':{description:'Forbidden'} }
         }
-      }
+      },
+      // ── Agent API Endpoints ──
+      '/api/todoless/agent/auth-test': {
+        get: {
+          tags:['agent'],
+          summary:'Test agent API key validity',
+          description:'Returns key info and scopes for a valid agent API key.',
+          security:[{ agentApiKeyAuth: [] }],
+          responses:{ '200':{description:'Key info'}, '401':{description:'Invalid or missing key'} }
+        }
+      },
+      '/api/todoless/agent/keys': {
+        get: {
+          tags:['agent','admin'],
+          summary:'List agent API keys',
+          description:'List all API keys for the authenticated admin user.',
+          security:[{ bearerAuth: [] }],
+          responses:{ '200':{description:'Key list'}, '401':{description:'Unauthorized'}, '403':{description:'Admin only'} }
+        },
+        post: {
+          tags:['agent','admin'],
+          summary:'Create new agent API key',
+          description:'Generate a new API key with specified scopes.',
+          security:[{ bearerAuth: [] }],
+          requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ name:{type:'string'}, scopes:{type:'array',items:{type:'string'}}, expires_at:{type:'string'} }, required:['name'] } } } },
+          responses:{ '201':{description:'Key created'}, '400':{description:'Validation error'}, '401':{description:'Unauthorized'}, '403':{description:'Admin only'} }
+        }
+      },
+      '/api/todoless/agent/keys/{id}/revoke': {
+        post: {
+          tags:['agent','admin'],
+          summary:'Revoke an agent API key',
+          description:'Deactivate an API key so it can no longer be used.',
+          security:[{ bearerAuth: [] }],
+          parameters:[{name:'id',in:'path',required:true,schema:{type:'string'}}],
+          responses:{ '200':{description:'Key revoked'}, '401':{description:'Unauthorized'}, '403':{description:'Admin only'} }
+        }
+      },
+      '/api/todoless/agent/dispatch': {
+        get: {
+          tags:['agent'],
+          summary:'Agent list entries',
+          description:'List tasks and groceries accessible to this agent API key.',
+          security:[{ agentApiKeyAuth: [] }],
+          parameters:[
+            {name:'type',in:'query',schema:{type:'string',enum:['task','grocery']}},
+            {name:'status',in:'query',schema:{type:'string'}},
+            {name:'limit',in:'query',schema:{type:'integer'}}
+          ],
+          responses:{ '200':{description:'Entries list'}, '401':{description:'Invalid or missing key'} }
+        },
+        post: {
+          tags:['agent'],
+          summary:'Agent action dispatcher',
+          description:'Execute actions via agent API key: create, read, update, delete, complete, assign, set_labels, set_due_date.',
+          security:[{ agentApiKeyAuth: [] }],
+          requestBody:{ required:true, content:{ 'application/json': { schema:{ type:'object', properties:{ action:{type:'string'}, type:{type:'string'}, id:{type:'string'}, title:{type:'string'}, status:{type:'string'}, assignee_id:{type:'string'}, labels:{type:'array',items:{type:'string'}}, due_date:{type:'string'}, description:{type:'string'}, shop_id:{type:'string'}, quantity:{type:'integer'}, complete:{type:'boolean'} }, required:['action'] } } } },
+          responses:{ '200':{description:'Action result'}, '201':{description:'Created'}, '400':{description:'Invalid request'}, '401':{description:'Invalid or missing key'}, '403':{description:'Insufficient scope'} }
+        }
+      },
+      '/api/todoless/agent/audit-log': {
+        get: {
+          tags:['agent','admin'],
+          summary:'Agent audit log',
+          description:'View audit log of agent actions for this admin.',
+          security:[{ bearerAuth: [] }],
+          parameters:[
+            {name:'limit',in:'query',schema:{type:'integer'}},
+            {name:'action',in:'query',schema:{type:'string'}},
+            {name:'key_id',in:'query',schema:{type:'string'}}
+          ],
+          responses:{ '200':{description:'Audit log entries'}, '401':{description:'Unauthorized'}, '403':{description:'Admin only'} }
+        }
+      },
     },
     components: {
       securitySchemes: {
-        bearerAuth: { type:'http', scheme:'bearer', bearerFormat:'JWT' }
+        bearerAuth: { type:'http', scheme:'bearer', bearerFormat:'JWT' },
+        agentApiKeyAuth: { type:'apiKey', in:'header', name:'Authorization', description:'Agent API key: "Bearer tlsk_<key>"' }
       }
     }
   };
@@ -185,6 +260,16 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       return c.json(400, { error: 'Invalid user_type. Must be family_member or family_assistant.' });
     }
 
+    // Helper: set first_name, last_name, and computed name on a record
+    function setNameFields(rec, d) {
+      var firstName = String(d.firstName || d.first_name || d.name || '').trim();
+      var lastName = String(d.lastName || d.last_name || '').trim();
+      if (!firstName && d.email) firstName = d.email.split('@')[0];
+      rec.set('first_name', firstName);
+      rec.set('last_name', lastName);
+      rec.set('name', (firstName + ' ' + lastName).trim() || firstName || d.email.split('@')[0]);
+    }
+
     var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     var setupDone = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0).length > 0;
     if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
@@ -196,7 +281,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       var rec = new Record(uc);
       rec.set('email', d.email); rec.set('password', d.password);
       rec.set('passwordConfirm', d.passwordConfirm);
-      rec.set('name', d.name || d.email.split('@')[0]);
+      setNameFields(rec, d);
       rec.set('role', 'admin'); rec.set('family_id', ''); rec.set('emailVisibility', true); rec.set('active', true);
       $app.save(rec);
       var fc = $app.findCollectionByNameOrId('families');
@@ -205,7 +290,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       fam.set('created_by', rec.id); $app.save(fam);
       rec.set('family_id', fam.id); $app.save(rec);
       return c.json(201, {
-        user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: 'admin', family_id: fam.id }
+        user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), first_name: String(rec.get('first_name')||''), last_name: String(rec.get('last_name')||''), role: 'admin', family_id: fam.id }
       });
     }
 
@@ -220,7 +305,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       var recBootstrap = new Record(ucBootstrap);
       recBootstrap.set('email', d.email); recBootstrap.set('password', d.password);
       recBootstrap.set('passwordConfirm', d.passwordConfirm);
-      recBootstrap.set('name', d.name || d.email.split('@')[0]);
+      setNameFields(recBootstrap, d);
       var roleBootstrap = userType === 'family_assistant' ? 'assistant' : 'user';
       recBootstrap.set('role', roleBootstrap);
       recBootstrap.set('family_id', fidBootstrap);
@@ -228,7 +313,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       recBootstrap.set('active', true);
       $app.save(recBootstrap);
       return c.json(201, {
-        user: { id: recBootstrap.id, email: String(recBootstrap.get('email')||''), name: String(recBootstrap.get('name')||''), role: roleBootstrap, family_id: fidBootstrap }
+        user: { id: recBootstrap.id, email: String(recBootstrap.get('email')||''), name: String(recBootstrap.get('name')||''), first_name: String(recBootstrap.get('first_name')||''), last_name: String(recBootstrap.get('last_name')||''), role: roleBootstrap, family_id: fidBootstrap }
       });
     }
 
@@ -264,7 +349,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     var rec = new Record(uc);
     rec.set('email', d.email); rec.set('password', d.password);
     rec.set('passwordConfirm', d.passwordConfirm);
-    rec.set('name', d.name || d.email.split('@')[0]);
+    setNameFields(rec, d);
 
     // Set role based on user_type
     var role = userType === 'family_assistant' ? 'assistant' : 'user';
@@ -277,7 +362,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     $app.save(inv);
 
     return c.json(201, {
-      user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: role, family_id: fid }
+      user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), first_name: String(rec.get('first_name')||''), last_name: String(rec.get('last_name')||''), role: role, family_id: fid }
     });
   } catch(e) { return c.json(400, { error: String(e) }); }
 });
