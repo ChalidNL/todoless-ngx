@@ -445,7 +445,12 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       var transferCollections = ['tasks','items','notes','labels','shops','rewards','goals','projects','reminders','calendar_events','invite_codes'];
       for (var tc = 0; tc < transferCollections.length; tc++) {
         var collName = transferCollections[tc];
-        var owned = $app.findRecordsByFilter(collName, 'user = "' + delTargetId + '"', '-created', 0, 0);
+        var owned = [];
+        try {
+          owned = $app.findRecordsByFilter(collName, 'user = "' + delTargetId + '"', '-created', 0, 0);
+        } catch (_eOwned) {
+          owned = [];
+        }
         for (var oi = 0; oi < owned.length; oi++) {
           owned[oi].set('user', auth.id);
           $app.save(owned[oi]);
@@ -453,12 +458,14 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       }
 
       // Clear assignee references in task/item records.
-      var assignedTasks = $app.findRecordsByFilter('tasks', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0);
+      var assignedTasks = [];
+      try { assignedTasks = $app.findRecordsByFilter('tasks', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0); } catch (_eTasks) { assignedTasks = []; }
       for (var ti = 0; ti < assignedTasks.length; ti++) {
         assignedTasks[ti].set('assigned_to', '');
         $app.save(assignedTasks[ti]);
       }
-      var assignedItems = $app.findRecordsByFilter('items', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0);
+      var assignedItems = [];
+      try { assignedItems = $app.findRecordsByFilter('items', 'assigned_to = "' + delTargetId + '"', '-created', 0, 0); } catch (_eItems) { assignedItems = []; }
       for (var ii = 0; ii < assignedItems.length; ii++) {
         assignedItems[ii].set('assigned_to', '');
         $app.save(assignedItems[ii]);
