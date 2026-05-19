@@ -182,5 +182,40 @@ describe('PocketBaseClient', () => {
       expect(users).toHaveLength(2);
       expect(pb.collection).toHaveBeenCalledWith('users');
     });
+
+    it('updateUser role uses secured API action set_role', async () => {
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ ok: true }) });
+
+      await api.updateUser('u2', { role: 'child' });
+
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/todoless/api',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
+        }),
+      );
+      const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+      expect(body).toEqual({ action: 'set_role', user_id: 'u2', role: 'child' });
+    });
+
+    it('updateUser active uses secured API action set_user_block', async () => {
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ ok: true }) });
+
+      await api.updateUser('u2', { active: false });
+
+      const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+      expect(body).toEqual({ action: 'set_user_block', user_id: 'u2', blocked: true });
+    });
+
+    it('deleteUser uses secured API action delete_user', async () => {
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ ok: true, deleted_user_id: 'u2' }) });
+
+      const res = await api.deleteUser('u2');
+
+      const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+      expect(body).toEqual({ action: 'delete_user', user_id: 'u2' });
+      expect(res.deleted_user_id).toBe('u2');
+    });
   });
 });
