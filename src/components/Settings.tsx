@@ -56,10 +56,10 @@ export const Settings = () => {
     updateUser(user.id, { active: !(user.active ?? true) } as Partial<User>);
   };
 
-  const handleDeleteMember = (user: User) => {
+  const handleDeleteMember = async (user: User) => {
     if (!currentUser || currentUser.role !== 'admin') return;
     if (!window.confirm(`Delete ${user.name}? This cannot be undone.`)) return;
-    deleteUser(user.id);
+    await deleteUser(user.id);
   };
 
   const handleLogout = () => {

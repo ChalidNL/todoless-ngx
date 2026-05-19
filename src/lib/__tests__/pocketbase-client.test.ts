@@ -217,5 +217,14 @@ describe('PocketBaseClient', () => {
       expect(body).toEqual({ action: 'delete_user', user_id: 'u2' });
       expect(res.deleted_user_id).toBe('u2');
     });
+
+    it('deleteUser surfaces backend error message', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn().mockResolvedValue({ error: 'cannot delete admin account' }),
+      });
+
+      await expect(api.deleteUser('u1')).rejects.toThrow('cannot delete admin account');
+    });
   });
 });

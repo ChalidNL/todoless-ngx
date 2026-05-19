@@ -119,7 +119,7 @@ interface AppContextType {
   updateCalendarEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   updateAppSettings: (settings: Partial<AppSettings>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  deleteUser: (id: string) => Promise<boolean>;
   deleteItem: (id: string) => void;
   deleteTask: (id: string) => void;
   deleteNote: (id: string) => void;
@@ -569,11 +569,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     })();
   };
 
-  const deleteUser = (id: string) => {
-    void (async () => {
+  const deleteUser = async (id: string): Promise<boolean> => {
+    try {
       await api.deleteUser(id);
       await Promise.all([refreshUsers(), refreshTasks(), refreshItems(), refreshNotes()]);
-    })();
+      showCompletionMessage('Member deleted');
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete member';
+      showCompletionMessage(message);
+      return false;
+    }
   };
 
   const deleteItem = (id: string) => {

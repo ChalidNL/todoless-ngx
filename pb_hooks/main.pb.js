@@ -442,7 +442,7 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       if (delTargetRole === 'admin') return c.json(409, { error: 'cannot delete admin account' });
 
       // Transfer ownership to acting admin to prevent FK constraint issues.
-      var transferCollections = ['tasks','items','notes','labels','shops','rewards','goals','projects','reminders','calendar_events'];
+      var transferCollections = ['tasks','items','notes','labels','shops','rewards','goals','projects','reminders','calendar_events','invite_codes'];
       for (var tc = 0; tc < transferCollections.length; tc++) {
         var collName = transferCollections[tc];
         var owned = $app.findRecordsByFilter(collName, 'user = "' + delTargetId + '"', '-created', 0, 0);
