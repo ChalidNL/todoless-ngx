@@ -149,7 +149,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       rec.set('email', d.email); rec.set('password', d.password);
       rec.set('passwordConfirm', d.passwordConfirm);
       rec.set('name', d.name || d.email.split('@')[0]);
-      rec.set('role', 'admin'); rec.set('family_id', ''); rec.set('emailVisibility', true);
+      rec.set('role', 'admin'); rec.set('family_id', ''); rec.set('emailVisibility', true); rec.set('active', true);
       $app.save(rec);
       var fc = $app.findCollectionByNameOrId('families');
       var fam = new Record(fc);
@@ -177,6 +177,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
       recBootstrap.set('role', roleBootstrap);
       recBootstrap.set('family_id', fidBootstrap);
       recBootstrap.set('emailVisibility', true);
+      recBootstrap.set('active', true);
       $app.save(recBootstrap);
       return c.json(201, {
         user: { id: recBootstrap.id, email: String(recBootstrap.get('email')||''), name: String(recBootstrap.get('name')||''), role: roleBootstrap, family_id: fidBootstrap }
@@ -220,7 +221,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     // Set role based on user_type
     var role = userType === 'family_assistant' ? 'assistant' : 'user';
     rec.set('role', role);
-    rec.set('family_id', fid); rec.set('emailVisibility', true);
+    rec.set('family_id', fid); rec.set('emailVisibility', true); rec.set('active', true);
     $app.save(rec);
 
     // Mark invite as used to prevent reuse
@@ -279,8 +280,9 @@ routerAdd('POST', '/api/todoless/api', (c) => {
       // Enforce blocked users cannot use authenticated API routes
       var authFresh = $app.findRecordById('users', auth.id);
       if (!authFresh) return c.json(401, { error: 'Unauthorized' });
-      var isActive = !!authFresh.get('active');
-      if (!isActive) return c.json(403, { error: 'Account is blocked' });
+      var rawActive = authFresh.get('active');
+      var isBlocked = (rawActive === false || rawActive === 0 || rawActive === 'false');
+      if (isBlocked) return c.json(403, { error: 'Account is blocked' });
       auth = authFresh;
     }
 
