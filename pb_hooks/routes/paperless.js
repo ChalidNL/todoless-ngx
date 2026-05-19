@@ -289,7 +289,23 @@ function fetchPaperlessDocsWithTag(config, tagName) {
 }
 
 // Check if a document has already been processed
+// Checks external_references (canonical) first, falls back to paperless_sync (legacy).
 function isDocumentProcessed(docId) {
+  // Check external_references — canonical cross-system dedup registry
+  try {
+    var extRows = $app.dao().findRecordsByFilter(
+      'external_references',
+      'source = "paperless" && external_id = "' + parseInt(docId) + '" && sync_status = "synced"',
+      '',
+      1,
+      0
+    )
+    if (extRows.length > 0) return true
+  } catch (e) {
+    // Collection may not exist yet in fresh deployments
+  }
+
+  // Fall back to paperless_sync (legacy records from earlier deployments)
   var rows = $app.dao().findRecordsByFilter(
     'paperless_sync',
     'document_id = ' + parseInt(docId),
@@ -301,7 +317,8 @@ function isDocumentProcessed(docId) {
 }
 
 // Record a processed document in the sync tracking collection
-function recordProcessed(docId, docTitle, taskId, status, errorMsg) {
+// Also creates an external_references record for canonical cross-system dedup.
+function recordProcessed(docId, docTitle, taskId, status, errorMsg, userId) {
   var collection = $app.dao().findCollectionByNameOrId('paperless_sync')
   var record = new Record(collection)
   var form = new RecordUpsertAction($app, record)
@@ -311,6 +328,26 @@ function recordProcessed(docId, docTitle, taskId, status, errorMsg) {
   if (taskId) form.set('task_id', taskId)
   if (errorMsg) form.set('error_message', errorMsg)
   form.submit()
+
+  // For successful sync, also record in external_references (canonical dedup registry)
+  if (status === 'synced' && taskId && userId) {
+    try {
+      var refCollection = $app.dao().findCollectionByNameOrId('external_references')
+      var refRec = new Record(refCollection)
+      var refForm = new RecordUpsertAction($app, refRec)
+      refForm.set('source', 'paperless')
+      refForm.set('external_id', String(parseInt(docId)))
+      refForm.set('sync_status', 'synced')
+      refForm.set('entity_type', 'task')
+      refForm.set('entity_id', taskId)
+      refForm.set('user', userId)
+      refForm.submit()
+    } catch (e) {
+      // Non-critical — sync already recorded in paperless_sync
+      console.log('Warning: Failed to create external_references:', e.message)
+    }
+  }
+
   return record.id
 }
 
@@ -350,12 +387,12 @@ function processPaperlessDocument(docId) {
   try {
     resp = paperlessFetch(config, '/documents/' + docId + '/')
   } catch (e) {
-    recordProcessed(docId, null, null, 'error', e.message)
+    recordProcessed(docId, null, null, 'error', e.message, config.userId)
     return { error: 'Failed to fetch document: ' + e.message }
   }
 
   if (resp.statusCode !== 200) {
-    recordProcessed(docId, null, null, 'error', 'HTTP ' + resp.statusCode)
+    recordProcessed(docId, null, null, 'error', 'HTTP ' + resp.statusCode, config.userId)
     return { error: 'Document not found in Paperless (HTTP ' + resp.statusCode + ')' }
   }
 
@@ -392,7 +429,7 @@ function processPaperlessDocument(docId) {
   }
 
   if (!hasTodoTag) {
-    recordProcessed(docId, docTitle, null, 'skipped', 'No todo tag')
+    recordProcessed(docId, docTitle, null, 'skipped', 'No todo tag', config.userId)
     return { skipped: true, document_id: docId, title: docTitle, reason: 'No todo tag found' }
   }
 
@@ -421,8 +458,8 @@ function processPaperlessDocument(docId) {
   configRec.set('last_sync', $now)
   $app.dao().saveRecord(configRec)
 
-  // Track as synced
-  recordProcessed(docId, docTitle, taskRecord.id, 'synced', null)
+  // Track as synced — creates both paperless_sync and external_references records
+  recordProcessed(docId, docTitle, taskRecord.id, 'synced', null, config.userId)
 
   return {
     created: true,

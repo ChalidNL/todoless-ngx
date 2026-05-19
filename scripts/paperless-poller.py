@@ -134,18 +134,47 @@ class PocketBaseClient:
             raise RuntimeError('Not authenticated')
         return {'Authorization': f'Bearer {self.token}'}
 
-    def create_task(self, title: str, source: str = '', content: str = '') -> dict:
+    def create_task(self, title: str, related_doc: dict = None) -> dict:
         """Create a task in PocketBase."""
+        payload = {
+            'title': title,
+            'status': 'todo',
+            'blocked': False,
+            'labels': ['paperless', 'scan'],
+            'is_private': False,
+            'archived': False,
+            'user': self.user_id,
+        }
+        if related_doc:
+            doc_id = related_doc.get('id', 0)
+            payload['labels'] = ['paperless', 'scan', f'paperless:{doc_id}']
+            # Also add content snippet if available
+            content = related_doc.get('content', '')
+            if content and len(content) > 200:
+                content = content[:200] + '...'
+            if content:
+                payload['description'] = content
+
         resp = requests.post(
             f'{self.base_url}/api/collections/tasks/records',
             headers=self._headers(),
+            json=payload,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_external_reference(self, doc_id: int, task_id: str, status: str = 'synced') -> dict:
+        """Create an external_references record linking a Paperless doc to a TodoLess task."""
+        resp = requests.post(
+            f'{self.base_url}/api/collections/external_references/records',
+            headers=self._headers(),
             json={
-                'title': title,
-                'status': 'todo',
-                'blocked': False,
-                'labels': ['paperless', 'scan'] + ([source] if source else []),
-                'is_private': False,
-                'archived': False,
+                'source': 'paperless',
+                'external_id': str(doc_id),
+                'sync_status': status,
+                'entity_type': 'task',
+                'entity_id': task_id,
                 'user': self.user_id,
             },
             timeout=10,
@@ -224,8 +253,17 @@ def poll_and_create(
             continue
 
         try:
-            task = pocketbase.create_task(title, source=f'paperless:{doc_id}')
-            log.info(f'Created task "{task.get("title")}" (id={task.get("id")}) for Paperless doc {doc_id}')
+            task = pocketbase.create_task(title, related_doc=doc)
+            task_id = task.get('id', '')
+            log.info(f'Created task "{task.get("title")}" (id={task_id}) for Paperless doc {doc_id}')
+
+            # Record in external_references for cross-system dedup
+            try:
+                pocketbase.create_external_reference(doc_id, task_id)
+                log.info(f'  external_references: paperless:{doc_id} -> task:{task_id}')
+            except Exception as eref_err:
+                log.warning(f'  Failed to create external_references: {eref_err}')
+
             new_processed.add(doc_id)
             created_count += 1
         except Exception as e:

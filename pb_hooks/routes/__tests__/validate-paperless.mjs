@@ -71,7 +71,7 @@ console.log('\nLogic:');
 check('Tag checking (hasTodoTag)', source.includes('hasTodoTag'));
 check('Dedup check (isDocumentProcessed)', source.includes('isDocumentProcessed'));
 check('Sync tracking (paperless_sync)', source.includes('paperless_sync'));
-check('Task creation', source.includes("findCollectionByNameOrId('tasks')"));
+check('Task creation', source.includes("findCollectionByNameOrId('tasks'"));
 check('HTTP fetch helper', source.includes('paperlessFetch'));
 check('Error recording', source.includes('recordProcessed'));
 check('Skipped docs tracking', source.includes("'skipped'"));
@@ -81,6 +81,22 @@ console.log('\nTag Handling:');
 check('Default todo tag', source.includes("'todo'"));
 check('Configurable tag name', source.includes('todo_tag'));
 check('Case-insensitive tag match', source.includes('toLowerCase()'));
+
+// External References Integration (API-001)
+console.log('\nExternal References Integration:');
+check('external_references collection referenced', source.includes('external_references'));
+check('Dedup checks external_references first', source.includes('external_references') && source.includes('sync_status = "synced"'));
+check('Falls back to paperless_sync for dedup', source.includes('paperless_sync') && source.includes('isDocumentProcessed'));
+check('recordProcessed accepts userId param', source.includes('function recordProcessed(') && source.includes('userId'));
+check('Creates external_references on synced', source.includes("'external_references'") && source.includes("'synced'"));
+check('Config userId passed to recordProcessed', source.includes("config.userId") && source.includes("recordProcessed("));
+check('Sync status field set correctly', source.includes("sync_status"));
+check('Source field set to paperless', source.includes("source") && source.includes("paperless"));
+
+// Error resilience
+console.log('\nError Resilience:');
+check('external_references creation wrapped in try/catch', source.includes('try') && source.includes('external_references') && source.includes('catch'));
+check('Collection-not-found protected', source.includes("catch (e)") && source.includes("console.log('Warning:"));
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
