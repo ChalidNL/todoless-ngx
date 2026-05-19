@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
 import { User } from '../types';
-import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { LabelBadge } from './shared/LabelBadge';
 import { TopBar } from './shared/TopBar';
@@ -11,7 +11,7 @@ import { InviteManager } from './InviteManager';
 export const Settings = () => {
   const { users, appSettings, updateAppSettings, updateUser, deleteUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, tasks, showCompletionMessage } = useApp();
   const { signOut } = useAuth();
-  const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
+  const appVersion = 'dev';
   const appCommitRaw = import.meta.env.VITE_GIT_COMMIT || 'local';
   const appCommit = appCommitRaw === 'local' ? 'local' : appCommitRaw.slice(0, 7);
   const [editingPassword, setEditingPassword] = useState(false);
@@ -65,6 +65,16 @@ export const Settings = () => {
   const handleLogout = () => {
     signOut();
     window.location.reload();
+  };
+
+  const handleCopyAppInfo = async () => {
+    const payload = `App Info\nVersion: ${appVersion}\nCommit: ${appCommit}`;
+    try {
+      await navigator.clipboard.writeText(payload);
+      showCompletionMessage('App info copied');
+    } catch {
+      showCompletionMessage('Copy failed');
+    }
   };
 
   const handleAddLabel = () => {
@@ -412,7 +422,17 @@ export const Settings = () => {
 
         {/* App Info */}
         <div className="bg-white rounded-lg border border-neutral-200 p-4 space-y-2" data-testid="app-info">
-          <h3 className="text-sm font-semibold text-neutral-900">App Info</h3>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-neutral-900">App Info</h3>
+            <button
+              onClick={handleCopyAppInfo}
+              className="inline-flex items-center gap-1.5 px-2 py-1 text-xs border border-neutral-200 rounded hover:bg-neutral-50"
+              aria-label="Copy app info"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy
+            </button>
+          </div>
           <div className="text-sm text-neutral-600">
             <p><span className="font-medium text-neutral-800">Version:</span> <code>{appVersion}</code></p>
             <p><span className="font-medium text-neutral-800">Commit:</span> <code>{appCommit}</code></p>
