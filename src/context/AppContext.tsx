@@ -572,7 +572,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteUser = async (id: string): Promise<boolean> => {
     try {
       await api.deleteUser(id);
-      await Promise.all([refreshUsers(), refreshTasks(), refreshItems(), refreshNotes()]);
+      await refreshUsers();
+      await Promise.allSettled([refreshTasks(), refreshItems(), refreshNotes()]);
       showCompletionMessage('Member deleted');
       return true;
     } catch (error) {
