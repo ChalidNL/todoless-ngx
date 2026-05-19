@@ -64,6 +64,11 @@ migrate(
           cascadeDelete: false,
           maxSelect: 1,
         },
+        {
+          name: 'created',
+          type: 'date',
+          required: false,
+        },
       ],
       indexes: [
         'CREATE INDEX `idx_audit_log_action` ON `agent_audit_log` (`action`)',
