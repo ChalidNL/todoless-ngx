@@ -51,23 +51,21 @@ describe('GroceryCard layered attributes', () => {
     expect(screen.getByLabelText('Open item attributes')).toBeTruthy();
   });
 
-  it('shows only grocery attribute icons in layer 2', () => {
+  it('shows only shop attribute + delete in attribute row', () => {
     render(<GroceryCard item={createItem()} />);
     fireEvent.click(screen.getByLabelText('Open item attributes'));
 
-    expect(screen.getByLabelText('Edit assignee')).toBeTruthy();
-    expect(screen.getByLabelText('Edit schedule')).toBeTruthy();
     expect(screen.getByLabelText('Edit shop')).toBeTruthy();
-    expect(screen.getByLabelText('Edit quantity')).toBeTruthy();
     expect(screen.getByLabelText('Delete item')).toBeTruthy();
 
+    expect(screen.queryByLabelText('Edit assignee')).toBeNull();
+    expect(screen.queryByLabelText('Edit schedule')).toBeNull();
+    expect(screen.queryByLabelText('Edit quantity')).toBeNull();
     expect(screen.queryByLabelText('Toggle flag')).toBeNull();
   });
 
-  it('opens quantity editor in layer 3 and updates quantity', () => {
+  it('updates quantity from the top row +/- controls', () => {
     render(<GroceryCard item={createItem({ quantity: 2 })} />);
-    fireEvent.click(screen.getByLabelText('Open item attributes'));
-    fireEvent.click(screen.getByLabelText('Edit quantity'));
 
     fireEvent.click(screen.getByLabelText('Increase quantity'));
     expect(mockUpdateItem).toHaveBeenCalledWith('item-1', { quantity: 3 });

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Item } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { AttributeChip } from '../shared/AttributeChip';
-import { Check, Menu, X, Trash2, ShoppingCart, Hash, User, CalendarDays } from 'lucide-react';
+import { Check, Menu, X, Trash2, ShoppingCart } from 'lucide-react';
 
 interface GroceryCardProps {
   item: Item;
 }
 
-type GroceryEditor = 'shop' | 'quantity' | 'assignee' | 'schedule' | null;
+type GroceryEditor = 'shop' | null;
 
 const DeleteConfirm = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
@@ -33,18 +33,13 @@ const DeleteConfirm = ({ onConfirm, onCancel }: { onConfirm: () => void; onCance
 );
 
 export const GroceryCard = ({ item }: GroceryCardProps) => {
-  const { updateItem, deleteItem, shops, users, isChipFilterActive } = useApp();
+  const { updateItem, deleteItem, shops, isChipFilterActive } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<GroceryEditor>(null);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const quantity = item.quantity ?? 1;
   const currentShop = item.shopId ? shops.find((s) => s.id === item.shopId) : null;
-  const assignedUser = item.assignedTo ? users.find((u) => u.id === item.assignedTo) : null;
-  const dateStr = item.dueDate
-    ? new Date(item.dueDate).toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' })
-    : null;
 
   const handleToggle = () => {
     updateItem(item.id, { completed: !item.completed });
@@ -62,18 +57,7 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
   };
 
   const hasShop = !!item.shopId;
-  const hasAssignee = !!item.assignedTo;
-  const hasSchedule = !!item.dueDate;
-  const dateValue = item.dueDate ? new Date(item.dueDate).toISOString().slice(0, 10) : '';
-  const timeValue = item.dueDate ? new Date(item.dueDate).toTimeString().slice(0, 5) : '';
-  const filteredUsers = users.filter((u) =>
-    u.name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
-    u.email?.toLowerCase().includes(assigneeSearch.toLowerCase())
-  );
-
   const isShopFiltered = (id?: string) => id ? isChipFilterActive('shop', id) : false;
-  const isAssigneeFiltered = (id?: string) => id ? isChipFilterActive('assignee', id) : false;
-  const isDateFiltered = (ds: string) => isChipFilterActive('date', ds);
 
   return (
     <>
@@ -105,9 +89,25 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
               {item.title}
             </span>
 
-            <span className="text-xs font-medium text-neutral-600 border border-neutral-200 rounded px-2 py-0.5">
-              {quantity}
-            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setQuantity(quantity - 1)}
+                className="w-6 h-6 text-xs border border-neutral-200 rounded hover:bg-neutral-50 text-neutral-700"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="text-xs font-medium text-neutral-600 border border-neutral-200 rounded px-2 py-0.5 min-w-[28px] text-center">
+                {quantity}
+              </span>
+              <button
+                onClick={() => setQuantity(quantity + 1)}
+                className="w-6 h-6 text-xs border border-neutral-200 rounded hover:bg-neutral-50 text-neutral-700"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
 
             <button
               onClick={() => {
@@ -122,36 +122,16 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
             </button>
           </div>
 
-          {/* Line 2: chips — assignee, shop, date */}
-          {(assignedUser || currentShop || dateStr) && !item.completed && (
+          {/* Line 2: chip — shop only */}
+          {currentShop && !item.completed && (
             <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
-              {assignedUser && (
-                <AttributeChip
-                  icon={<User className="w-3.5 h-3.5" />}
-                  label={assignedUser.name}
-                  color="#10b981"
-                  active={isAssigneeFiltered(assignedUser.id)}
-                  onClick={showMenu ? () => updateItem(item.id, { assignedTo: null }) : () => setActiveEditor('assignee')}
-                />
-              )}
-              {currentShop && (
-                <AttributeChip
-                  icon={<ShoppingCart className="w-3.5 h-3.5" />}
-                  label={currentShop.name}
-                  color="#10b981"
-                  active={isShopFiltered(currentShop.id)}
-                  onClick={showMenu ? () => updateItem(item.id, { shopId: null }) : () => setActiveEditor('shop')}
-                />
-              )}
-              {dateStr && (
-                <AttributeChip
-                  icon={<CalendarDays className="w-3.5 h-3.5" />}
-                  label={dateStr}
-                  color="#ea580c"
-                  active={isDateFiltered(dateStr)}
-                  onClick={showMenu ? () => updateItem(item.id, { dueDate: null }) : () => setActiveEditor('schedule')}
-                />
-              )}
+              <AttributeChip
+                icon={<ShoppingCart className="w-3.5 h-3.5" />}
+                label={currentShop.name}
+                color="#10b981"
+                active={isShopFiltered(currentShop.id)}
+                onClick={showMenu ? () => updateItem(item.id, { shopId: null }) : () => setActiveEditor('shop')}
+              />
             </div>
           )}
 
@@ -159,34 +139,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
           {showMenu && (
             <div className="mt-2 pt-2 border-t border-neutral-100">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const next = activeEditor === 'assignee' ? null : 'assignee';
-                    setActiveEditor(next);
-                    if (next) setAssigneeSearch('');
-                  }}
-                  className={`p-1.5 rounded transition-colors ${
-                    hasAssignee || activeEditor === 'assignee'
-                      ? 'bg-green-100 text-green-700'
-                      : 'hover:bg-neutral-100 text-neutral-500'
-                  }`}
-                  title="@assignee"
-                  aria-label="Edit assignee"
-                >
-                  <User className="w-4 h-4" strokeWidth={1.75} />
-                </button>
-                <button
-                  onClick={() => setActiveEditor(activeEditor === 'schedule' ? null : 'schedule')}
-                  className={`p-1.5 rounded transition-colors ${
-                    hasSchedule || activeEditor === 'schedule'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'hover:bg-neutral-100 text-neutral-500'
-                  }`}
-                  title="//schedule"
-                  aria-label="Edit schedule"
-                >
-                  <CalendarDays className="w-4 h-4" strokeWidth={1.75} />
-                </button>
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'shop' ? null : 'shop')}
                   className={`p-1.5 rounded transition-colors ${
@@ -200,14 +152,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <button
-                  onClick={() => setActiveEditor(activeEditor === 'quantity' ? null : 'quantity')}
-                  className={`p-1.5 rounded transition-colors ${activeEditor === 'quantity' ? 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-300' : 'hover:bg-neutral-100 text-neutral-500'}`}
-                  title="*quantity"
-                  aria-label="Edit quantity"
-                >
-                  <Hash className="w-4 h-4" strokeWidth={1.75} />
-                </button>
-                <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="p-1.5 rounded transition-colors text-red-600 hover:bg-red-50"
                   title="delete"
@@ -216,94 +160,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
                   <Trash2 className="w-4 h-4" strokeWidth={1.75} />
                 </button>
               </div>
-
-              {/* Assignee editor */}
-              {activeEditor === 'assignee' && (
-                <div className="mt-2 relative">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={assigneeSearch}
-                      onChange={(e) => setAssigneeSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && filteredUsers.length === 1) {
-                          updateItem(item.id, { assignedTo: filteredUsers[0].id });
-                          setActiveEditor(null);
-                        }
-                        if (e.key === 'Escape') setActiveEditor(null);
-                      }}
-                      placeholder="Search team..."
-                      className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                      aria-label="Search assignee"
-                    />
-                    {hasAssignee && (
-                      <button
-                        onClick={() => {
-                          updateItem(item.id, { assignedTo: null });
-                          setAssigneeSearch('');
-                          setActiveEditor(null);
-                        }}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded text-sm"
-                        aria-label="Clear assignee"
-                        title="Remove assignee"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  {filteredUsers.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                      {filteredUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            updateItem(item.id, { assignedTo: item.assignedTo === u.id ? null : u.id });
-                            setActiveEditor(null);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-neutral-100 flex items-center gap-2 ${
-                            item.assignedTo === u.id ? 'bg-neutral-50 font-medium' : ''
-                          }`}
-                        >
-                          <span>{u.name}</span>
-                          {u.role && <span className="text-xs text-neutral-400 ml-auto">{u.role}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Schedule editor */}
-              {activeEditor === 'schedule' && (
-                <div className="mt-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="date"
-                      value={dateValue}
-                      onChange={(e) => {
-                        if (!e.target.value) {
-                          updateItem(item.id, { dueDate: null });
-                          return;
-                        }
-                        const t = timeValue || '00:00';
-                        updateItem(item.id, { dueDate: new Date(`${e.target.value}T${t}:00`).getTime() });
-                      }}
-                      className="flex-1 text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                      aria-label="Due date"
-                    />
-                    <input
-                      type="time"
-                      value={timeValue}
-                      onChange={(e) => {
-                        if (!dateValue) return;
-                        updateItem(item.id, { dueDate: new Date(`${dateValue}T${e.target.value || '00:00'}:00`).getTime() });
-                      }}
-                      className="text-sm px-2 py-1.5 border border-neutral-200 rounded"
-                      aria-label="Due time"
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Shop editor */}
               {activeEditor === 'shop' && (
@@ -345,26 +201,6 @@ export const GroceryCard = ({ item }: GroceryCardProps) => {
                 </div>
               )}
 
-              {/* Quantity editor */}
-              {activeEditor === 'quantity' && (
-                <div className="mt-2 flex items-center gap-2">
-                  <button
-                    onClick={() => setQuantity(quantity - 1)}
-                    className="px-2 py-1 text-xs border border-neutral-200 rounded hover:bg-neutral-50"
-                    aria-label="Decrease quantity"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[24px] text-center text-sm font-semibold text-neutral-700">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-2 py-1 text-xs border border-neutral-200 rounded hover:bg-neutral-50"
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
