@@ -328,11 +328,8 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           )}
 
           {/* Line 3: attributes behind hamburger — smooth expand/collapse animation */}
-          <div 
-            className={`mt-2 pt-2 border-t border-neutral-100 overflow-hidden transition-all duration-300 ease-out ${
-              showMenu ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
+          <div style={{ display: 'grid', gridTemplateRows: showMenu ? '1fr' : '0fr' }} className="mt-2 pt-2 border-t border-neutral-100 overflow-hidden transition-all duration-300 ease-out">
+            <div>
               {/* Attribute buttons */}
               <div className="flex items-center gap-2">
                 <button
