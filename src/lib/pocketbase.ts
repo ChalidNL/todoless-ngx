@@ -54,6 +54,7 @@ export interface Task {
   due_date?: string;
   repeat_interval?: 'week' | 'month' | 'year';
   labels: string[];
+  subtask_ids?: string[];
   is_private: boolean;
   archived: boolean;
   archived_at?: string;

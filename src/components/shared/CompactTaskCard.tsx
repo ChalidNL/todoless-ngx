@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ToggleLeft, RotateCcw } from 'lucide-react';
+import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ToggleLeft, RotateCcw, ListChecks } from 'lucide-react';
 import { AttributeChip } from './AttributeChip';
 import { entityColor } from '../../lib/entity-colors';
 
@@ -57,7 +57,7 @@ const ConfirmDialog = ({ title, confirmLabel, onConfirm, onCancel }: { title: st
 );
 
 export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardProps) => {
-  const { updateTask, deleteTask, labels, users, shops, addLabel, convertTaskToItem, toggleChipFilter, isChipFilterActive } = useApp();
+  const { updateTask, deleteTask, labels, users, shops, tasks, addLabel, convertTaskToItem, toggleChipFilter, isChipFilterActive } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<TaskEditor>(null);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -66,6 +66,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const [showConvertConfirm, setShowConvertConfirm] = useState(false);
   const [isDeleteHover, setIsDeleteHover] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
+  const [subtasksExpanded, setSubtasksExpanded] = useState(false);
 
   const isDone = task.status === 'done';
   const assignedUser = task.assignedTo ? users.find((u) => u.id === task.assignedTo) : null;
@@ -78,6 +79,12 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const repeatLabel = task.repeatInterval
     ? { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }[task.repeatInterval]
     : null;
+
+  // Subtasks: tasks that have this task's id in their linkedTo/linkedType (subtask relationship)
+  const subtasks = (task.subtaskIds || [])
+    .map(id => tasks.find(t => t.id === id))
+    .filter(Boolean) as Task[];
+  const subtaskCount = subtasks.length;
 
   const handleToggle = () => {
     if (task.status === 'done') {
@@ -223,8 +230,8 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             </button>
           </div>
 
-          {/* Line 2: chips — labels, assignee, date, repeat (no X on chips) */}
-          {(hasLabels || assignedUser || (dateStr && !isDone) || (repeatLabel && !isDone)) && !isDone && (
+          {/* Line 2: chips — labels, assignee, date, repeat, subtasks (no X on chips) */}
+          {(hasLabels || assignedUser || (dateStr && !isDone) || (repeatLabel && !isDone) || subtaskCount > 0) && !isDone && (
             <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
               {task.labels.map((labelId) => {
                 const label = labels.find((l) => l.id === labelId);
@@ -266,6 +273,54 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   onClick={showMenu ? clearAllSchedule : () => openEditor('schedule')}
                 />
               )}
+              {subtaskCount > 0 && (
+                <AttributeChip
+                  icon={<ListChecks className="w-3.5 h-3.5" />}
+                  label={`${subtaskCount}`}
+                  color="#8b5cf6"
+                  onClick={() => setSubtasksExpanded(!subtasksExpanded)}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Expanded subtasks */}
+          {subtasksExpanded && subtaskCount > 0 && (
+            <div className="mt-2 pt-2 border-t border-neutral-100 space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-medium text-neutral-500">Subtasks ({subtaskCount})</span>
+                <button
+                  onClick={() => setSubtasksExpanded(false)}
+                  className="p-0.5 hover:bg-neutral-100 rounded"
+                  aria-label="Collapse subtasks"
+                >
+                  <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+                </button>
+              </div>
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2 pl-2 py-1 bg-neutral-50 rounded border border-neutral-100">
+                  <button
+                    onClick={() => {
+                      if (subtask.status === 'done') {
+                        updateTask(subtask.id, { status: 'todo', completedAt: undefined });
+                      } else {
+                        updateTask(subtask.id, { status: 'done', completedAt: Date.now() });
+                      }
+                    }}
+                    className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      subtask.status === 'done'
+                        ? 'bg-neutral-900 border-neutral-900 text-white'
+                        : 'border-neutral-300 hover:border-neutral-500'
+                    }`}
+                    aria-label={subtask.status === 'done' ? 'Mark subtask as not done' : 'Mark subtask as done'}
+                  >
+                    {subtask.status === 'done' && <Check className="w-2.5 h-2.5" />}
+                  </button>
+                  <span className={`text-xs flex-1 truncate ${subtask.status === 'done' ? 'line-through text-neutral-400' : 'text-neutral-700'}`}>
+                    {subtask.title}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

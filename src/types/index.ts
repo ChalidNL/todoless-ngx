@@ -102,6 +102,7 @@ export interface Task {
   labels: string[];
   linkedItemIds?: string[];
   linkedNoteIds?: string[];
+  subtaskIds?: string[];
   // Reminders module fields
   linkedTo?: string;              // ~linked — ID of linked entity
   linkedType?: 'task' | 'item' | 'note'; // ~linked — type of linked entity
@@ -268,6 +269,7 @@ export interface Entry {
   labels: string[];
   linkedItemIds?: string[];
   linkedNoteIds?: string[];
+  subtaskIds?: string[];
   linkedTo?: string;
   linkedType?: 'task' | 'item' | 'note';
   flag?: boolean;
