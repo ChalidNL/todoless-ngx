@@ -30,12 +30,16 @@ export const GroceriesView = () => {
     return result;
   }, [items, activeChipFilters, searchQuery]);
 
-  const activeItems = useMemo(() => {
-    return filteredItems.filter((item) => !item.completed);
+  const sortedActiveItems = useMemo(() => {
+    return [...filteredItems.filter((item) => !item.completed)].sort((a, b) =>
+      a.title.toLowerCase().localeCompare(b.title.toLowerCase())
+    );
   }, [filteredItems]);
 
-  const boughtItems = useMemo(() => {
-    return filteredItems.filter((item) => item.completed);
+  const sortedBoughtItems = useMemo(() => {
+    return [...filteredItems.filter((item) => item.completed)].sort((a, b) =>
+      a.title.toLowerCase().localeCompare(b.title.toLowerCase())
+    );
   }, [filteredItems]);
 
   const handleAddItem = (value: string) => {
@@ -64,8 +68,8 @@ export const GroceriesView = () => {
         <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 shadow-sm">
           <div className="max-w-lg mx-auto px-4 py-2 flex items-center gap-2">
             <span className="text-xs font-semibold text-neutral-600">
-              {activeItems.length > 0
-                ? `Groceries (${activeItems.length + boughtItems.length})`
+              {sortedActiveItems.length > 0
+                ? `Groceries (${sortedActiveItems.length + sortedBoughtItems.length})`
                 : 'No results'}
             </span>
             <div className="flex gap-1 flex-1 flex-wrap">
@@ -109,24 +113,24 @@ export const GroceriesView = () => {
       <div className="max-w-6xl mx-auto px-4 pt-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-sm text-neutral-600 flex items-center gap-1.5">
-            Groceries ({activeItems.length})
+            Groceries ({sortedActiveItems.length})
           </h2>
         </div>
-        {activeItems.length === 0 ? (
+        {sortedActiveItems.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingCart className="w-12 h-12 text-neutral-200 mx-auto mb-3" />
             <p className="text-neutral-400 text-sm">No grocery items</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeItems.map((item) => (
+            {sortedActiveItems.map((item) => (
               <UnifiedCard key={item.id} entity={item} type="item" />
             ))}
           </div>
         )}
 
         {/* In stock items (collapsed by default) */}
-        {boughtItems.length > 0 && (
+        {sortedBoughtItems.length > 0 && (
           <div className="mt-6 border-t border-neutral-200 pt-4">
             <div className="flex items-center justify-between">
               <button
@@ -134,9 +138,9 @@ export const GroceriesView = () => {
                 className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900"
               >
                 {showBought ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                In stock ({boughtItems.length})
+                In stock ({sortedBoughtItems.length})
               </button>
-              {boughtItems.length > 0 && (
+              {sortedBoughtItems.length > 0 && (
                 <button
                   onClick={() => {
                     uncheckAllDoneItems();
@@ -153,7 +157,7 @@ export const GroceriesView = () => {
 
             {showBought && (
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {boughtItems.map((item) => (
+                {sortedBoughtItems.map((item) => (
                   <UnifiedCard key={item.id} entity={item} type="item" />
                 ))}
               </div>
