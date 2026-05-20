@@ -86,6 +86,9 @@ routerAdd(
     if (body.has('name')) data.set('name', body.get('name'))
     if (body.has('avatar')) data.set('avatar', body.get('avatar'))
     if (body.has('family_id')) data.set('family_id', body.get('family_id'))
+    if (body.has('firstName') || body.has('first_name')) data.set('first_name', body.get('firstName') || body.get('first_name'))
+    if (body.has('lastName') || body.has('last_name')) data.set('last_name', body.get('lastName') || body.get('last_name'))
+    if (body.has('displayName')) data.set('displayName', body.get('displayName'))
 
     // Only admins can change roles
     if (body.has('role') && authRecord.get('role') === 'admin') {
@@ -104,6 +107,9 @@ routerAdd(
       'id': record.id,
       'email': record.get('email'),
       'name': record.get('name'),
+      'first_name': record.get('first_name'),
+      'last_name': record.get('last_name'),
+      'displayName': record.get('displayName'),
       'avatar': record.get('avatar'),
       'role': record.get('role'),
       'family_id': record.get('family_id'),

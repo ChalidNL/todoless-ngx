@@ -990,13 +990,19 @@ class PocketBaseClient {
   // Shared views (multi-user)
   async getSharedTasks(): Promise<Task[]> {
     if (!pb.authStore.isValid) return [];
-    const list = await pb.collection('tasks').getFullList({ filter: 'is_private = false', sort: '-created' });
+    const userId = pb.authStore.record?.id;
+    const familyId = (pb.authStore.record as any)?.family_id;
+    const filter = familyId ? `is_private = false && user.family_id = "${familyId}"` : `is_private = false && user.id = "${userId}"`;
+    const list = await pb.collection('tasks').getFullList({ filter, sort: '-created' });
     return list.map(normalizeTask);
   }
 
   async getSharedItems(): Promise<Item[]> {
     if (!pb.authStore.isValid) return [];
-    const list = await pb.collection('items').getFullList({ filter: 'is_private = false', sort: '-created' });
+    const userId = pb.authStore.record?.id;
+    const familyId = (pb.authStore.record as any)?.family_id;
+    const filter = familyId ? `is_private = false && user.family_id = "${familyId}"` : `is_private = false && user.id = "${userId}"`;
+    const list = await pb.collection('items').getFullList({ filter, sort: '-created' });
     return list.map(normalizeItem);
   }
 
