@@ -226,7 +226,10 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
               className="p-1 hover:bg-neutral-100 rounded transition-colors flex-shrink-0"
               aria-label="Open task attributes"
             >
-              {showMenu ? <X className="w-4 h-4 text-neutral-600" /> : <Menu className="w-4 h-4 text-neutral-400" />}
+              {showMenu 
+                ? <X className="w-4 h-4 text-neutral-600 transition-transform duration-200" /> 
+                : <Menu className="w-4 h-4 text-neutral-400 transition-transform duration-200" />
+              }
             </button>
           </div>
 
@@ -324,9 +327,12 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
             </div>
           )}
 
-          {/* Line 3: attributes behind hamburger */}
-          {showMenu && (
-            <div className="mt-2 pt-2 border-t border-neutral-100">
+          {/* Line 3: attributes behind hamburger — smooth expand/collapse animation */}
+          <div 
+            className={`mt-2 pt-2 border-t border-neutral-100 overflow-hidden transition-all duration-300 ease-out ${
+              showMenu ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
               {/* Attribute buttons */}
               <div className="flex items-center gap-2">
                 <button
@@ -568,7 +574,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
