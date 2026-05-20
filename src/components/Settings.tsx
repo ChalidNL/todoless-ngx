@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
 import { User, ApiToken, userDisplayName } from '../types';
-import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { LabelBadge } from './shared/LabelBadge';
 import { TopBar } from './shared/TopBar';
@@ -37,6 +37,7 @@ export const Settings = () => {
   const [newTokenName, setNewTokenName] = useState('');
   const [newTokenPermissions, setNewTokenPermissions] = useState<string[]>([]);
   const [newTokenExpiry, setNewTokenExpiry] = useState('');
+  const [showAdvancedTokenOptions, setShowAdvancedTokenOptions] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
   const [editingLabelName, setEditingLabelName] = useState('');
@@ -58,6 +59,8 @@ export const Settings = () => {
   const [approvingAgentId, setApprovingAgentId] = useState<string | null>(null);
   const [rejectingAgentId, setRejectingAgentId] = useState<string | null>(null);
   const [approvedToken, setApprovedToken] = useState<{agentId: string; token: string} | null>(null);
+  const [showIntegrations, setShowIntegrations] = useState(false);
+  const [approvedAgentsCount, setApprovedAgentsCount] = useState(0);
 
   const currentUser = users.find(u => u.id === appSettings.currentUserId);
 
@@ -246,13 +249,18 @@ export const Settings = () => {
   };
 
   const handleCreateToken = async () => {
-    if (!newTokenName || newTokenPermissions.length === 0) return;
+    if (!newTokenName) return;
     try {
-      const result = await api.createApiToken(newTokenName, newTokenPermissions, newTokenExpiry || undefined);
+      // Default permissions and 1-year expiry
+      const defaultPermissions = ['tasks:read', 'tasks:write', 'groceries:read', 'groceries:write'];
+      const permissions = newTokenPermissions.length > 0 ? newTokenPermissions : defaultPermissions;
+      const expiry = newTokenExpiry || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const result = await api.createApiToken(newTokenName, permissions, expiry);
       setCreatedToken(result.token);
       setNewTokenName('');
       setNewTokenPermissions([]);
       setNewTokenExpiry('');
+      setShowAdvancedTokenOptions(false);
       await loadApiTokens();
     } catch (err: any) {
       showCompletionMessage(err.message || 'Failed to create token');
@@ -377,6 +385,29 @@ export const Settings = () => {
 
   const handleCopyAgentToken = async (token: string) => {
     await handleCopyToken(token);
+  };
+
+  const loadAgentCounts = async () => {
+    try {
+      const response = await fetch('/api/todoless/agent/counts', {
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPendingAgents(data.pending || []);
+        setApprovedAgentsCount(data.approved || 0);
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const toggleIntegrationsSection = async () => {
+    const next = !showIntegrations;
+    setShowIntegrations(next);
+    if (next) {
+      await loadAgentCounts();
+    }
   };
 
   if (!currentUser) {
@@ -891,20 +922,87 @@ export const Settings = () => {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-4 pt-4 border-t border-neutral-200">
+)}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* App Info */}
+        {currentUser?.role === 'admin' && (
+          <div className="mb-6 border-b border-neutral-200 pb-6">
+            <button
+              onClick={toggleIntegrationsSection}
+              className="flex items-center justify-between w-full mb-3"
+            >
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Plug className="w-5 h-5" />
+                Integrations
+              </h2>
+              {showIntegrations ? (
+                <ChevronUp className="w-5 h-5 text-neutral-500" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-neutral-500" />
+              )}
+            </button>
+
+            {showIntegrations && (
+              <div className="space-y-4">
+                <div className="p-4 bg-white border border-neutral-200 rounded-lg space-y-3">
+                  <h3 className="text-sm font-semibold">API Documentation</h3>
+                  <p className="text-xs text-neutral-600">Explore the API endpoints, request/response schemas, and authentication details.</p>
                   <a
                     href="/api/todoless/swagger"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline underline-offset-2 text-sm"
+                    className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    Swagger Docs
+                    <ExternalLink className="w-4 h-4" />
+                    Open Swagger Docs
                   </a>
                 </div>
-              </>
+
+                <div className="p-4 bg-white border border-neutral-200 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Bot className="w-4 h-4 text-neutral-600" />
+                    <h3 className="text-sm font-semibold">Agent Status</h3>
+                  </div>
+                  <p className="text-xs text-neutral-600">Connect external AI agents to interact with your tasks and groceries.</p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-orange-600 font-medium">
+                      {pendingAgents.length} pending
+                    </span>
+                    <span className="text-green-600 font-medium">
+                      {approvedAgentsCount} approved
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleAgentApprovalSection}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Manage agents →
+                  </button>
+                </div>
+
+                <div className="p-4 bg-white border border-neutral-200 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Plug className="w-4 h-4 text-neutral-600" />
+                    <h3 className="text-sm font-semibold">Connect External App</h3>
+                  </div>
+                  <p className="text-xs text-neutral-600">
+                    To connect an external application, create an API token with the required permissions. 
+                    The app will use this token to authenticate API requests.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowAddTokenModal(true);
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Create API token →
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -1265,47 +1363,60 @@ export const Settings = () => {
                   placeholder="My Agent Token"
                   className="w-full px-3 py-2 border border-neutral-200 rounded"
                 />
+                <p className="text-xs text-neutral-500 mt-1">Default permissions: tasks and groceries read/write, expires in 1 year.</p>
               </div>
 
-              <div>
-                <label className="block text-sm text-neutral-600 mb-2">Permissions</label>
-                <div className="space-y-2">
-                  {[
-                    { id: 'tasks:read', label: 'Tasks: Read' },
-                    { id: 'tasks:write', label: 'Tasks: Write' },
-                    { id: 'groceries:read', label: 'Groceries: Read' },
-                    { id: 'groceries:write', label: 'Groceries: Write' },
-                    { id: 'notes:read', label: 'Notes: Read' },
-                    { id: 'notes:write', label: 'Notes: Write' },
-                    { id: '*', label: 'Full Access (all)' },
-                  ].map((perm) => (
-                    <label
-                      key={perm.id}
-                      className="flex items-center gap-3 p-2 border border-neutral-200 rounded cursor-pointer hover:bg-neutral-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={newTokenPermissions.includes(perm.id)}
-                        onChange={() => togglePermission(perm.id)}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{perm.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {/* Advanced Options Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowAdvancedTokenOptions(!showAdvancedTokenOptions)}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                {showAdvancedTokenOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Advanced options
+              </button>
 
-              <div>
-                <label className="block text-sm text-neutral-600 mb-1">
-                  Expiry <span className="text-neutral-400">(optional)</span>
-                </label>
-                <input
-                  type="date"
-                  value={newTokenExpiry}
-                  onChange={(e) => setNewTokenExpiry(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
-              </div>
+              {showAdvancedTokenOptions && (
+                <>
+                  <div>
+                    <label className="block text-sm text-neutral-600 mb-2">Permissions</label>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'tasks:read', label: 'Tasks: Read' },
+                        { id: 'tasks:write', label: 'Tasks: Write' },
+                        { id: 'groceries:read', label: 'Groceries: Read' },
+                        { id: 'groceries:write', label: 'Groceries: Write' },
+                        { id: 'notes:read', label: 'Notes: Read' },
+                        { id: 'notes:write', label: 'Notes: Write' },
+                        { id: '*', label: 'Full Access (all)' },
+                      ].map((perm) => (
+                        <label
+                          key={perm.id}
+                          className="flex items-center gap-3 p-2 border border-neutral-200 rounded cursor-pointer hover:bg-neutral-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={newTokenPermissions.includes(perm.id)}
+                            onChange={() => togglePermission(perm.id)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">{perm.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-neutral-600 mb-1">Expiry</label>
+                    <input
+                      type="date"
+                      value={newTokenExpiry}
+                      onChange={(e) => setNewTokenExpiry(e.target.value)}
+                      className="w-full px-3 py-2 border border-neutral-200 rounded"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button
@@ -1314,6 +1425,7 @@ export const Settings = () => {
                     setNewTokenName('');
                     setNewTokenPermissions([]);
                     setNewTokenExpiry('');
+                    setShowAdvancedTokenOptions(false);
                   }}
                   className="flex-1 px-4 py-2 border border-neutral-200 rounded"
                 >
@@ -1324,7 +1436,7 @@ export const Settings = () => {
                     handleCreateToken();
                     setShowAddTokenModal(false);
                   }}
-                  disabled={!newTokenName || newTokenPermissions.length === 0}
+                  disabled={!newTokenName}
                   className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded disabled:opacity-50"
                 >
                   Create
