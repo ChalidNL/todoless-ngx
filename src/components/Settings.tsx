@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
-import { User, ApiToken, userDisplayName } from '../types';
+import { User, ApiToken, userDisplayName, Agent } from '../types';
 import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { LabelBadge } from './shared/LabelBadge';
@@ -61,6 +61,12 @@ export const Settings = () => {
   const [approvedToken, setApprovedToken] = useState<{agentId: string; token: string} | null>(null);
   const [showIntegrations, setShowIntegrations] = useState(false);
   const [approvedAgentsCount, setApprovedAgentsCount] = useState(0);
+
+  // Full Agents management
+  const [showAgents, setShowAgents] = useState(false);
+  const [allAgents, setAllAgents] = useState<Agent[]>([]);
+  const [loadingAllAgents, setLoadingAllAgents] = useState(false);
+  const [revokingAgentId, setRevokingAgentId] = useState<string | null>(null);
 
   const currentUser = users.find(u => u.id === appSettings.currentUserId);
 
@@ -407,6 +413,56 @@ export const Settings = () => {
     setShowIntegrations(next);
     if (next) {
       await loadAgentCounts();
+    }
+  };
+
+  // Full Agents management functions
+  const loadAllAgents = async () => {
+    setLoadingAllAgents(true);
+    try {
+      const response = await fetch('/api/todoless/agent/list', {
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAllAgents(data.agents || []);
+      } else {
+        showCompletionMessage('Failed to load agents');
+      }
+    } catch {
+      showCompletionMessage('Failed to load agents');
+    } finally {
+      setLoadingAllAgents(false);
+    }
+  };
+
+  const toggleAgentsSection = async () => {
+    const next = !showAgents;
+    setShowAgents(next);
+    if (next && allAgents.length === 0) {
+      await loadAllAgents();
+    }
+  };
+
+  const handleRevokeAgent = async (agentId: string) => {
+    if (!window.confirm('Revoke this agent token? The agent will lose access.')) return;
+    setRevokingAgentId(agentId);
+    try {
+      const response = await fetch(`/api/todoless/agent/${agentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (response.ok) {
+        setAllAgents(prev => prev.filter(a => a.id !== agentId));
+        showCompletionMessage('Agent token revoked');
+      } else {
+        const data = await response.json();
+        showCompletionMessage(data.error || 'Failed to revoke agent');
+      }
+    } catch {
+      showCompletionMessage('Failed to revoke agent');
+    } finally {
+      setRevokingAgentId(null);
     }
   };
 
@@ -1113,6 +1169,88 @@ export const Settings = () => {
                     >
                       Dismiss
                     </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Full Agents Section - Admin only */}
+        {currentUser?.role === 'admin' && (
+          <div className="mb-6 border-b border-neutral-200 pb-6">
+            <button
+              onClick={toggleAgentsSection}
+              className="flex items-center justify-between w-full mb-3"
+            >
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                Agents
+              </h2>
+              {showAgents ? (
+                <ChevronUp className="w-5 h-5 text-neutral-500" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-neutral-500" />
+              )}
+            </button>
+
+            {showAgents && (
+              <>
+                {loadingAllAgents ? (
+                  <p className="text-sm text-neutral-600 py-4 text-center">Loading...</p>
+                ) : allAgents.length === 0 ? (
+                  <p className="text-sm text-neutral-600 py-4 text-center">No registered agents.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {allAgents.map(agent => (
+                      <div key={agent.id} className="p-4 border border-neutral-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
+                            agent.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            agent.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {agent.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm truncate">{agent.name || 'Unnamed'}</p>
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                agent.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                agent.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {agent.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-600 truncate">{agent.email}</p>
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              Created: {new Date(agent.created).toLocaleDateString()}
+                              {agent.updated && ` • Updated: ${new Date(agent.updated).toLocaleDateString()}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {agent.status === 'approved' && (
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              onClick={() => handleRevokeAgent(agent.id)}
+                              disabled={revokingAgentId === agent.id}
+                              className="flex-1 px-3 py-1.5 border border-red-200 text-red-600 rounded text-sm hover:bg-red-50 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                            >
+                              {revokingAgentId === agent.id ? (
+                                <span>Revoking...</span>
+                              ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4" />
+                                  Revoke Token
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </>

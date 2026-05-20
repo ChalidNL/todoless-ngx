@@ -292,3 +292,15 @@ export interface ApiToken {
   created: string;
   token?: string; // Only present on creation response
 }
+
+export type AgentStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Agent {
+  id: string;
+  name: string;
+  email: string;
+  status: AgentStatus;
+  token?: string; // Only present on approval response
+  created: string;
+  updated?: string;
+}
