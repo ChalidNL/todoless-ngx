@@ -7,25 +7,25 @@
 // - path params via routerAdd(':param') don't work — use body/query for IDs
 
 // ── Record Hooks: task subtask_ids ──
-onRecordCreate('tasks', (e) => {
+onModelAfterCreateRequest('tasks', (e) => {
   try {
     var data = e.requestInfo && e.requestInfo().data ? e.requestInfo().data : {};
     if (data && data.subtask_ids !== undefined) {
       e.record.set('subtask_ids', data.subtask_ids);
     }
   } catch (err) { /* subtask_ids optional */ }
-}, 'users');
+});
 
-onRecordUpdate('tasks', (e) => {
+onModelAfterUpdateRequest('tasks', (e) => {
   try {
     var data = e.requestInfo && e.requestInfo().data ? e.requestInfo().data : {};
     if (data && data.subtask_ids !== undefined) {
       e.record.set('subtask_ids', data.subtask_ids);
     }
   } catch (err) { /* subtask_ids optional */ }
-}, 'users');
+});
 
-onRecordAfterViewRequest('tasks', (e) => {
+onModelAfterViewRequest('tasks', (e) => {
   try {
     var ids = e.record.get('subtask_ids');
     if (ids === undefined || ids === null) {
@@ -33,7 +33,7 @@ onRecordAfterViewRequest('tasks', (e) => {
       e.record.set('subtask_ids', []);
     }
   } catch (err) { /* subtask_ids optional */ }
-}, 'users');
+});
 
 routerAdd('GET', '/api/todoless/hook-health', (c) => c.json(200, { ok: true }));
 
