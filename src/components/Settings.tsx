@@ -735,9 +735,9 @@ export const Settings = () => {
                         {user.role || 'user'}
                       </span>
                       {(user.active ?? true) ? (
-                        <span className="text-[11px] px-2 py-1 rounded bg-green-100 text-green-700">active</span>
+                        <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">active</span>
                       ) : (
-                        <span className="text-[11px] px-2 py-1 rounded bg-red-100 text-red-700">blocked</span>
+                        <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">blocked</span>
                       )}
                     </div>
 
