@@ -267,7 +267,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                     label={label.name}
                     color="#3b82f6"
                     active={isLabelFiltered(label.id)}
-                    onClick={showMenu ? () => removeLabel(label.id) : undefined}
+                    onClick={showMenu ? () => removeLabel(label.id) : () => toggleChipFilter('label', label.id, label.name, label.color)}
                   />
                 ) : null;
               })}
@@ -277,7 +277,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                     label={assignedUser.firstName || ''}
                   color="#10b981"
                   active={isAssigneeFiltered(assignedUser.id)}
-                  onClick={showMenu ? clearAssignee : undefined}
+                  onClick={showMenu ? clearAssignee : () => toggleChipFilter('assignee', assignedUser.id, assignedUser.firstName || '', '#10b981')}
                 />
               )}
               {dateStr && !isDone && (
@@ -286,7 +286,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   label={dateStr}
                   color="#ea580c"
                   active={isDateFiltered(dateStr)}
-                  onClick={showMenu ? clearAllSchedule : undefined}
+                  onClick={showMenu ? clearAllSchedule : () => toggleChipFilter('date', dateStr)}
                 />
               )}
               {repeatLabel && !isDone && (

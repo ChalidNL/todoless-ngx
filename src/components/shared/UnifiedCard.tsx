@@ -225,7 +225,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 label={currentShop.name}
                 color="#10b981"
                 active={isShopFiltered(currentShop.id)}
-                onClick={showMenu ? () => setValue({ shopId: null }) : undefined}
+                onClick={showMenu ? () => setValue({ shopId: null }) : () => toggleChipFilter('shop', currentShop.id, currentShop.name, currentShop.color)}
               />
             )}
           </div>
