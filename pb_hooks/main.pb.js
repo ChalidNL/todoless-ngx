@@ -159,7 +159,8 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     var fam = new Record(fc);
     fam.set('name', name || 'My Family');
     fam.set('created_by', createdBy);
-    $app.save(fam);
+    var u = $app.unsafeWithoutHooks();
+    u.save(fam);
     return fam;
   };
 
@@ -226,12 +227,13 @@ routerAdd('POST', '/api/todoless/register', (c) => {
     inviteRec.set('used', true);
     inviteRec.set('used_at', now);
     inviteRec.set('used_by', rec.id);
-    $app.save(inviteRec);
+    var uu = $app.unsafeWithoutHooks();
+    uu.save(inviteRec);
 
     return c.json(201, {
       user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: role, family_id: fid }
     });
-  } catch(e) { return c.json(400, { error: String(e) }); }
+  } catch(e) { return c.json(400, { error: String(e), stack: String(e.stack||'') }); }
 });
 
 // ── Agent Registration: POST /api/todoless/agent/register ──
