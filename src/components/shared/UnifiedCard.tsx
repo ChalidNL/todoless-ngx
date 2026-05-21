@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, Item, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight } from 'lucide-react';
+import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, ListChecks, ChevronUp } from 'lucide-react';
 import { LabelBadge } from './LabelBadge';
 import { AttributeChip } from './AttributeChip';
 import { entityColor, entityBg } from '../../lib/entity-colors';
@@ -14,11 +14,12 @@ interface UnifiedCardProps {
 type UnifiedEditor = 'labels' | 'assignee' | 'schedule' | 'shop' | null;
 
 export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
-  const { updateTask, updateItem, deleteTask, deleteItem, labels, users, shops, addLabel, addShop, toggleChipFilter, isChipFilterActive, swapEntity } = useApp();
+  const { updateTask, updateItem, deleteTask, deleteItem, labels, users, shops, tasks, addLabel, addShop, toggleChipFilter, isChipFilterActive, swapEntity } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<UnifiedEditor>(null);
   const [titleDraft, setTitleDraft] = useState('');
   const [shopInput, setShopInput] = useState('');
+  const [subtasksExpanded, setSubtasksExpanded] = useState(false);
 
   // Edit mode inactivity timeout (60s)
   const lastInteractionRef = useRef(Date.now());
@@ -84,6 +85,12 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
   const hasShop = !!currentShop;
 
   const visibleShops = shops.filter((shop) => shop.name.toLowerCase().includes(shopInput.toLowerCase()));
+
+  // Subtasks (tasks only)
+  const subtasks: Task[] = isTask && (task as Task).subtaskIds
+    ? (task as Task).subtaskIds!.map(id => tasks.find(t => t.id === id)).filter(Boolean) as Task[]
+    : [];
+  const subtaskCount = subtasks.length;
 
   return (
     <div
@@ -228,6 +235,54 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 onClick={showMenu ? () => setValue({ shopId: null }) : () => toggleChipFilter('shop', currentShop.id, currentShop.name, currentShop.color)}
               />
             )}
+            {isTask && subtaskCount > 0 && (
+              <AttributeChip
+                icon={<ListChecks className="w-3.5 h-3.5" />}
+                label={`${subtaskCount}`}
+                color="#8b5cf6"
+                onClick={() => setSubtasksExpanded(!subtasksExpanded)}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Expanded subtasks (tasks only) */}
+        {isTask && subtasksExpanded && (
+          <div className="mt-2 pt-2 border-t border-neutral-100 space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-medium text-neutral-500">Subtasks ({subtaskCount})</span>
+              <button
+                onClick={() => setSubtasksExpanded(false)}
+                className="p-0.5 hover:bg-neutral-100 rounded"
+                aria-label="Collapse subtasks"
+              >
+                <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+              </button>
+            </div>
+            {subtasks.map((subtask) => (
+              <div key={subtask.id} className="flex items-center gap-2 pl-2 py-1 bg-neutral-50 rounded border border-neutral-100">
+                <button
+                  onClick={() => {
+                    if (subtask.status === 'done') {
+                      updateTask(subtask.id, { status: 'todo', completedAt: undefined });
+                    } else {
+                      updateTask(subtask.id, { status: 'done', completedAt: Date.now() });
+                    }
+                  }}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                    subtask.status === 'done'
+                      ? 'bg-neutral-900 border-neutral-900 text-white'
+                      : 'border-neutral-300 hover:border-neutral-500'
+                  }`}
+                  aria-label={subtask.status === 'done' ? 'Mark subtask as not done' : 'Mark subtask as done'}
+                >
+                  {subtask.status === 'done' && <Check className="w-2.5 h-2.5" />}
+                </button>
+                <span className={`text-xs flex-1 truncate ${subtask.status === 'done' ? 'line-through text-neutral-400' : 'text-neutral-700'}`}>
+                  {subtask.title}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 

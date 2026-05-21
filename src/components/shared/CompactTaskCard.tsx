@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ToggleLeft, RotateCcw, ListChecks } from 'lucide-react';
+import { api } from '../../lib/pocketbase-client';
+import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ToggleLeft, RotateCcw, ListChecks, ChevronUp } from 'lucide-react';
 import { AttributeChip } from './AttributeChip';
 import { entityColor } from '../../lib/entity-colors';
 
@@ -57,7 +58,7 @@ const ConfirmDialog = ({ title, confirmLabel, onConfirm, onCancel }: { title: st
 );
 
 export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardProps) => {
-  const { updateTask, deleteTask, labels, users, shops, tasks, addLabel, convertTaskToItem, toggleChipFilter, isChipFilterActive } = useApp();
+  const { updateTask, deleteTask, labels, users, shops, tasks, addLabel, addTask, convertTaskToItem, toggleChipFilter, isChipFilterActive } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<TaskEditor>(null);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -67,6 +68,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
   const [isDeleteHover, setIsDeleteHover] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [subtasksExpanded, setSubtasksExpanded] = useState(false);
+  const [subtaskTitle, setSubtaskTitle] = useState('');
 
   // Edit mode inactivity timeout (60s)
   const lastInteractionRef = useRef(Date.now());
@@ -310,7 +312,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
           )}
 
           {/* Expanded subtasks */}
-          {subtasksExpanded && subtaskCount > 0 && (
+          {subtasksExpanded && (
             <div className="mt-2 pt-2 border-t border-neutral-100 space-y-1.5">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-medium text-neutral-500">Subtasks ({subtaskCount})</span>
@@ -346,6 +348,67 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   </span>
                 </div>
               ))}
+              {/* Add subtask input */}
+              <div className="flex items-center gap-1.5 pl-2">
+                <input
+                  type="text"
+                  value={subtaskTitle}
+                  onChange={(e) => setSubtaskTitle(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                      const title = subtaskTitle.trim();
+                      if (!title) return;
+                      const t = task;
+                      try {
+                        const created = await api.createTask({
+                          title,
+                          status: 'todo',
+                          blocked: false,
+                          labels: [],
+                          linkedTo: t.id,
+                          linkedType: 'task',
+                          flag: false,
+                        });
+                        const newId = created.id;
+                        updateTask(t.id, { subtaskIds: [...(t.subtaskIds || []), newId] });
+                      } catch (err) {
+                        console.error('Failed to create subtask:', err);
+                      }
+                      setSubtaskTitle('');
+                    }
+                  }}
+                  placeholder="Add subtask..."
+                  className="flex-1 text-xs px-2 py-1.5 border border-neutral-200 rounded bg-white"
+                  aria-label="New subtask title"
+                />
+                <button
+                  onClick={async () => {
+                    const title = subtaskTitle.trim();
+                    if (!title) return;
+                    const t = task;
+                    try {
+                      const created = await api.createTask({
+                        title,
+                        status: 'todo',
+                        blocked: false,
+                        labels: [],
+                        linkedTo: t.id,
+                        linkedType: 'task',
+                        flag: false,
+                      });
+                      const newId = created.id;
+                      updateTask(t.id, { subtaskIds: [...(t.subtaskIds || []), newId] });
+                    } catch (err) {
+                      console.error('Failed to create subtask:', err);
+                    }
+                    setSubtaskTitle('');
+                  }}
+                  className="px-2 py-1.5 text-xs font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
+                  aria-label="Add subtask"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           )}
 

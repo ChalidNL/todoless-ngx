@@ -52,6 +52,7 @@ const normalizeTask = (record: any): Task => ({
   labels: Array.isArray(record.labels) ? record.labels : [],
   linkedItemIds: Array.isArray(record.linked_item_ids) ? record.linked_item_ids : [],
   linkedNoteIds: Array.isArray(record.linked_note_ids) ? record.linked_note_ids : [],
+  subtaskIds: Array.isArray(record.subtask_ids) ? record.subtask_ids : [],
   linkedTo: record.linked_to || undefined,
   linkedType: record.linked_type || undefined,
   flag: !!record.flag,
@@ -356,6 +357,7 @@ class PocketBaseClient {
         archived_at: task.archivedAt ? new Date(task.archivedAt).toISOString() : null,
         delete_after: task.deleteAfter ? new Date(task.deleteAfter).toISOString() : null,
         completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+        subtask_ids: task.subtaskIds || [],
         linked_to: task.linkedTo,
         linked_type: task.linkedType,
         linked_item_ids: task.linkedItemIds || [],
@@ -394,6 +396,7 @@ class PocketBaseClient {
       if (has('linkedType')) payload.linked_type = updates.linkedType;
       if (has('linkedItemIds')) payload.linked_item_ids = updates.linkedItemIds;
       if (has('linkedNoteIds')) payload.linked_note_ids = updates.linkedNoteIds;
+      if (has('subtaskIds')) payload.subtask_ids = updates.subtaskIds;
       if (has('flag')) payload.flag = updates.flag;
 
       return await pb.collection('tasks').update(id, payload);
