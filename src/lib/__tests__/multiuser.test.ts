@@ -193,7 +193,7 @@ describe('Multi-user: Shared vs private items', () => {
     const tasks = await freshApi.getSharedTasks();
 
     expect(mockTasksCollection.getFullList).toHaveBeenCalledWith(
-      expect.objectContaining({ filter: 'is_private = false' }),
+      expect.objectContaining({ filter: 'is_private = false && user.family_id = "fam-1"', sort: '-created' }),
     );
     expect(tasks).toHaveLength(1);
     expect(tasks[0].isPrivate).toBe(false);
@@ -208,7 +208,7 @@ describe('Multi-user: Shared vs private items', () => {
     const items = await freshApi.getSharedItems();
 
     expect(mockItemsCollection.getFullList).toHaveBeenCalledWith(
-      expect.objectContaining({ filter: 'is_private = false' }),
+      expect.objectContaining({ filter: 'is_private = false && user.family_id = "fam-1"', sort: '-created' }),
     );
     expect(items).toHaveLength(1);
   });
