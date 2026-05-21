@@ -851,28 +851,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const entry = entries.find(e => e.id === id);
     if (!entry) return;
     if (entry.type === 'task') {
-      // Task → Grocery: preserve title, labels, assignedTo, dueDate, quantity
-      addItem({
-        title: entry.title,
+      // Task → Grocery: preserve all fields via addEntry/deleteEntry
+      addEntry({
+        ...entry,
+        type: 'item',
         completed: false,
-        quantity: 1,
-        labels: entry.labels || [],
-        assignedTo: entry.assignedTo,
-        dueDate: entry.dueDate,
-      });
-      deleteTask(id);
-    } else {
-      // Grocery → Task: preserve title, labels, assignedTo, dueDate
-      addTask({
-        title: entry.title,
-        status: 'todo',
+        status: 'todo' as const,
         blocked: false,
-        labels: entry.labels || [],
-        assignedTo: entry.assignedTo,
-        dueDate: entry.dueDate,
         flag: false,
       });
-      deleteItem(id);
+      deleteEntry(id);
+    } else {
+      // Grocery → Task: preserve all fields via addEntry/deleteEntry
+      addEntry({
+        ...entry,
+        type: 'task',
+        status: 'todo' as const,
+        blocked: false,
+        flag: false,
+      });
+      deleteEntry(id);
     }
   };
 

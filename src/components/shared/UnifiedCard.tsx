@@ -168,17 +168,17 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
         {/* Chip row — labels + assignee + shop + date (only when not done) */}
         {!isDone && (hasLabels || assignedUser || hasShop || dateStr) && (
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
-            {entity.labels.map(labelId => {
+            {isTask && entity.labels.map(labelId => {
               const label = labels.find(l => l.id === labelId);
               return label ? <LabelBadge key={label.id} label={label} size="sm" /> : null;
             })}
-            {assignedUser && (
+            {isTask && assignedUser && (
               <span className="chip" style={{ backgroundColor: entityBg(assignedUser.id), color: entityColor(assignedUser.id) }}>
                 <User className="w-3 h-3" strokeWidth={2} />
                 {assignedUser.firstName || ''}
               </span>
             )}
-            {dateStr && (
+            {isTask && dateStr && (
               <AttributeChip
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
                 label={dateStr}
@@ -202,30 +202,36 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
           <div className="mt-2 pt-2 border-t border-neutral-100">
             {/* Attribute buttons */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveEditor(activeEditor === 'labels' ? null : 'labels')}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'labels' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
-                title="#label"
-                aria-label="Edit labels"
-              >
-                <Tag className="w-4 h-4" strokeWidth={1.75} />
-              </button>
-              <button
-                onClick={() => setActiveEditor(activeEditor === 'assignee' ? null : 'assignee')}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'assignee' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
-                title="@assignee"
-                aria-label="Edit assignee"
-              >
-                <User className="w-4 h-4" strokeWidth={1.75} />
-              </button>
-              <button
-                onClick={() => setActiveEditor(activeEditor === 'schedule' ? null : 'schedule')}
-                className={`p-1.5 rounded transition-colors ${activeEditor === 'schedule' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
-                title="//schedule"
-                aria-label="Edit schedule"
-              >
-                <CalendarDays className="w-4 h-4" strokeWidth={1.75} />
-              </button>
+              {isTask && (
+                <button
+                  onClick={() => setActiveEditor(activeEditor === 'labels' ? null : 'labels')}
+                  className={`p-1.5 rounded transition-colors ${activeEditor === 'labels' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                  title="#label"
+                  aria-label="Edit labels"
+                >
+                  <Tag className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+              )}
+              {isTask && (
+                <button
+                  onClick={() => setActiveEditor(activeEditor === 'assignee' ? null : 'assignee')}
+                  className={`p-1.5 rounded transition-colors ${activeEditor === 'assignee' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                  title="@assignee"
+                  aria-label="Edit assignee"
+                >
+                  <User className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+              )}
+              {isTask && (
+                <button
+                  onClick={() => setActiveEditor(activeEditor === 'schedule' ? null : 'schedule')}
+                  className={`p-1.5 rounded transition-colors ${activeEditor === 'schedule' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                  title="//schedule"
+                  aria-label="Edit schedule"
+                >
+                  <CalendarDays className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+              )}
               {isTask && (
                 <button
                   onClick={handleToggleFlag}
