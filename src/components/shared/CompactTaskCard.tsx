@@ -577,7 +577,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                       </button>
                     )}
                   </div>
-                  {assigneeSearch !== undefined && filteredUsers.length > 0 && (
+                  {filteredUsers.length > 0 && (
                     <div className="absolute z-10 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {filteredUsers.map((u) => (
                         <button
