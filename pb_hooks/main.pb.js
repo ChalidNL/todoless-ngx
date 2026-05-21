@@ -25,7 +25,7 @@ onRecordUpdate('tasks', (e) => {
   } catch (err) { /* subtask_ids optional */ }
 }, 'users');
 
-onRecordView('tasks', (e) => {
+onRecordAfterViewRequest('tasks', (e) => {
   try {
     var ids = e.record.get('subtask_ids');
     if (ids === undefined || ids === null) {
