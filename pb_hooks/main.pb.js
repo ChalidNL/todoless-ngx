@@ -7,33 +7,27 @@
 // - path params via routerAdd(':param') don't work — use body/query for IDs
 
 // ── Record Hooks: task subtask_ids ──
-onModelAfterCreateRequest('tasks', (e) => {
+onRecordCreate('tasks', (e) => {
   try {
     var data = e.requestInfo && e.requestInfo().data ? e.requestInfo().data : {};
     if (data && data.subtask_ids !== undefined) {
       e.record.set('subtask_ids', data.subtask_ids);
     }
   } catch (err) { /* subtask_ids optional */ }
-});
+}, 'users');
 
-onModelAfterUpdateRequest('tasks', (e) => {
+onRecordUpdate('tasks', (e) => {
   try {
     var data = e.requestInfo && e.requestInfo().data ? e.requestInfo().data : {};
     if (data && data.subtask_ids !== undefined) {
       e.record.set('subtask_ids', data.subtask_ids);
     }
   } catch (err) { /* subtask_ids optional */ }
-});
+}, 'users');
 
-onModelAfterViewRequest('tasks', (e) => {
-  try {
-    var ids = e.record.get('subtask_ids');
-    if (ids === undefined || ids === null) {
-      // Ensure subtask_ids is always present in response
-      e.record.set('subtask_ids', []);
-    }
-  } catch (err) { /* subtask_ids optional */ }
-});
+// Note: onRecordView not available in this PB version — subtask_ids default
+// is handled client-side with .filter(Boolean) fallback.
+// To re-enable: upgrade to PB 0.22+ which supports onModelAfterViewRequest.
 
 routerAdd('GET', '/api/todoless/hook-health', (c) => c.json(200, { ok: true }));
 
