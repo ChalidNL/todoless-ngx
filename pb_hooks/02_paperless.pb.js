@@ -74,7 +74,8 @@ routerAdd(
     const docs = fetchPaperlessDocsWithTag(config, config.todoTag)
 
     return c.json(200, { documents: docs })
-  }
+  },
+  $apis.requireRecordAuth('users')
 )
 
 // ---------------------------------------------------------------------------
@@ -124,7 +125,8 @@ routerAdd(
         configured: true,
       })
     }
-  }
+  },
+  $apis.requireRecordAuth('users')
 )
 
 // ---------------------------------------------------------------------------
@@ -173,7 +175,8 @@ routerAdd(
     form.submit()
 
     return c.json(201, { message: 'Created', config: paperlessConfigToJSON(record) })
-  }
+  },
+  $apis.requireRecordAuth('users')
 )
 
 // ---------------------------------------------------------------------------
@@ -204,7 +207,8 @@ routerAdd(
     }
 
     return c.json(200, { synced: results.length, results: results })
-  }
+  },
+  $apis.requireRecordAuth('users')
 )
 
 // ===================================================================
