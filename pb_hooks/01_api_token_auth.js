@@ -74,7 +74,7 @@ function bearerAuthMiddleware(c) {
     );
 
     if (tokens.length === 0) {
-      return c.json(401, { 'error': 'Invalid API token' });
+      return null; // Not an API token — fall through to PB session auth
     }
 
     var tokRec = tokens[0];
