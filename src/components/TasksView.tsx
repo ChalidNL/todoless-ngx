@@ -87,18 +87,17 @@ export const TasksView = () => {
   const hasAnyFilter = activeChipFilters.length > 0;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
-      <div className="flex-shrink-0">
+    <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="sticky top-0 z-40">
         <NewGlobalHeader
           onAdd={handleAddTaskWithValue}
           onSearch={setSearchQuery}
           searchPlaceholder="Search tasks..."
         />
       </div>
-      <div className="flex-1 overflow-y-auto bg-neutral-50">
-        {/* Filter bar */}
+              {/* Filter bar */}
         {hasAnyFilter && (
-          <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 shadow-sm">
+          <div className="bg-white border-b border-neutral-200 shadow-sm">
             <div className="max-w-lg mx-auto px-4 py-2 flex items-center gap-2">
             <span className="text-xs font-semibold text-neutral-600">
               {activeTasks.length > 0
@@ -216,7 +215,6 @@ export const TasksView = () => {
         )}
       </div>
       <DueDateNotifications />
-    </div>
     </div>
   );
 };
