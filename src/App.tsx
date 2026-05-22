@@ -210,8 +210,8 @@ function AppContent() {
   ];
 
   return (
-    <div className="h-dvh bg-neutral-50 flex flex-col overflow-hidden">
-      <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-neutral-50">
+      <main>
         <Routes>
           <Route path="/" element={<InboxBacklog />} />
           <Route path="/tasks" element={<TasksView />} />
@@ -229,7 +229,7 @@ function AppContent() {
         </div>
       )}
 
-      <nav className="flex-shrink-0 bg-white border-t border-neutral-200 z-40"
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-neutral-200"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)' }}
       >
         <div className="max-w-lg mx-auto flex justify-around items-center">
