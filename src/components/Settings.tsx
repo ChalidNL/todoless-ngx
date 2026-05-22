@@ -484,7 +484,7 @@ export const Settings = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 pt-6 pb-10 space-y-6">
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-20 space-y-6">
         {/* User Profile */}
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
           <h2 className="text-lg font-semibold mb-4">Your Profile</h2>

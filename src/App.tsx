@@ -211,7 +211,7 @@ function AppContent() {
 
   return (
     <div className="h-screen bg-neutral-50 flex flex-col overflow-hidden">
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <Routes>
           <Route path="/" element={<InboxBacklog />} />
           <Route path="/tasks" element={<TasksView />} />
