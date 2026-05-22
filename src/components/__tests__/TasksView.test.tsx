@@ -15,13 +15,13 @@ const makeTask = (overrides: Partial<Task> = {}): Task => ({
 
 // -- Tests for Task Card default view logic --
 describe('TasksView — Task Cards (default type)', () => {
-  it('renders active tasks (todo, not blocked) filtered from backlog', () => {
+  it('renders all todo tasks (blocked included, sorted to top)', () => {
     const tasks: Task[] = [
       makeTask({ id: 't1', title: 'Active task 1', status: 'todo' }),
       makeTask({ id: 't2', title: 'Backlog task', status: 'backlog' }),
       makeTask({ id: 't3', title: 'Done task', status: 'done' }),
     ];
-    const active = tasks.filter(t => t.status === 'todo' && !t.blocked);
+    const active = tasks.filter(t => t.status === 'todo');
     expect(active).toHaveLength(1);
     expect(active.map(t => t.title)).toEqual(['Active task 1']);
   });
@@ -79,7 +79,7 @@ describe('TasksView — Task Cards (default type)', () => {
 
   it('handles empty task list gracefully', () => {
     const tasks: Task[] = [];
-    const active = tasks.filter(t => t.status === 'todo' && !t.blocked);
+    const active = tasks.filter(t => t.status === 'todo');
     expect(active).toHaveLength(0);
   });
 
@@ -119,8 +119,8 @@ describe('TasksView — Task Cards (default type)', () => {
     if (!savedFilter.showCompleted) {
       filtered = filtered.filter(t => t.status !== 'done');
     }
-    // Active tasks = todo, not blocked (backlog excluded from board)
-    const active = filtered.filter(t => t.status === 'todo' && !t.blocked);
+    // Active tasks = all todo (blocked included, sorted to top; backlog excluded from board)
+    const active = filtered.filter(t => t.status === 'todo');
     expect(active.map(t => t.title)).toEqual(['Active']);
   });
 });
@@ -308,7 +308,7 @@ describe('TasksView — Combined View Behavior', () => {
     const filtered = allTasks.filter(t =>
       t.title.toLowerCase().includes(query.toLowerCase())
     );
-    const active = filtered.filter(t => t.status === 'todo' && !t.blocked);
+    const active = filtered.filter(t => t.status === 'todo');
     const checkedOut = filtered.filter(t => t.status === 'done');
     expect(active).toHaveLength(1);
     expect(checkedOut).toHaveLength(1);
@@ -323,7 +323,7 @@ describe('TasksView — Combined View Behavior', () => {
     const filtered = tasks.filter(t =>
       t.title.toLowerCase().includes(query.toLowerCase())
     );
-    const activeTasks = filtered.filter(t => t.status === 'todo' && !t.blocked);
+    const activeTasks = filtered.filter(t => t.status === 'todo');
     const checkedOutTasks = filtered.filter(t => t.status === 'done');
     const showEmpty = activeTasks.length === 0 && checkedOutTasks.length === 0;
     expect(showEmpty).toBe(true);
@@ -333,7 +333,7 @@ describe('TasksView — Combined View Behavior', () => {
     const tasks: Task[] = [
       makeTask({ id: 't1', title: 'Done', status: 'done' }),
     ];
-    const active = tasks.filter(t => t.status === 'todo' && !t.blocked);
+    const active = tasks.filter(t => t.status === 'todo');
     // The active tasks section container should still render
     expect(active).toBeDefined();
     expect(active).toHaveLength(0);
