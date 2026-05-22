@@ -79,7 +79,7 @@ describe('TasksView — Task Cards (default type)', () => {
 
   it('handles empty task list gracefully', () => {
     const tasks: Task[] = [];
-    const active = tasks.filter(t => t.status !== 'done');
+    const active = tasks.filter(t => t.status === 'todo' && !t.blocked);
     expect(active).toHaveLength(0);
   });
 

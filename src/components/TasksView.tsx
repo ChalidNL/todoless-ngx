@@ -151,6 +151,23 @@ export const TasksView = () => {
       )}
 
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+        {/* Blocked Tasks — shown first for visibility */}
+        {blockedTasks.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-neutral-600 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                Blocked ({blockedTasks.length})
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {blockedTasks.map((task) => (
+                <CompactTaskCard key={task.id} task={task} showCheckbox={true} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Active Tasks */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -158,7 +175,7 @@ export const TasksView = () => {
               Tasks ({activeTasks.length})
             </h2>
           </div>
-          {activeTasks.length === 0 && checkedOutTasks.length === 0 ? (
+          {activeTasks.length === 0 && checkedOutTasks.length === 0 && blockedTasks.length === 0 ? (
             <div className="text-center py-16">
               <CheckSquare className="w-12 h-12 text-neutral-200 mx-auto mb-3" />
               <p className="text-neutral-400 text-sm">No tasks found</p>
@@ -175,23 +192,6 @@ export const TasksView = () => {
             </div>
           )}
         </div>
-
-        {/* Blocked Tasks */}
-        {blockedTasks.length > 0 && (
-          <div className="border-t border-neutral-200 pt-4">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-sm font-semibold text-neutral-600 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-red-500" />
-                Blocked ({blockedTasks.length})
-              </h2>
-            </div>
-            <div className="space-y-2">
-              {blockedTasks.map((task) => (
-                <CompactTaskCard key={task.id} task={task} showCheckbox={true} />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Checked Out Tasks */}
         {checkedOutTasks.length > 0 && (
