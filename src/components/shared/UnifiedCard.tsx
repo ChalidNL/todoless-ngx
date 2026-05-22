@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, Item, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, ListChecks, ChevronUp } from 'lucide-react';
+import { Check, Menu, X, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, ChevronUp } from 'lucide-react';
+
+// Subtask icon: square with dot inside
+const SubtaskIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" />
+    <circle cx="8" cy="8" r="2.5" fill="currentColor" />
+  </svg>
+);
 import { LabelBadge } from './LabelBadge';
 import { AttributeChip } from './AttributeChip';
 import { entityColor, entityBg } from '../../lib/entity-colors';
@@ -239,7 +247,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
             )}
             {isTask && subtaskCount > 0 && (
               <AttributeChip
-                icon={<ListChecks className="w-3.5 h-3.5" />}
+                icon={<SubtaskIcon className="w-3.5 h-3.5" />}
                 label={`${subtaskCount}`}
                 color="#8b5cf6"
                 onClick={() => setSubtasksExpanded(!subtasksExpanded)}
