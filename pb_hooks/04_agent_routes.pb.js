@@ -6,16 +6,7 @@
 // GET  /api/todoless/agent/permissions - Returns available permission scopes
 
 // ─── Available permission scopes ──────────────────────────────────────────
-var AVAILABLE_PERMISSIONS = [
-  'tasks:read',
-  'tasks:write',
-  'tasks:delete',
-  'groceries:read',
-  'groceries:write',
-  'groceries:delete',
-  'calendar:read',
-  'calendar:write',
-];
+
 
 // ─── POST /api/todoless/agent/token ───────────────────────────────────────
 // Creates a scoped API token for an agent.
@@ -29,6 +20,16 @@ var AVAILABLE_PERMISSIONS = [
 // When agent_id is provided, the token is linked to that agent user.
 // Default role for new agent tokens: 'assistant'.
 routerAdd('POST', '/api/todoless/agent/token', function(c) {
+  var AVAILABLE_PERMISSIONS = ["entries:read","entries:write","reminders:read","reminders:write","goals:read","goals:write","family:read","family:write"];
+  function validatePermission(perm) {
+    if (!perm) return false;
+    if (AVAILABLE_PERMISSIONS.indexOf(perm) !== -1) return true;
+    var p = perm.split(':');
+    if (p.length === 2) {
+      if (AVAILABLE_PERMISSIONS.indexOf(p[0] + ':*') !== -1) return true;
+    }
+    return false;
+  }
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -70,7 +71,7 @@ routerAdd('POST', '/api/todoless/agent/token', function(c) {
     if (agentId) {
       var agentUser = null;
       try {
-        agentUser = $app.dao().findRecordById('users', agentId);
+        agentUser = $app.findRecordById('users', agentId);
       } catch (_e) {}
       if (!agentUser) return c.json(404, { error: 'Agent user not found' });
 
@@ -95,7 +96,7 @@ routerAdd('POST', '/api/todoless/agent/token', function(c) {
     var rawToken = generateAgentToken(48);
     var hashed = hashAgentToken(rawToken);
 
-    var coll = $app.dao().findCollectionByNameOrId('api_tokens');
+    var coll = $app.findCollectionByNameOrId('api_tokens');
     var rec = new Record(coll);
     rec.set('name', name);
     rec.set('token_hash', hashed);
@@ -105,7 +106,7 @@ routerAdd('POST', '/api/todoless/agent/token', function(c) {
 
     if (expiresAt) rec.set('expires_at', expiresAt);
 
-    $app.dao().saveRecord(rec);
+    $app.save(rec);
 
     return c.json(201, {
       id: rec.id,
@@ -128,6 +129,7 @@ routerAdd('POST', '/api/todoless/agent/token', function(c) {
 // Returns the list of available permission scopes for agents.
 // No auth required (public information).
 routerAdd('GET', '/api/todoless/agent/permissions', function(c) {
+  var AVAILABLE_PERMISSIONS = ["entries:read","entries:write","reminders:read","reminders:write","goals:read","goals:write","family:read","family:write"];
   try {
     var categories = {
       tasks: {

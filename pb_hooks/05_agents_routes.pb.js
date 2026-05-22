@@ -17,37 +17,7 @@ function getKeyPrefix(key) {
   return key.substring(0, 12); // "tlsk_XXXXXXXX"
 }
 
-function authFromApiKey(c) {
-  var authHeader = c.request().header.get('Authorization') || '';
-  var parts = authHeader.split(' ');
-  var token = '';
-  if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
-    token = parts[1].trim();
-  }
-  if (!token) return null;
 
-  var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
-  var candidates = $app.dao().findRecordsByFilter(
-    'agent_keys',
-    'key_prefix = "' + prefix + '" && active = true',
-    '-created',
-    10,
-    0
-  );
-
-  for (var i = 0; i < candidates.length; i++) {
-    var storedHash = candidates[i].get('key_hash');
-    if ($security.compareWithHash(storedHash, token)) {
-      // Update last_used_at
-      try {
-        candidates[i].set('last_used_at', new Date().toISOString());
-        $app.dao().saveRecord(candidates[i]);
-      } catch (_eu) {}
-      return candidates[i];
-    }
-  }
-  return null;
-}
 
 function hasScope(agentKey, requiredScope) {
   var scopes = agentKey.get('scopes');
@@ -63,17 +33,16 @@ function hasScope(agentKey, requiredScope) {
 
 function auditLog(agentKey, action, entityType, entityId, details, c) {
   try {
-    var coll = $app.dao().findCollectionByNameOrId('agent_audit_log');
-    var rec = new Record(coll);
+    var rec = $app.createRecord('agent_audit_log');
     rec.set('agent_key_id', agentKey.id);
     rec.set('agent_name', agentKey.get('name') || '');
     rec.set('action', action);
     rec.set('entity_type', entityType || '');
     rec.set('entity_id', entityId || '');
     rec.set('details', details || {});
-    rec.set('ip_address', String(c.request().RemoteAddr || ''));
+    rec.set('ip_address', String('' || ''));
     rec.set('user', agentKey.get('user'));
-    $app.dao().saveRecord(rec);
+    $app.save(rec);
   } catch (_e) {
     // Silently fail — audit logging should never block the main action
   }
@@ -95,7 +64,7 @@ function getAgentUserFamily(agentKey) {
   var userId = String(agentKey.get('user') || '');
   if (!userId) return null;
   try {
-    return $app.dao().findRecordById('users', userId);
+    return $app.findRecordById('users', userId);
   } catch (_e) {
     return null;
   }
@@ -105,6 +74,38 @@ function getAgentUserFamily(agentKey) {
 
 // Create a new API key: POST /api/todoless/agent/keys
 routerAdd('POST', '/api/todoless/agent/keys', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -130,8 +131,7 @@ routerAdd('POST', '/api/todoless/agent/keys', function(c) {
     var prefix = getKeyPrefix(rawKey);
     var keyHash = $security.hashWithPassword(rawKey);
 
-    var coll = $app.dao().findCollectionByNameOrId('agent_keys');
-    var rec = new Record(coll);
+    var rec = $app.createRecord('agent_keys');
     rec.set('name', name);
     rec.set('key_hash', keyHash);
     rec.set('key_prefix', prefix);
@@ -139,7 +139,7 @@ routerAdd('POST', '/api/todoless/agent/keys', function(c) {
     rec.set('active', true);
     rec.set('user', auth.id);
     if (expiresAt) rec.set('expires_at', expiresAt);
-    $app.dao().saveRecord(rec);
+    $app.save(rec);
 
     // Audit log
     auditLog(rec, 'key_generate', 'agent_key', rec.id, { name: name, scopes: scopes }, c);
@@ -160,13 +160,45 @@ routerAdd('POST', '/api/todoless/agent/keys', function(c) {
 
 // List API keys: GET /api/todoless/agent/keys
 routerAdd('GET', '/api/todoless/agent/keys', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
     if (!auth) return c.json(401, { error: 'Unauthorized' });
     if (String(auth.get('role') || '') !== 'admin') return c.json(403, { error: 'Admin only' });
 
-    var keys = $app.dao().findRecordsByFilter(
+    var keys = $app.findRecordsByFilter(
       'agent_keys',
       'user = "' + auth.id + '"',
       '-created',
@@ -197,6 +229,38 @@ routerAdd('GET', '/api/todoless/agent/keys', function(c) {
 
 // Revoke an API key: POST /api/todoless/agent/keys/:id/revoke
 routerAdd('POST', '/api/todoless/agent/keys/:id/revoke', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -206,14 +270,14 @@ routerAdd('POST', '/api/todoless/agent/keys/:id/revoke', function(c) {
     var id = c.pathParam('id');
     if (!id) return c.json(400, { error: 'id required' });
 
-    var rec = $app.dao().findRecordById('agent_keys', id);
+    var rec = $app.findRecordById('agent_keys', id);
     if (!rec) return c.json(404, { error: 'Key not found' });
 
     // Must own the key
     if (String(rec.get('user') || '') !== auth.id) return c.json(403, { error: 'Not your key' });
 
     rec.set('active', false);
-    $app.dao().saveRecord(rec);
+    $app.save(rec);
 
     auditLog(rec, 'key_revoke', 'agent_key', rec.id, { name: rec.get('name') }, c);
 
@@ -229,6 +293,38 @@ routerAdd('POST', '/api/todoless/agent/keys/:id/revoke', function(c) {
 // Actions: create, update, delete, complete, assign, set_labels, set_due_date, read
 
 routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -271,12 +367,12 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       var collectionName = type === 'grocery' ? 'items' : 'tasks';
 
       if (id) {
-        var rec = $app.dao().findRecordById(collectionName, id);
+        var rec = $app.findRecordById(collectionName, id);
         if (!rec) return c.json(404, { error: 'Entry not found' });
 
         // Ensure family-scoped access
         var recFamily = String(rec.get('user') || '');
-        var recUser = $app.dao().findRecordById('users', recFamily);
+        var recUser = $app.findRecordById('users', recFamily);
         var recFamilyId = recUser ? String(recUser.get('family_id') || '') : '';
         if (recFamilyId !== familyId && recFamily !== actingUserId) {
           // If no family, check individual match
@@ -317,7 +413,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       if (!t || t === 'task') {
         var taskFilter = f;
         if (status) taskFilter += ' && status = "' + status + '"';
-        var tasks = $app.dao().findRecordsByFilter('tasks', taskFilter, '-created', 0, 0);
+        var tasks = $app.findRecordsByFilter('tasks', taskFilter, '-created', 0, 0);
         for (var ti = 0; ti < tasks.length; ti++) {
           var tr = tasks[ti];
           results.push({
@@ -338,7 +434,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
 
       if (!t || t === 'grocery') {
         var itemFilter = f;
-        var items = $app.dao().findRecordsByFilter('items', itemFilter, '-created', 0, 0);
+        var items = $app.findRecordsByFilter('items', itemFilter, '-created', 0, 0);
         for (var ii = 0; ii < items.length; ii++) {
           var ir = items[ii];
           results.push({
@@ -378,8 +474,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       if (!title) return c.json(400, { error: 'title required' });
 
       if (type === 'task') {
-        var coll = $app.dao().findCollectionByNameOrId('tasks');
-        var rec = new Record(coll);
+        var rec = $app.createRecord('tasks');
         rec.set('user', actingUserId);
         rec.set('title', title);
         var rawStatus = String(gv(d, 'status', 'todo'));
@@ -394,7 +489,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
         rec.set('is_private', false);
         rec.set('completed_at', st === 'done' ? new Date().toISOString() : null);
         rec.set('flag', false);
-        $app.dao().saveRecord(rec);
+        $app.save(rec);
 
         auditLog(agentKey, 'create', 'task', rec.id, { title: title }, c);
         return c.json(201, {
@@ -410,7 +505,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       // Grocery
-      var itemColl = $app.dao().findCollectionByNameOrId('items');
+      var itemColl = $app.findCollectionByNameOrId('items');
       var itemRec = new Record(itemColl);
       itemRec.set('user', actingUserId);
       itemRec.set('title', title);
@@ -420,7 +515,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       itemRec.set('shop_id', gv(d, 'shop_id', ''));
       itemRec.set('quantity', gv(d, 'quantity', 1));
       itemRec.set('is_private', false);
-      $app.dao().saveRecord(itemRec);
+      $app.save(itemRec);
 
       auditLog(agentKey, 'create', 'grocery', itemRec.id, { title: title }, c);
       return c.json(201, {
@@ -444,7 +539,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       var collName = type === 'task' ? 'tasks' : 'items';
-      var rec = $app.dao().findRecordById(collName, id);
+      var rec = $app.findRecordById(collName, id);
       if (!rec) return c.json(404, { error: 'Entry not found' });
 
       if (Object.prototype.hasOwnProperty.call(d, 'title')) rec.set('title', gv(d, 'title', ''));
@@ -466,7 +561,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
         if (Object.prototype.hasOwnProperty.call(d, 'quantity')) rec.set('quantity', gv(d, 'quantity', 1));
       }
 
-      $app.dao().saveRecord(rec);
+      $app.save(rec);
       auditLog(agentKey, 'update', type, rec.id, { title: rec.get('title') }, c);
       return c.json(200, { id: rec.id, updated: true });
     }
@@ -480,11 +575,11 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       var collName = type === 'task' ? 'tasks' : 'items';
-      var rec = $app.dao().findRecordById(collName, id);
+      var rec = $app.findRecordById(collName, id);
       if (!rec) return c.json(404, { error: 'Entry not found' });
 
       var title = String(rec.get('title') || '');
-      $app.dao().deleteRecord(rec);
+      $app.delete(rec);
       auditLog(agentKey, 'delete', type, id, { title: title }, c);
       return c.json(200, { deleted: true });
     }
@@ -499,7 +594,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       var collName = type === 'task' ? 'tasks' : 'items';
-      var rec = $app.dao().findRecordById(collName, id);
+      var rec = $app.findRecordById(collName, id);
       if (!rec) return c.json(404, { error: 'Entry not found' });
 
       if (type === 'task') {
@@ -508,7 +603,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       } else {
         rec.set('completed', complete);
       }
-      $app.dao().saveRecord(rec);
+      $app.save(rec);
       auditLog(agentKey, 'complete', type, rec.id, { completed: complete }, c);
       return c.json(200, { completed: complete });
     }
@@ -522,11 +617,11 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       var collName = type === 'task' ? 'tasks' : 'items';
-      var rec = $app.dao().findRecordById(collName, id);
+      var rec = $app.findRecordById(collName, id);
       if (!rec) return c.json(404, { error: 'Entry not found' });
 
       rec.set('assigned_to', String(gv(d, 'assignee_id', '')));
-      $app.dao().saveRecord(rec);
+      $app.save(rec);
       auditLog(agentKey, 'assign', type, rec.id, { assignee_id: gv(d, 'assignee_id', '') }, c);
       return c.json(200, { assigned: true });
     }
@@ -540,12 +635,12 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       }
 
       var collName = type === 'task' ? 'tasks' : 'items';
-      var rec = $app.dao().findRecordById(collName, id);
+      var rec = $app.findRecordById(collName, id);
       if (!rec) return c.json(404, { error: 'Entry not found' });
 
       var newLabels = gv(d, 'labels', []);
       rec.set('labels', Array.isArray(newLabels) ? newLabels : []);
-      $app.dao().saveRecord(rec);
+      $app.save(rec);
       auditLog(agentKey, 'set_labels', type, rec.id, { labels: rec.get('labels') }, c);
       return c.json(200, { labels: rec.get('labels') || [] });
     }
@@ -554,11 +649,11 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
       var id = String(gv(d, 'id', '')).trim();
       if (!id) return c.json(400, { error: 'id required' });
 
-      var rec = $app.dao().findRecordById('tasks', id);
+      var rec = $app.findRecordById('tasks', id);
       if (!rec) return c.json(404, { error: 'Task not found' });
 
       rec.set('due_date', String(gv(d, 'due_date', '') || ''));
-      $app.dao().saveRecord(rec);
+      $app.save(rec);
       auditLog(agentKey, 'set_due_date', 'task', rec.id, { due_date: rec.get('due_date') }, c);
       return c.json(200, { due_date: rec.get('due_date') || '' });
     }
@@ -571,6 +666,38 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
 
 // ─── Agent: GET list (lightweight alternative to POST read) ─────────────────
 routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -596,7 +723,7 @@ routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
     if (!t || t === 'task') {
       var taskFilter = f;
       if (status) taskFilter += ' && status = "' + status + '"';
-      var tasks = $app.dao().findRecordsByFilter('tasks', taskFilter, '-created', limit, 0);
+      var tasks = $app.findRecordsByFilter('tasks', taskFilter, '-created', limit, 0);
       for (var ti = 0; ti < tasks.length; ti++) {
         var tr = tasks[ti];
         results.push({
@@ -613,7 +740,7 @@ routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
     }
 
     if (!t || t === 'grocery') {
-      var items = $app.dao().findRecordsByFilter('items', f, '-created', limit, 0);
+      var items = $app.findRecordsByFilter('items', f, '-created', limit, 0);
       for (var ii = 0; ii < items.length; ii++) {
         var ir = items[ii];
         results.push({
@@ -638,6 +765,38 @@ routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
 
 // ─── Auth test endpoint: GET /api/todoless/agent/auth-test ──────────────────
 routerAdd('GET', '/api/todoless/agent/auth-test', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -656,6 +815,38 @@ routerAdd('GET', '/api/todoless/agent/auth-test', function(c) {
 
 // ─── Agent audit log: GET /api/todoless/agent/audit-log ────────────────────
 routerAdd('GET', '/api/todoless/agent/audit-log', function(c) {
+  function authFromApiKey(c) {
+    var authHeader = c.requestInfo().headers.Authorization || '';
+    var parts = authHeader.split(' ');
+    var token = '';
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1].trim();
+    }
+    if (!token) return null;
+  
+    var prefix = token.substring(0, 12); // "tlsk_" + first 8 hex chars
+    var candidates = $app.findRecordsByFilter(
+      'agent_keys',
+      'key_prefix = "' + prefix + '" && active = true',
+      '-created',
+      10,
+      0
+    );
+  
+    for (var i = 0; i < candidates.length; i++) {
+      var storedHash = candidates[i].get('key_hash');
+      if ($security.compareWithHash(storedHash, token)) {
+        // Update last_used_at
+        try {
+          candidates[i].set('last_used_at', new Date().toISOString());
+          $app.save(candidates[i]);
+        } catch (_eu) {}
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -672,7 +863,7 @@ routerAdd('GET', '/api/todoless/agent/audit-log', function(c) {
     if (actionFilter) filter += ' && action = "' + actionFilter + '"';
     if (keyIdFilter) filter += ' && agent_key_id = "' + keyIdFilter + '"';
 
-    var logs = $app.dao().findRecordsByFilter('agent_audit_log', filter, '-created', limit, 0);
+    var logs = $app.findRecordsByFilter('agent_audit_log', filter, '-created', limit, 0);
     var result = [];
     for (var i = 0; i < logs.length; i++) {
       var l = logs[i];
