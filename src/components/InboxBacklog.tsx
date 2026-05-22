@@ -251,7 +251,7 @@ export const InboxBacklog = () => {
                         </button>
                       )}
                       <div className="flex-1 min-w-0">
-                        <CompactTaskCard task={task} showCheckbox={!isSelecting} />
+                        <CompactTaskCard task={task} showCheckbox={false} />
                       </div>
                     </div>
                   ))}
