@@ -3,14 +3,41 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 vi.mock('../../context/AppContext', () => ({
+
+vi.mock('../context/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: () => {},
+    t: (key) => key,
+  }),
+  LanguageProvider: ({ children }) => children,
+}));
   useApp: () => ({ updateAppSettings: vi.fn() }),
 }));
 
 vi.mock('../AuthProvider', () => ({
+
+vi.mock('../context/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: () => {},
+    t: (key) => key,
+  }),
+  LanguageProvider: ({ children }) => children,
+}));
   useAuth: () => ({ user: null, loading: false }),
 }));
 
 vi.mock('../../lib/pocketbase-client', () => ({
+
+vi.mock('../context/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: () => {},
+    t: (key) => key,
+  }),
+  LanguageProvider: ({ children }) => children,
+}));
   api: {
     markOnboardingSeen: vi.fn(async () => {}),
     registerAdmin: vi.fn(async () => ({})),
@@ -18,6 +45,15 @@ vi.mock('../../lib/pocketbase-client', () => ({
 }));
 
 vi.mock('../../lib/pocketbase', () => ({
+
+vi.mock('../context/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: () => {},
+    t: (key) => key,
+  }),
+  LanguageProvider: ({ children }) => children,
+}));
   pb: {},
 }));
 
