@@ -330,8 +330,7 @@ routerAdd('GET', '/api/entries', (c) => {
     var auth = info && info.auth ? info.auth : null;
     if (!auth) return c.json(401, { error: 'Unauthorized' });
     var q = info.query || {};
-    var fid = String(auth.get('family_id') || '').trim();
-    var f = fid ? 'user.family_id = "' + fid + '"' : 'user = "' + auth.id + '"';
+    var f = ''; // All entries visible to everyone
     var tasks = $app.findRecordsByFilter('tasks', f, '-created', 0, 0).map(function(r) {
       return { id:r.id, type:'task', title: (r.get('title')||''), description: (r.get('blocked_comment')||''), status: (r.get('status')||'todo'), assignee_id: (r.get('assigned_to')||''), labels: (r.get('labels')||[]), shop_id:'', quantity:null, created_by: (r.get('user')||''), completed_by:'', created_at: r.get("created"), updated_at: r.get("updated") };
     });
@@ -405,9 +404,8 @@ routerAdd('POST', '/api/v1', (c) => {
     var gv = function(o,k,f) { if(f===undefined)f='';if(!o)return f;if(Object.prototype.hasOwnProperty.call(o,k)){var v=o[k];return(v===undefined||v===null)?f:v;}return f; };
 
     if (action === 'list') {
-      var q = info.query || {};
-      var fid = String(auth.get('family_id') || '').trim();
-      var f = fid ? 'user.family_id = "' + fid + '"' : 'user = "' + auth.id + '"';
+    var q = info.query || {};
+    var f = ''; // All entries visible to everyone
       var tasks = $app.findRecordsByFilter('tasks', f, '-created', 0, 0).map(function(r) {
         return { id:r.id, type:'task', title:(r.get('title')||''), description:(r.get('blocked_comment')||''), status:(r.get('status')||'todo'), assignee_id:(r.get('assigned_to')||''), labels:(r.get('labels')||[]), shop_id:'', quantity:null, created_by:(r.get('user')||''), completed_by:'', created_at:r.get("created"), updated_at:r.get("updated") };
       });
@@ -536,12 +534,10 @@ routerAdd('POST', '/api/v1', (c) => {
     }
 
     if (action === 'filters') {
-      var fid = String(auth.get('family_id')||'').trim();
-      var f = fid?'user.family_id = "'+fid+'"':'user = "'+auth.id+'"';
+      var f = ''; // All entries visible to everyone
       var labels = $app.findRecordsByFilter('labels',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
       var shops = $app.findRecordsByFilter('shops',f,'name',0,0).map(function(r){return{id:r.id,name:r.get('name'),color:r.get('color')};});
-      var users = [];
-      if(fid){users=$app.findRecordsByFilter('users','family_id = "'+fid+'"','name',0,0).map(function(r){return{id:r.id,name:r.get('name')||r.email};});}
+      var users = $app.findRecordsByFilter('users','','name',0,0).map(function(r){return{id:r.id,name:r.get('name')||r.email};});
       return c.json(200,{labels:labels,shops:shops,users:users});
     }
 
