@@ -44,8 +44,8 @@ echo "Token count: $(echo "$LIST_RESP" | python3 -c "import sys,json; print(len(
 echo ""
 
 # 5. Test API endpoint with Bearer token
-echo "--- Test /api/v1/api with Bearer token (list) ---"
-curl -s -X POST "$HOST/api/v1/api" \
+echo "--- Test /api/v1 with Bearer token (list) ---"
+curl -s -X POST "$HOST/api/v1" \
   -H "Authorization: Bearer $RAW_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"action":"list"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'Status: entries={len(d)}')"
@@ -60,7 +60,7 @@ echo ""
 
 # 7. Test with invalid token (should fail)
 echo "--- Test with invalid Bearer token (expect 401) ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$HOST/api/v1/api" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$HOST/api/v1" \
   -H "Authorization: Bearer invalid_token_xyz" \
   -H "Content-Type: application/json" \
   -d '{"action":"list"}')
@@ -77,7 +77,7 @@ echo ""
 
 # 9. Verify token is revoked (should fail now)
 echo "--- Verify revoked token fails (expect 401) ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$HOST/api/v1/api" \
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$HOST/api/v1" \
   -H "Authorization: Bearer $RAW_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"action":"list"}')

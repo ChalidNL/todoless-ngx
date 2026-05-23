@@ -792,7 +792,7 @@ class PocketBaseClient {
   async updateUser(id: string, updates: any) {
     // Role changes must go through secured hook action (single-admin guardrails).
     if (typeof updates.role !== 'undefined') {
-      const response = await fetch('/api/v1/api', {
+      const response = await fetch('/api/v1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -809,7 +809,7 @@ class PocketBaseClient {
 
     // Active/block changes must go through secured hook action.
     if (typeof updates.active !== 'undefined') {
-      const response = await fetch('/api/v1/api', {
+      const response = await fetch('/api/v1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -836,7 +836,7 @@ class PocketBaseClient {
   }
 
   async deleteUser(id: string) {
-    const response = await fetch('/api/v1/api', {
+    const response = await fetch('/api/v1', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

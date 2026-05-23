@@ -376,8 +376,8 @@ routerAdd('GET', '/api/v1/entries', (c) => {
   } catch(e) { return c.json(400, { error: String(e) }); }
 });
 
-// ── API v2: POST /api/v1/api (unified action dispatcher) ──
-routerAdd('POST', '/api/v1/api', (c) => {
+// ── API v2: POST /api/v1 (unified action dispatcher) ──
+routerAdd('POST', '/api/v1', (c) => {
   function bearerAuthMiddleware(c) {
     try {
       var authHeader = c.requestInfo().headers['authorization'];

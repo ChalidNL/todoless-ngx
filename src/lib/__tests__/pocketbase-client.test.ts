@@ -189,7 +189,7 @@ describe('PocketBaseClient', () => {
       await api.updateUser('u2', { role: 'child' });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/v1/api',
+        '/api/v1',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
