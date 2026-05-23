@@ -210,10 +210,14 @@ routerAdd('POST', '/api/register', (c) => {
   try {
     var info = c.requestInfo();
     var d = info.body || {};
-    var userType = String(d.user_type || 'family_member').trim();
-    if (['family_member', 'family_assistant'].indexOf(userType) === -1) {
-      return c.json(400, { error: 'Invalid user_type. Must be family_member or family_assistant.' });
+    var userTypeRaw = String(d.user_type || 'family_member').trim();
+    if (['family_member', 'family_assistant', 'human', 'agent'].indexOf(userTypeRaw) === -1) {
+      return c.json(400, { error: 'Invalid user_type.' });
     }
+    // Map legacy types to new identity model
+    var memberType = userTypeRaw;
+    if (userTypeRaw === 'family_member') memberType = 'human';
+    if (userTypeRaw === 'family_assistant') memberType = 'agent';
 
     var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     var setupDone = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0).length > 0;
@@ -231,7 +235,7 @@ routerAdd('POST', '/api/register', (c) => {
         role: 'admin',
         family_id: '',
         member_status: 'active',
-        member_type: userType
+        member_type: memberType
       });
 
       var fam = createFamily(d.family_name || 'My Family', rec.id);
@@ -266,7 +270,7 @@ routerAdd('POST', '/api/register', (c) => {
       role: role,
       family_id: fid,
       member_status: 'active',
-      member_type: userType
+      member_type: memberType
     });
 
     // Mark invite as used
