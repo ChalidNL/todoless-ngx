@@ -10,7 +10,7 @@ import { api } from '../lib/pocketbase-client';
 import { pb } from '../lib/pocketbase';
 
 export const Settings = () => {
-  const { users, appSettings, updateAppSettings, updateUser, deleteUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, tasks, showCompletionMessage } = useApp();
+  const { users, appSettings, updateAppSettings, updateUser, deleteUser, labels, addLabel, updateLabel, deleteLabel, shops, addShop, updateShop, deleteShop, tasks, filters, deleteFilter, showCompletionMessage } = useApp();
   const { signOut } = useAuth();
   const appVersion = 'dev';
   const appCommitRaw = import.meta.env.VITE_GIT_COMMIT || 'local';
@@ -26,6 +26,7 @@ export const Settings = () => {
   const [showLabels, setShowLabels] = useState(false);
   const [showShops, setShowShops] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
   const [newShopName, setNewShopName] = useState('');
@@ -879,6 +880,54 @@ export const Settings = () => {
                   </div>
                 ))}
               </div>
+            </>
+          )}
+        </div>
+
+        {/* Filter Views */}
+        <div className="mb-6 border-b border-neutral-200 pb-6">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center justify-between w-full mb-3"
+          >
+            <h2 className="text-lg font-semibold">Filter Views</h2>
+            {showFilters ? (
+              <ChevronUp className="w-5 h-5 text-neutral-500" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-neutral-500" />
+            )}
+          </button>
+
+          {showFilters && (
+            <>
+              {filters.length === 0 ? (
+                <p className="text-sm text-neutral-500">No saved filters yet. Go to Tasks and click the save icon to create one.</p>
+              ) : (
+                <div className="space-y-2">
+                  {filters.map(f => (
+                    <div key={f.id} className="flex items-center justify-between p-3 border border-neutral-200 rounded">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{f.name}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                          {f.chipFilters?.length || f.labelIds.length || 0} condition{f.chipFilters?.length !== 1 ? 's' : ''}
+                          {f.chipFilters?.map(cf => (
+                            <span key={cf.id} className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                              style={{ backgroundColor: cf.color ? `${cf.color}20` : '#f3f4f6', color: cf.color || '#6b7280' }}
+                            >{cf.label || cf.id}</span>
+                          ))}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => { deleteFilter(f.id); showCompletionMessage('Filter deleted'); }}
+                        className="p-1.5 text-neutral-400 hover:text-red-500 rounded hover:bg-red-50 transition-colors"
+                        title="Delete filter"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
