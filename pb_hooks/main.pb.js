@@ -50,43 +50,6 @@ routerAdd('GET', '/api/debug-token', (c) => {
   }
 });
 
-// ── Debug: test agent invite (no auth, fixed user ID) ──
-routerAdd('POST', '/api/debug-agent-invite', (c) => {
-  try {
-    function _gt(len) { if(typeof len==='undefined')len=48;var c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',r='';for(var i=0;i<len;i++){r+=c.charAt(Math.floor(Math.random()*c.length));}return 'tl_'+r; }
-    function _ht(tok) { try { return $security.SHA256(tok); } catch(e){ var h=0;if(tok.length===0)return'd';for(var i=0;i<tok.length;i++){h=((h<<5)-h)+tok.charCodeAt(i);h=h&h;}return 'd_'+Math.abs(h).toString(16).padStart(8,'0');} }
-    
-    var code = '';
-    var digits = '0123456789';
-    for (var i = 0; i < 6; i++) { code += digits.charAt(Math.floor(Math.random() * digits.length)); }
-    var now = new Date();
-    var expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    var coll = $app.findCollectionByNameOrId('invite_codes');
-    var rec = new Record(coll);
-    rec.set('code', code);
-    rec.set('expires_at', expiresAt.toISOString());
-    rec.set('used', false);
-    rec.set('user', 'zqjmvcm0g5wznm7');
-    rec.set('type', 'agent');
-    var rawToken = _gt(48);
-    var hashed = _ht(rawToken);
-    var tokenColl = $app.findCollectionByNameOrId('api_tokens');
-    var tokenRec = new Record(tokenColl);
-    tokenRec.set('name', 'Agent: ' + code);
-    tokenRec.set('token_hash', hashed);
-    tokenRec.set('permissions', ['*']);
-    tokenRec.set('enabled', true);
-    tokenRec.set('user', 'zqjmvcm0g5wznm7');
-    try { tokenRec.set('token_type', 'agent_api_token'); } catch(e) {}
-    $app.save(tokenRec);
-    rec.set('token_id', tokenRec.id);
-    $app.save(rec);
-    return c.json(201, { id: rec.id, code: code, token: rawToken, token_id: tokenRec.id, type: 'agent', expires_at: expiresAt.toISOString() });
-  } catch(e) {
-    return c.json(500, { error: String(e), stack: String(e.stack||'') });
-  }
-});
-
 // ── Create invite code (server-side, bypasses PB API rules) ──
 // Supports type: 'human' (default) or 'agent'
 // If type='agent': also generates an API token (enabled=false), stored hashed, returned once.
