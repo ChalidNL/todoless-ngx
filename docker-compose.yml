@@ -36,7 +36,8 @@ services:
     image: ghcr.io/chalidnl/todoless-ngx-pocketbase:latest
     container_name: todoless-ngx-pocketbase
     restart: unless-stopped
-    command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--hooksDir=/pb_hooks", "--automigrate"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["cp -r /pb_hooks_bundled/* /pb_hooks/ 2>/dev/null; exec /entrypoint.sh serve --http=0.0.0.0:8090 --dir=/pb_data --migrationsDir=/pb_migrations --hooksDir=/pb_hooks --automigrate"]
     environment:
       TZ: Europe/Amsterdam
     # No published ports — only accessible via nginx proxy on todoless-net
