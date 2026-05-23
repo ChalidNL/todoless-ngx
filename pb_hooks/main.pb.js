@@ -613,10 +613,7 @@ routerAdd('POST', '/api/v1', (c) => {
 });
 
 // ── Load additional route files ──────────────────────────────────────
-try { require('./routes/openapi.js'); } catch(e) { console.log('WARN: openapi.js:', String(e)); }
-try { require('./routes/docs.js'); } catch(e) { console.log('WARN: docs.js:', String(e)); }
-try { require('./routes/api-tokens.js'); } catch(e) { console.log('WARN: api-tokens.js:', String(e)); }
-try { require('./routes/users.js'); } catch(e) { console.log('WARN: users.js:', String(e)); }
+// Route files now auto-loaded from 10_openapi.pb.js, 11_docs.pb.js, 12_users.pb.js
 
 // ── Agent management endpoints ──────────────────────────────────────────
 // These work with api_tokens records where enabled=false = pending, enabled=true = approved.
