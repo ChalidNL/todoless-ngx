@@ -91,10 +91,10 @@ function requireAgentAuth(c) {
   };
 }
 
-// ─── GET /api/todoless/agent/tasks ────────────────────────────────────────────
+// ─── GET /api/v1/agent/tasks ────────────────────────────────────────────
 // List tasks assigned to the agent
 
-routerAdd('GET', '/api/todoless/agent/tasks', function(c) {
+routerAdd('GET', '/api/v1/agent/tasks', function(c) {
   try {
     var auth = requireAgentAuth(c);
     if (auth.error) return c.json(auth.status, { error: auth.error });
@@ -144,10 +144,10 @@ routerAdd('GET', '/api/todoless/agent/tasks', function(c) {
   }
 });
 
-// ─── PATCH /api/todoless/agent/tasks/:id ──────────────────────────────────────
+// ─── PATCH /api/v1/agent/tasks/:id ──────────────────────────────────────
 // Update task status (for agents) - complete, pause, etc.
 
-routerAdd('PATCH', '/api/todoless/agent/tasks/:id', function(c) {
+routerAdd('PATCH', '/api/v1/agent/tasks/:id', function(c) {
   try {
     var auth = requireAgentAuth(c);
     if (auth.error) return c.json(auth.status, { error: auth.error });
@@ -206,10 +206,10 @@ routerAdd('PATCH', '/api/todoless/agent/tasks/:id', function(c) {
   }
 });
 
-// ─── POST /api/todoless/agent/reminders ───────────────────────────────────────
+// ─── POST /api/v1/agent/reminders ───────────────────────────────────────
 // Create a reminder with title, due date, linked task
 
-routerAdd('POST', '/api/todoless/agent/reminders', function(c) {
+routerAdd('POST', '/api/v1/agent/reminders', function(c) {
   try {
     var auth = requireAgentAuth(c);
     if (auth.error) return c.json(auth.status, { error: auth.error });
@@ -266,10 +266,10 @@ routerAdd('POST', '/api/todoless/agent/reminders', function(c) {
   }
 });
 
-// ─── GET /api/todoless/agent/reminders ────────────────────────────────────────
+// ─── GET /api/v1/agent/reminders ────────────────────────────────────────
 // List reminders for agent (active, not dismissed)
 
-routerAdd('GET', '/api/todoless/agent/reminders', function(c) {
+routerAdd('GET', '/api/v1/agent/reminders', function(c) {
   try {
     var auth = requireAgentAuth(c);
     if (auth.error) return c.json(auth.status, { error: auth.error });

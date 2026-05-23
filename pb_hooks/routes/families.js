@@ -1,10 +1,10 @@
 // pb_hooks/routes/families.js
 // REST API endpoints for families collection
 
-// GET /api/todoless/families - list families (user's own)
+// GET /api/v1/families - list families (user's own)
 routerAdd(
   'GET',
-  '/api/todoless/families',
+  '/api/v1/families',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -41,10 +41,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// GET /api/todoless/families/:id - get a specific family
+// GET /api/v1/families/:id - get a specific family
 routerAdd(
   'GET',
-  '/api/todoless/families/:id',
+  '/api/v1/families/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -66,10 +66,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/families - create a family
+// POST /api/v1/families - create a family
 routerAdd(
   'POST',
-  '/api/todoless/families',
+  '/api/v1/families',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -96,10 +96,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/families/join/:id - join a family (sets user's family_id)
+// POST /api/v1/families/join/:id - join a family (sets user's family_id)
 routerAdd(
   'POST',
-  '/api/todoless/families/join/:id',
+  '/api/v1/families/join/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -124,10 +124,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/families/leave - leave current family
+// POST /api/v1/families/leave - leave current family
 routerAdd(
   'POST',
-  '/api/todoless/families/leave',
+  '/api/v1/families/leave',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

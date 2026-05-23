@@ -3,10 +3,10 @@
 // Integration: create external linked task, list external links, update sync state
 // API-003: Public/Internal API Endpoints
 
-// GET /api/todoless/external-references - list external links
+// GET /api/v1/external-references - list external links
 routerAdd(
   'GET',
-  '/api/todoless/external-references',
+  '/api/v1/external-references',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -63,10 +63,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// GET /api/todoless/external-references/:id - get a specific external link
+// GET /api/v1/external-references/:id - get a specific external link
 routerAdd(
   'GET',
-  '/api/todoless/external-references/:id',
+  '/api/v1/external-references/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -109,10 +109,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/external-references - create external linked task
+// POST /api/v1/external-references - create external linked task
 routerAdd(
   'POST',
-  '/api/todoless/external-references',
+  '/api/v1/external-references',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -177,10 +177,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// PATCH /api/todoless/external-references/:id - update sync state
+// PATCH /api/v1/external-references/:id - update sync state
 routerAdd(
   'PATCH',
-  '/api/todoless/external-references/:id',
+  '/api/v1/external-references/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -232,10 +232,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// DELETE /api/todoless/external-references/:id - delete an external link
+// DELETE /api/v1/external-references/:id - delete an external link
 routerAdd(
   'DELETE',
-  '/api/todoless/external-references/:id',
+  '/api/v1/external-references/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

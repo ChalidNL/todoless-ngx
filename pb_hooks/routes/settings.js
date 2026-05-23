@@ -5,7 +5,7 @@
 // This replaces the insecure public listRule on app_settings that exposed all user settings
 routerAdd(
   'GET',
-  '/api/todoless/setup-status',
+  '/api/v1/setup-status',
   (c) => {
     try {
       const userRows = $app.dao().findRecordsByFilter('users', '', '-created', 1, 0)
@@ -22,7 +22,7 @@ routerAdd(
 
 routerAdd(
   'GET',
-  '/api/todoless/settings',
+  '/api/v1/settings',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -53,7 +53,7 @@ routerAdd(
 
 routerAdd(
   'PATCH',
-  '/api/todoless/settings',
+  '/api/v1/settings',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

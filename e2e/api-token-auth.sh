@@ -56,7 +56,7 @@ login_admin() {
 create_api_token() {
   echo "  › Creating API token ..."
   local resp
-  resp=$(curl -s -X POST "$BASE_URL/api/todoless/api-tokens" \
+  resp=$(curl -s -X POST "$BASE_URL/api/v1/api-tokens" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"name":"E2E Test Token","permissions":["tasks:read","tasks:write","groceries:*"],"expires_at":""}')
@@ -77,9 +77,9 @@ create_api_token() {
 
 # ── 3. Call hook-health with Bearer token ──
 call_with_bearer() {
-  echo "  › GET /api/todoless/hook-health (with Bearer token) ..."
+  echo "  › GET /api/v1/hook-health (with Bearer token) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/todoless/hook-health" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/v1/hook-health" \
     -H "Authorization: Bearer $API_TOKEN_RAW")
   if [ "$resp" != "200" ]; then
     echo "  ✗ Expected 200, got $resp"
@@ -91,9 +91,9 @@ call_with_bearer() {
 
 # ── 4. Call entry listing (should work with tasks:read scope) ──
 call_entries_with_bearer() {
-  echo "  › GET /api/todoless/entries (with Bearer token) ..."
+  echo "  › GET /api/v1/entries (with Bearer token) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/todoless/entries" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/v1/entries" \
     -H "Authorization: Bearer $API_TOKEN_RAW")
   # entries endpoint may return 200 or 404 based on whether data exists
   if [ "$resp" != "200" ] && [ "$resp" != "404" ]; then
@@ -106,9 +106,9 @@ call_entries_with_bearer() {
 
 # ── 5. List tokens via admin session ──
 list_tokens() {
-  echo "  › GET /api/todoless/api-tokens (list tokens) ..."
+  echo "  › GET /api/v1/api-tokens (list tokens) ..."
   local resp
-  resp=$(curl -s -X GET "$BASE_URL/api/todoless/api-tokens" \
+  resp=$(curl -s -X GET "$BASE_URL/api/v1/api-tokens" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
   local count
   count=$(echo "$resp" | python3 -c "import sys,json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
@@ -122,9 +122,9 @@ list_tokens() {
 
 # ── 6. Toggle token disabled ──
 toggle_token_off() {
-  echo "  › PATCH /api/todoless/api-tokens/$API_TOKEN_ID/toggle (disable) ..."
+  echo "  › PATCH /api/v1/api-tokens/$API_TOKEN_ID/toggle (disable) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "$BASE_URL/api/todoless/api-tokens/$API_TOKEN_ID/toggle" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "$BASE_URL/api/v1/api-tokens/$API_TOKEN_ID/toggle" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"enabled":false}')
@@ -138,9 +138,9 @@ toggle_token_off() {
 
 # ── 7. Verify disabled token returns 401 ──
 verify_disabled_token_401() {
-  echo "  › GET /api/todoless/hook-health (with DISABLED token) ..."
+  echo "  › GET /api/v1/hook-health (with DISABLED token) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/todoless/hook-health" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/v1/hook-health" \
     -H "Authorization: Bearer $API_TOKEN_RAW")
   if [ "$resp" != "401" ]; then
     echo "  ✗ Expected 401 for disabled token, got $resp"
@@ -152,9 +152,9 @@ verify_disabled_token_401() {
 
 # ── 8. Re-enable token ──
 toggle_token_on() {
-  echo "  › PATCH /api/todoless/api-tokens/$API_TOKEN_ID/toggle (re-enable) ..."
+  echo "  › PATCH /api/v1/api-tokens/$API_TOKEN_ID/toggle (re-enable) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "$BASE_URL/api/todoless/api-tokens/$API_TOKEN_ID/toggle" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "$BASE_URL/api/v1/api-tokens/$API_TOKEN_ID/toggle" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"enabled":true}')
@@ -168,9 +168,9 @@ toggle_token_on() {
 
 # ── 9. Delete token ──
 delete_token() {
-  echo "  › DELETE /api/todoless/api-tokens/$API_TOKEN_ID ..."
+  echo "  › DELETE /api/v1/api-tokens/$API_TOKEN_ID ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/todoless/api-tokens/$API_TOKEN_ID" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/v1/api-tokens/$API_TOKEN_ID" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
   if [ "$resp" != "200" ]; then
     echo "  ✗ Expected 200, got $resp"
@@ -182,9 +182,9 @@ delete_token() {
 
 # ── 10. Verify deleted token returns 401 ──
 verify_deleted_token_401() {
-  echo "  › GET /api/todoless/hook-health (with DELETED token) ..."
+  echo "  › GET /api/v1/hook-health (with DELETED token) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/todoless/hook-health" \
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/v1/hook-health" \
     -H "Authorization: Bearer $API_TOKEN_RAW")
   if [ "$resp" != "401" ]; then
     echo "  ✗ Expected 401 for deleted token, got $resp"
@@ -196,9 +196,9 @@ verify_deleted_token_401() {
 
 # ── 11. Verify no Bearer still works (backward compatible) ──
 verify_backward_compatible() {
-  echo "  › GET /api/todoless/hook-health (NO auth) ..."
+  echo "  › GET /api/v1/hook-health (NO auth) ..."
   local resp
-  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/todoless/hook-health")
+  resp=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/api/v1/hook-health")
   if [ "$resp" != "200" ]; then
     echo "  ✗ Expected 200 (public endpoint), got $resp"
     return 1

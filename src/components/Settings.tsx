@@ -261,7 +261,7 @@ export const Settings = () => {
   const loadPendingAgents = async () => {
     setLoadingAgents(true);
     try {
-      const response = await fetch('/api/todoless/agent/pending', {
+      const response = await fetch('/api/v1/agent/pending', {
         headers: { Authorization: `Bearer ${pb.authStore.token}` },
       });
       if (response.ok) {
@@ -286,7 +286,7 @@ export const Settings = () => {
   const handleApproveAgent = async (agentId: string) => {
     setApprovingAgentId(agentId);
     try {
-      const response = await fetch(`/api/todoless/agent/approve`, {
+      const response = await fetch(`/api/v1/agent/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({ id: agentId }),
@@ -309,7 +309,7 @@ export const Settings = () => {
     if (!window.confirm('Reject this agent? This cannot be undone.')) return;
     setRejectingAgentId(agentId);
     try {
-      const response = await fetch(`/api/todoless/agent/reject`, {
+      const response = await fetch(`/api/v1/agent/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({ id: agentId }),
@@ -330,7 +330,7 @@ export const Settings = () => {
 
   const loadAgentCounts = async () => {
     try {
-      const response = await fetch('/api/todoless/agent/counts', {
+      const response = await fetch('/api/v1/agent/counts', {
         headers: { Authorization: `Bearer ${pb.authStore.token}` },
       });
       if (response.ok) {
@@ -355,7 +355,7 @@ export const Settings = () => {
   const loadAllAgents = async () => {
     setLoadingAllAgents(true);
     try {
-      const response = await fetch('/api/todoless/agent/list', {
+      const response = await fetch('/api/v1/agent/list', {
         headers: { Authorization: `Bearer ${pb.authStore.token}` },
       });
       if (response.ok) {
@@ -383,7 +383,7 @@ export const Settings = () => {
     if (!window.confirm('Revoke this agent token? The agent will lose access.')) return;
     setRevokingAgentId(agentId);
     try {
-      const response = await fetch(`/api/todoless/agent/${agentId}`, {
+      const response = await fetch(`/api/v1/agent/${agentId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${pb.authStore.token}` },
       });
@@ -893,7 +893,7 @@ export const Settings = () => {
                 <div>
                   <h3 className="text-sm font-semibold mb-2">API Documentation</h3>
                   <a
-                    href="/api/todoless/swagger"
+                    href="/api/v1/swagger"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm"

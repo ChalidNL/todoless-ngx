@@ -73,7 +73,7 @@ describe('PocketBaseClient', () => {
       const result = await api.register('admin@test.com', 'pass', 'Admin');
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/todoless/register',
+        '/api/v1/register',
         expect.objectContaining({ method: 'POST' }),
       );
       expect(result).toHaveProperty('token');
@@ -189,7 +189,7 @@ describe('PocketBaseClient', () => {
       await api.updateUser('u2', { role: 'child' });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/todoless/api',
+        '/api/v1/api',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),

@@ -1,7 +1,7 @@
 /// <reference path="../../pb_data/types.d.ts" />
 
 // Swagger UI HTML page for interactive API exploration
-// Served at: GET /api/todoless/docs
+// Served at: GET /api/v1/docs
 
 function swaggerHtmlHandler(c) {
   var html = '<!DOCTYPE html>\n'
@@ -29,7 +29,7 @@ function swaggerHtmlHandler(c) {
   html += '<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>\n'
   html += '<script>\n'
   html += '  SwaggerUIBundle({\n'
-  html += '    url: "/api/todoless/openapi.json",\n'
+  html += '    url: "/api/v1/openapi.json",\n'
   html += '    dom_id: "#swagger-ui",\n'
   html += '    deepLinking: true,\n'
   html += '    presets: [\n'
@@ -61,5 +61,5 @@ function swaggerHtmlHandler(c) {
 }
 
 // Register both /docs and /swagger endpoints
-routerAdd('GET', '/api/todoless/docs', swaggerHtmlHandler);
-routerAdd('GET', '/api/todoless/swagger', swaggerHtmlHandler);
+routerAdd('GET', '/api/v1/docs', swaggerHtmlHandler);
+routerAdd('GET', '/api/v1/swagger', swaggerHtmlHandler);

@@ -3,10 +3,10 @@
 
 // ─── AI Config Endpoints ───────────────────────────────────────────────────
 
-// Get AI config: GET /api/todoless/ai/config
+// Get AI config: GET /api/v1/ai/config
 routerAdd(
   'GET',
-  '/api/todoless/ai/config',
+  '/api/v1/ai/config',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -31,10 +31,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// Configure AI: POST /api/todoless/ai/config
+// Configure AI: POST /api/v1/ai/config
 routerAdd(
   'POST',
-  '/api/todoless/ai/config',
+  '/api/v1/ai/config',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -78,12 +78,12 @@ routerAdd(
 
 // ─── AI Task Endpoints ─────────────────────────────────────────────────────
 
-// Auto-categorize a task: POST /api/todoless/ai/categorize
+// Auto-categorize a task: POST /api/v1/ai/categorize
 // Body: { "title": "Buy groceries", "description": "Milk, eggs, bread" }
 // Returns: { "labels": ["shopping", "household"], "priority": "normal", "horizon": "week" }
 routerAdd(
   'POST',
-  '/api/todoless/ai/categorize',
+  '/api/v1/ai/categorize',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -130,12 +130,12 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// Task suggestions: POST /api/todoless/ai/suggest
+// Task suggestions: POST /api/v1/ai/suggest
 // Body: { "context": "planning week", "count": 5 }
 // Returns: { "suggestions": [{ "title": "...", "labels": [...], "priority": "..." }] }
 routerAdd(
   'POST',
-  '/api/todoless/ai/suggest',
+  '/api/v1/ai/suggest',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -176,12 +176,12 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// AI chat about tasks: POST /api/todoless/ai/chat
+// AI chat about tasks: POST /api/v1/ai/chat
 // Body: { "message": "What should I focus on this week?" }
 // Returns: { "response": "..." }
 routerAdd(
   'POST',
-  '/api/todoless/ai/chat',
+  '/api/v1/ai/chat',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

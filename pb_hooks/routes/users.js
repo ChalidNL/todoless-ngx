@@ -1,10 +1,10 @@
 // pb_hooks/routes/users.js
 // REST API endpoints for user management
 
-// GET /api/todoless/users - list all users
+// GET /api/v1/users - list all users
 routerAdd(
   'GET',
-  '/api/todoless/users',
+  '/api/v1/users',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -31,10 +31,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// GET /api/todoless/users/:id - get a specific user
+// GET /api/v1/users/:id - get a specific user
 routerAdd(
   'GET',
-  '/api/todoless/users/:id',
+  '/api/v1/users/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -59,10 +59,10 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// PATCH /api/todoless/users/:id - update a user
+// PATCH /api/v1/users/:id - update a user
 routerAdd(
   'PATCH',
-  '/api/todoless/users/:id',
+  '/api/v1/users/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

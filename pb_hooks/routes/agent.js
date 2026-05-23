@@ -2,8 +2,8 @@
 // Agent API Token & Permission Model
 // API-004
 //
-// POST /api/todoless/agent/token    - Create scoped API token for an agent
-// GET  /api/todoless/agent/permissions - Returns available permission scopes
+// POST /api/v1/agent/token    - Create scoped API token for an agent
+// GET  /api/v1/agent/permissions - Returns available permission scopes
 
 // ─── Available permission scopes ──────────────────────────────────────────
 var AVAILABLE_PERMISSIONS = [
@@ -17,7 +17,7 @@ var AVAILABLE_PERMISSIONS = [
   'calendar:write',
 ];
 
-// ─── POST /api/todoless/agent/token ───────────────────────────────────────
+// ─── POST /api/v1/agent/token ───────────────────────────────────────
 // Creates a scoped API token for an agent.
 // Auth: PB session auth (user must be authenticated).
 // Body: { name, permissions, expires_at, agent_id }
@@ -28,7 +28,7 @@ var AVAILABLE_PERMISSIONS = [
 //
 // When agent_id is provided, the token is linked to that agent user.
 // Default role for new agent tokens: 'assistant'.
-routerAdd('POST', '/api/todoless/agent/token', function(c) {
+routerAdd('POST', '/api/v1/agent/token', function(c) {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -124,10 +124,10 @@ routerAdd('POST', '/api/todoless/agent/token', function(c) {
   }
 }, $apis.requireRecordAuth());
 
-// ─── GET /api/todoless/agent/permissions ───────────────────────────────────
+// ─── GET /api/v1/agent/permissions ───────────────────────────────────
 // Returns the list of available permission scopes for agents.
 // No auth required (public information).
-routerAdd('GET', '/api/todoless/agent/permissions', function(c) {
+routerAdd('GET', '/api/v1/agent/permissions', function(c) {
   try {
     var categories = {
       tasks: {

@@ -3,7 +3,7 @@
 
 routerAdd(
   'GET',
-  '/api/todoless/tasks',
+  '/api/v1/tasks',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -34,7 +34,7 @@ routerAdd(
 
 routerAdd(
   'GET',
-  '/api/todoless/tasks/:id',
+  '/api/v1/tasks/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -54,7 +54,7 @@ routerAdd(
 
 routerAdd(
   'POST',
-  '/api/todoless/tasks',
+  '/api/v1/tasks',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -98,7 +98,7 @@ routerAdd(
 
 routerAdd(
   'PATCH',
-  '/api/todoless/tasks/:id',
+  '/api/v1/tasks/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -147,7 +147,7 @@ routerAdd(
 
 routerAdd(
   'DELETE',
-  '/api/todoless/tasks/:id',
+  '/api/v1/tasks/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

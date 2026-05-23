@@ -42,7 +42,7 @@ try {
 }
 
 console.log('\nBootstrap endpoint:');
-check('Safe setup-status route exists', source.includes("'/api/todoless/setup-status'"));
+check('Safe setup-status route exists', source.includes("'/api/v1/setup-status'"));
 check('Setup-status exposes only booleans', source.includes('has_users') && source.includes('setup_complete'));
 
 console.log('\nInvite-only registration:');

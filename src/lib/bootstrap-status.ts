@@ -25,7 +25,7 @@ export async function fetchSetupStatus(
   fetcher: typeof fetch = fetch,
 ): Promise<SetupStatus> {
   try {
-    const response = await fetcher('/api/todoless/setup-status');
+    const response = await fetcher('/api/v1/setup-status');
     if (!response.ok) return SAFE_FALLBACK;
     return normalizeSetupStatus(await response.json());
   } catch {

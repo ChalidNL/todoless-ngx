@@ -3,7 +3,7 @@
 
 routerAdd(
   'GET',
-  '/api/todoless/reminders',
+  '/api/v1/reminders',
   (c) => {
     const authRecord = c.get('authRecord');
     if (!authRecord) {
@@ -35,7 +35,7 @@ routerAdd(
 
 routerAdd(
   'POST',
-  '/api/todoless/reminders',
+  '/api/v1/reminders',
   (c) => {
     const authRecord = c.get('authRecord');
     if (!authRecord) {
@@ -68,7 +68,7 @@ routerAdd(
 
 routerAdd(
   'PATCH',
-  '/api/todoless/reminders/:id',
+  '/api/v1/reminders/:id',
   (c) => {
     const authRecord = c.get('authRecord');
     if (!authRecord) {
@@ -106,7 +106,7 @@ routerAdd(
 
 routerAdd(
   'DELETE',
-  '/api/todoless/reminders/:id',
+  '/api/v1/reminders/:id',
   (c) => {
     const authRecord = c.get('authRecord');
     if (!authRecord) {

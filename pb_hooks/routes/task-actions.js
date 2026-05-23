@@ -1,11 +1,11 @@
 // pb_hooks/routes/task-actions.js
 // REST API endpoints for specialized task operations (archive, convert, bulk actions)
 
-// POST /api/todoless/tasks/:id/archive
+// POST /api/v1/tasks/:id/archive
 // Archive a completed task
 routerAdd(
   'POST',
-  '/api/todoless/tasks/:id/archive',
+  '/api/v1/tasks/:id/archive',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -49,11 +49,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/tasks/archive-done
+// POST /api/v1/tasks/archive-done
 // Archive all completed tasks
 routerAdd(
   'POST',
-  '/api/todoless/tasks/archive-done',
+  '/api/v1/tasks/archive-done',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -87,11 +87,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/tasks/:id/convert-to-item
+// POST /api/v1/tasks/:id/convert-to-item
 // Convert a task to an item
 routerAdd(
   'POST',
-  '/api/todoless/tasks/:id/convert-to-item',
+  '/api/v1/tasks/:id/convert-to-item',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -137,11 +137,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/items/:id/convert-to-task
+// POST /api/v1/items/:id/convert-to-task
 // Convert an item to a task
 routerAdd(
   'POST',
-  '/api/todoless/items/:id/convert-to-task',
+  '/api/v1/items/:id/convert-to-task',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -188,11 +188,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/tasks/uncheck-all-done
+// POST /api/v1/tasks/uncheck-all-done
 // Reset all done tasks to todo
 routerAdd(
   'POST',
-  '/api/todoless/tasks/uncheck-all-done',
+  '/api/v1/tasks/uncheck-all-done',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -216,11 +216,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/items/uncheck-all-done
+// POST /api/v1/items/uncheck-all-done
 // Reset all completed items to incomplete
 routerAdd(
   'POST',
-  '/api/todoless/items/uncheck-all-done',
+  '/api/v1/items/uncheck-all-done',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -243,11 +243,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/tasks/:id/move
+// POST /api/v1/tasks/:id/move
 // Move a task to a different status
 routerAdd(
   'POST',
-  '/api/todoless/tasks/:id/move',
+  '/api/v1/tasks/:id/move',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -294,11 +294,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/sprints/new
+// POST /api/v1/sprints/new
 // Create a new sprint based on current settings
 routerAdd(
   'POST',
-  '/api/todoless/sprints/new',
+  '/api/v1/sprints/new',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -360,11 +360,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/sprints/:id/archive-tasks
+// POST /api/v1/sprints/:id/archive-tasks
 // Archive all done tasks in a sprint
 routerAdd(
   'POST',
-  '/api/todoless/sprints/:id/archive-tasks',
+  '/api/v1/sprints/:id/archive-tasks',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

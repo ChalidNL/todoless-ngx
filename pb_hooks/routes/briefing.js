@@ -1,8 +1,8 @@
 /// <reference path="../../pb_data/types.d.ts" />
 
 // ── Daily Briefing ──
-// POST /api/todoless/briefing/generate — generate a new briefing for the authenticated user
-routerAdd('POST', '/api/todoless/briefing/generate', (c) => {
+// POST /api/v1/briefing/generate — generate a new briefing for the authenticated user
+routerAdd('POST', '/api/v1/briefing/generate', (c) => {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -139,8 +139,8 @@ routerAdd('POST', '/api/todoless/briefing/generate', (c) => {
   } catch(e) { return c.json(500, { error: String(e) }); }
 });
 
-// ── GET /api/todoless/briefing — get today's cached briefing ──
-routerAdd('GET', '/api/todoless/briefing', (c) => {
+// ── GET /api/v1/briefing — get today's cached briefing ──
+routerAdd('GET', '/api/v1/briefing', (c) => {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -175,8 +175,8 @@ routerAdd('GET', '/api/todoless/briefing', (c) => {
   } catch(e) { return c.json(500, { error: String(e) }); }
 });
 
-// ── DELETE /api/todoless/briefing — clear today's cached briefing ──
-routerAdd('DELETE', '/api/todoless/briefing', (c) => {
+// ── DELETE /api/v1/briefing — clear today's cached briefing ──
+routerAdd('DELETE', '/api/v1/briefing', (c) => {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;

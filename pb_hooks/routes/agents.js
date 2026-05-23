@@ -103,8 +103,8 @@ function getAgentUserFamily(agentKey) {
 
 // ─── API Key Management (admin-only routes) ────────────────────────────────
 
-// Create a new API key: POST /api/todoless/agent/keys
-routerAdd('POST', '/api/todoless/agent/keys', function(c) {
+// Create a new API key: POST /api/v1/agent/keys
+routerAdd('POST', '/api/v1/agent/keys', function(c) {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -158,8 +158,8 @@ routerAdd('POST', '/api/todoless/agent/keys', function(c) {
   }
 }, $apis.requireRecordAuth());
 
-// List API keys: GET /api/todoless/agent/keys
-routerAdd('GET', '/api/todoless/agent/keys', function(c) {
+// List API keys: GET /api/v1/agent/keys
+routerAdd('GET', '/api/v1/agent/keys', function(c) {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -195,8 +195,8 @@ routerAdd('GET', '/api/todoless/agent/keys', function(c) {
   }
 }, $apis.requireRecordAuth());
 
-// Revoke an API key: POST /api/todoless/agent/keys/:id/revoke
-routerAdd('POST', '/api/todoless/agent/keys/:id/revoke', function(c) {
+// Revoke an API key: POST /api/v1/agent/keys/:id/revoke
+routerAdd('POST', '/api/v1/agent/keys/:id/revoke', function(c) {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;
@@ -223,12 +223,12 @@ routerAdd('POST', '/api/todoless/agent/keys/:id/revoke', function(c) {
   }
 }, $apis.requireRecordAuth());
 
-// ─── Agent Dispatch: POST /api/todoless/agent/dispatch ──────────────────────
+// ─── Agent Dispatch: POST /api/v1/agent/dispatch ──────────────────────
 // Authenticated by agent API key in Authorization header
 // Body: { action, type, ...data }
 // Actions: create, update, delete, complete, assign, set_labels, set_due_date, read
 
-routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
+routerAdd('POST', '/api/v1/agent/dispatch', function(c) {
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -570,7 +570,7 @@ routerAdd('POST', '/api/todoless/agent/dispatch', function(c) {
 });
 
 // ─── Agent: GET list (lightweight alternative to POST read) ─────────────────
-routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
+routerAdd('GET', '/api/v1/agent/dispatch', function(c) {
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -636,8 +636,8 @@ routerAdd('GET', '/api/todoless/agent/dispatch', function(c) {
   }
 });
 
-// ─── Auth test endpoint: GET /api/todoless/agent/auth-test ──────────────────
-routerAdd('GET', '/api/todoless/agent/auth-test', function(c) {
+// ─── Auth test endpoint: GET /api/v1/agent/auth-test ──────────────────
+routerAdd('GET', '/api/v1/agent/auth-test', function(c) {
   try {
     var agentKey = authFromApiKey(c);
     if (!agentKey) return c.json(401, { error: 'Invalid or missing API key' });
@@ -654,8 +654,8 @@ routerAdd('GET', '/api/todoless/agent/auth-test', function(c) {
   }
 });
 
-// ─── Agent audit log: GET /api/todoless/agent/audit-log ────────────────────
-routerAdd('GET', '/api/todoless/agent/audit-log', function(c) {
+// ─── Agent audit log: GET /api/v1/agent/audit-log ────────────────────
+routerAdd('GET', '/api/v1/agent/audit-log', function(c) {
   try {
     var info = c.requestInfo();
     var auth = info && info.auth ? info.auth : null;

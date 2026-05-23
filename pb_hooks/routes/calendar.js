@@ -3,7 +3,7 @@
 
 routerAdd(
   'GET',
-  '/api/todoless/calendar',
+  '/api/v1/calendar',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -28,7 +28,7 @@ routerAdd(
 
 routerAdd(
   'GET',
-  '/api/todoless/calendar/:id',
+  '/api/v1/calendar/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -48,7 +48,7 @@ routerAdd(
 
 routerAdd(
   'POST',
-  '/api/todoless/calendar',
+  '/api/v1/calendar',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -79,7 +79,7 @@ routerAdd(
 
 routerAdd(
   'PATCH',
-  '/api/todoless/calendar/:id',
+  '/api/v1/calendar/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -115,7 +115,7 @@ routerAdd(
 
 routerAdd(
   'DELETE',
-  '/api/todoless/calendar/:id',
+  '/api/v1/calendar/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {

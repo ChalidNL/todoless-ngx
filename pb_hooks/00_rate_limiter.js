@@ -107,7 +107,7 @@ function cleanupRateLimitBuckets() {
 // ─── Health / debug endpoint ────────────────────────────────────────────────
 routerAdd(
     'GET',
-    '/api/todoless/rate-limit/status',
+    '/api/v1/rate-limit/status',
     (c) => {
         const authRecord = c.get('authRecord');
         if (!authRecord) {

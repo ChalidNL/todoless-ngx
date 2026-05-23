@@ -3,7 +3,7 @@
 
 routerAdd(
   'GET',
-  '/api/todoless/invites',
+  '/api/v1/invites',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -22,7 +22,7 @@ routerAdd(
 
 routerAdd(
   'GET',
-  '/api/todoless/invites/:id',
+  '/api/v1/invites/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -42,7 +42,7 @@ routerAdd(
 
 routerAdd(
   'POST',
-  '/api/todoless/invites',
+  '/api/v1/invites',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -70,7 +70,7 @@ routerAdd(
 
 routerAdd(
   'DELETE',
-  '/api/todoless/invites/:id',
+  '/api/v1/invites/:id',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -93,11 +93,11 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/invites/generate
+// POST /api/v1/invites/generate
 // Generates a random 6-digit invite code
 routerAdd(
   'POST',
-  '/api/todoless/invites/generate',
+  '/api/v1/invites/generate',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
@@ -127,12 +127,12 @@ routerAdd(
   $apis.requireRecordAuth()
 )
 
-// POST /api/todoless/invites/:id/use
+// POST /api/v1/invites/:id/use
 // Marks an invite code as used. Server-side endpoint bypasses updateRule.
 // Any authenticated user can call this to consume an invite during registration.
 routerAdd(
   'POST',
-  '/api/todoless/invites/:id/use',
+  '/api/v1/invites/:id/use',
   (c) => {
     const authRecord = c.get('authRecord')
     if (!authRecord) {
