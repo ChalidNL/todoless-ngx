@@ -113,6 +113,7 @@ interface TranslationStructure {
     newItem: string;
     quantity: string;
     category: string;
+    searchPlaceholder: string;
   };
   notes: {
     title: string;
@@ -440,6 +441,7 @@ export const translations: Record<Language, TranslationStructure> = {
       newItem: 'New Item',
       quantity: 'Quantity',
       category: 'Category',
+      searchPlaceholder: 'Search items...',
     },
     notes: {
       title: 'Notes',
@@ -765,6 +767,7 @@ export const translations: Record<Language, TranslationStructure> = {
       newItem: 'Nouvel article',
       quantity: 'Quantité',
       category: 'Catégorie',
+      searchPlaceholder: 'Rechercher des articles...',
     },
     notes: {
       title: 'Notes',
@@ -1090,6 +1093,7 @@ export const translations: Record<Language, TranslationStructure> = {
       newItem: 'Nieuw item',
       quantity: 'Hoeveelheid',
       category: 'Categorie',
+      searchPlaceholder: 'Items zoeken...',
     },
     notes: {
       title: 'Notities',
@@ -1415,6 +1419,7 @@ export const translations: Record<Language, TranslationStructure> = {
       newItem: 'Neuer Artikel',
       quantity: 'Menge',
       category: 'Kategorie',
+      searchPlaceholder: 'Artikel suchen...',
     },
     notes: {
       title: 'Notizen',

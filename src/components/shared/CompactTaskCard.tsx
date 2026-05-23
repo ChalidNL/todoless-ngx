@@ -364,7 +364,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                       }
                     }
                   }}
-                  placeholder={t('tasks.addSubtaskPlaceholder')}
+                  placeholder=""
                   className="flex-1 text-xs px-2 py-1.5 border border-neutral-200 rounded bg-white"
                   aria-label={t('tasks.newSubtaskTitle')}
                 />

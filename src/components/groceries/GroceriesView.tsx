@@ -75,7 +75,7 @@ export const GroceriesView = () => {
         <NewGlobalHeader
           onSearch={setSearchQuery}
           onAdd={handleAddItem}
-          searchPlaceholder={t('common.searchDot')}
+          searchPlaceholder={t('items.searchPlaceholder')}
           type="item"
         />
       </div>
