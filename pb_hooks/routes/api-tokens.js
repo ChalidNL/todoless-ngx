@@ -10,7 +10,7 @@
 routerAdd('GET', '/api/todoless/api-tokens', (c) => {
   function _bam(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) return c.json(401,{'error':'Invalid Authorization header'});
@@ -68,7 +68,7 @@ routerAdd('GET', '/api/todoless/api-tokens', (c) => {
 routerAdd('POST', '/api/todoless/api-tokens', (c) => {
   function _bam(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) return c.json(401,{'error':'Invalid Authorization header'});
@@ -157,7 +157,7 @@ routerAdd('POST', '/api/todoless/api-tokens', (c) => {
 routerAdd('DELETE', '/api/todoless/api-tokens/:id', (c) => {
   function _bam(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) return c.json(401,{'error':'Invalid Authorization header'});
@@ -206,7 +206,7 @@ routerAdd('DELETE', '/api/todoless/api-tokens/:id', (c) => {
 routerAdd('PATCH', '/api/todoless/api-tokens/:id/toggle', (c) => {
   function _bam(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) return c.json(401,{'error':'Invalid Authorization header'});

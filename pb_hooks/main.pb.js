@@ -316,7 +316,7 @@ routerAdd('POST', '/api/todoless/register', (c) => {
 routerAdd('GET', '/api/todoless/entries', (c) => {
   function bearerAuthMiddleware(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
@@ -376,7 +376,7 @@ routerAdd('GET', '/api/todoless/entries', (c) => {
 routerAdd('POST', '/api/todoless/api', (c) => {
   function bearerAuthMiddleware(c) {
     try {
-      var authHeader = c.request().header.get('Authorization');
+      var authHeader = c.requestInfo().headers['authorization'];
       if (!authHeader) return null;
       var parts = String(authHeader).split(' ');
       if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
