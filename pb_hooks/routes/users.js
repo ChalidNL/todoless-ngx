@@ -69,8 +69,11 @@ routerAdd(
       return c.json(401, { 'error': 'Unauthorized' })
     }
 
-    // Any authenticated user can update any user (multi-user)
+    // Only admins or the user themselves can update
     const id = c.pathParam('id')
+    if (id !== authRecord.id && authRecord.get('role') !== 'admin') {
+      return c.json(403, { 'error': 'Forbidden' })
+    }
 
     const record = $app.dao().findRecordById('users', id)
     if (!record) {
@@ -87,8 +90,8 @@ routerAdd(
     if (body.has('lastName') || body.has('last_name')) data.set('last_name', body.get('lastName') || body.get('last_name'))
     if (body.has('displayName') || body.has('display_name')) data.set('display_name', body.get('displayName') || body.get('display_name'))
 
-    // Any user can change roles (multi-user)
-    if (body.has('role')) {
+    // Only admins can change roles
+    if (body.has('role') && authRecord.get('role') === 'admin') {
       data.set('role', body.get('role'))
     }
 

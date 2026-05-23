@@ -151,12 +151,12 @@ export const Settings = () => {
   };
 
   const handleToggleMemberActive = async (user: User) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'admin') return;
     await updateUser(user.id, { active: !(user.active ?? true) } as Partial<User>);
   };
 
   const handleDeleteMember = async (user: User) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'admin') return;
     if (!window.confirm(`Delete ${user.name}? This cannot be undone.`)) return;
     await deleteUser(user.id);
   };
@@ -672,16 +672,25 @@ export const Settings = () => {
 
           {showTeamMembers && (
             <>
-              {/* Invite Manager */}
-              <div className="mb-6 p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3">Invite Codes</h3>
-                <InviteManager />
-              </div>
+              {/* Invite Manager - only for admins */}
+              {currentUser?.role === 'admin' && (
+                <div className="mb-6 p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
+                  <h3 className="text-sm font-semibold mb-3">Invite Codes</h3>
+                  <InviteManager />
+                </div>
+              )}
+
+              {currentUser?.role !== 'admin' && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                  🔒
+                  Only administrators can invite new users. Contact your admin to get access.
+                </div>
+              )}
 
               <h3 className="text-sm font-semibold mb-3">Team Members</h3>
 
               {/* Admin max-1 warning */}
-              {users.filter(u => u.role === 'admin').length > 1 && (
+              {users.filter(u => u.role === 'admin').length > 1 && currentUser?.role === 'admin' && (
                 <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                   ⚠️ Er zijn {users.filter(u => u.role === 'admin').length} admins. Maximaal 1 admin toegestaan. Demote de extra admins naar user.
                 </div>
@@ -713,7 +722,7 @@ export const Settings = () => {
                       )}
                     </div>
 
-                    {currentUser.id !== user.id && user.role !== 'admin' && (
+                    {currentUser?.role === 'admin' && currentUser.id !== user.id && user.role !== 'admin' && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => handleToggleMemberActive(user)}
@@ -729,7 +738,7 @@ export const Settings = () => {
                         </button>
                       </div>
                     )}
-                    {currentUser.id !== user.id && user.role === 'admin' && users.filter(u => u.role === 'admin').length > 1 && (
+                    {currentUser?.role === 'admin' && currentUser.id !== user.id && user.role === 'admin' && users.filter(u => u.role === 'admin').length > 1 && (
                       <div className="mt-2">
                         <button
                           onClick={async () => {
