@@ -53,6 +53,7 @@ export const Settings = () => {
   const [approvingAgentId, setApprovingAgentId] = useState<string | null>(null);
   const [rejectingAgentId, setRejectingAgentId] = useState<string | null>(null);
   const [showIntegrations, setShowIntegrations] = useState(false);
+  const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [approvedAgentsCount, setApprovedAgentsCount] = useState(0);
 
   // Full Agents management
@@ -336,7 +337,7 @@ export const Settings = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setPendingAgents(data.pending || []);
+        setPendingAgentsCount(data.pending || 0);
         setApprovedAgentsCount(data.approved || 0);
       }
     } catch {
@@ -907,10 +908,10 @@ export const Settings = () => {
                 {/* Agent Pending Summary + API Tokens + Agents inline */}
 
                 {/* Agent Status Summary */}
-                {approvedAgentsCount > 0 || pendingAgents.length > 0 ? (
+                {approvedAgentsCount > 0 || pendingAgentsCount > 0 ? (
                   <div className="flex items-center gap-3 text-sm">
-                    {pendingAgents.length > 0 && (
-                      <span className="text-orange-600 font-medium">{pendingAgents.length} {t('settings.pendingCount')}</span>
+                    {pendingAgentsCount > 0 && (
+                      <span className="text-orange-600 font-medium">{pendingAgentsCount} {t('settings.pendingCount')}</span>
                     )}
                     {approvedAgentsCount > 0 && (
                       <span className="text-green-600 font-medium">{approvedAgentsCount} {t('settings.approvedCount')}</span>
