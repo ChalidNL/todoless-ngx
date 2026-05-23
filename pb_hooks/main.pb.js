@@ -189,6 +189,8 @@ routerAdd('POST', '/api/register', (c) => {
     rec.set('emailVisibility', true);
     rec.set('role', data.role || 'user');
     rec.set('family_id', data.family_id || '');
+    rec.set('member_status', data.member_status || 'active');
+    rec.set('member_type', data.member_type || 'family_member');
     u.save(rec);
     return rec;
   };
@@ -227,7 +229,9 @@ routerAdd('POST', '/api/register', (c) => {
         passwordConfirm: d.passwordConfirm,
         name: d.name || d.email.split('@')[0],
         role: 'admin',
-        family_id: ''
+        family_id: '',
+        member_status: 'active',
+        member_type: userType
       });
 
       var fam = createFamily(d.family_name || 'My Family', rec.id);
@@ -260,7 +264,9 @@ routerAdd('POST', '/api/register', (c) => {
       passwordConfirm: d.passwordConfirm,
       name: d.name || d.email.split('@')[0],
       role: role,
-      family_id: fid
+      family_id: fid,
+      member_status: 'active',
+      member_type: userType
     });
 
     // Mark invite as used
