@@ -840,13 +840,11 @@ class PocketBaseClient {
   }
 
   async deleteUser(id: string) {
-    const response = await fetch('/api/v1', {
-      method: 'POST',
+    const response = await fetch(`/api/v1/users/${id}`, {
+      method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': pb.authStore.token ? `Bearer ${pb.authStore.token}` : '',
       },
-      body: JSON.stringify({ action: 'delete_user', user_id: id }),
     });
 
     if (!response.ok) {

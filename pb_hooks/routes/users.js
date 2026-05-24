@@ -117,3 +117,68 @@ routerAdd(
   },
   $apis.requireRecordAuth()
 )
+
+// DELETE /api/v1/users/:id - delete a user (admin only)
+routerAdd(
+  'DELETE',
+  '/api/v1/users/:id',
+  (c) => {
+    const authRecord = c.get('authRecord')
+    if (!authRecord) {
+      return c.json(401, { 'error': 'Unauthorized' })
+    }
+
+    if (authRecord.get('role') !== 'admin' && authRecord.get('role') !== 'owner') {
+      return c.json(403, { 'error': 'Admin only' })
+    }
+
+    const id = c.pathParam('id')
+    if (id === authRecord.id) {
+      return c.json(409, { 'error': 'Cannot delete yourself' })
+    }
+
+    var target = $app.dao().findRecordById('users', id)
+    if (!target) {
+      return c.json(404, { 'error': 'User not found' })
+    }
+    if (target.get('role') === 'admin' || target.get('role') === 'owner') {
+      return c.json(403, { 'error': 'Cannot delete admin/owner accounts' })
+    }
+
+    // Cross-family check
+    var actorFamilyId = String(authRecord.get('family_id') || '')
+    var targetFamilyId = String(target.get('family_id') || '')
+    if (!actorFamilyId || actorFamilyId !== targetFamilyId) {
+      return c.json(403, { 'error': 'Cross-family delete denied' })
+    }
+
+    // Transfer ownership of user-created records to the admin
+    var transferCollections = ['tasks','items','notes','labels','shops','rewards','goals','projects','reminders','calendar_events','invite_codes']
+    for (var ci = 0; ci < transferCollections.length; ci++) {
+      try {
+        var collName = transferCollections[ci]
+        var owned = $app.dao().findRecordsByFilter(collName, 'user = \"' + id + '\"', '-created', 0, 0)
+        for (var ri = 0; ri < owned.length; ri++) {
+          owned[ri].set('user', authRecord.id)
+          $app.dao().saveRecord(owned[ri])
+        }
+      } catch (_) {}
+    }
+
+    // Clear assignee references
+    var assignColls = ['tasks', 'items']
+    for (var ai = 0; ai < assignColls.length; ai++) {
+      try {
+        var assigned = $app.dao().findRecordsByFilter(assignColls[ai], 'assigned_to = \"' + id + '\"', '-created', 0, 0)
+        for (var ari = 0; ari < assigned.length; ari++) {
+          assigned[ari].set('assigned_to', '')
+          $app.dao().saveRecord(assigned[ari])
+        }
+      } catch (_) {}
+    }
+
+    $app.dao().deleteRecord(target)
+    return c.json(200, { 'ok': true, 'deleted_user_id': id })
+  },
+  $apis.requireRecordAuth()
+)

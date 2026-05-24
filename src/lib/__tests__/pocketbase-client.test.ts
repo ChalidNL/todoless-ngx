@@ -208,13 +208,15 @@ describe('PocketBaseClient', () => {
       expect(body).toEqual({ action: 'set_user_block', user_id: 'u2', blocked: true });
     });
 
-    it('deleteUser uses secured API action delete_user', async () => {
+    it('deleteUser uses DELETE /api/v1/users/:id', async () => {
       (fetch as any).mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ ok: true, deleted_user_id: 'u2' }) });
 
       const res = await api.deleteUser('u2');
 
-      const body = JSON.parse((fetch as any).mock.calls[0][1].body);
-      expect(body).toEqual({ action: 'delete_user', user_id: 'u2' });
+      const url = (fetch as any).mock.calls[0][0];
+      const opts = (fetch as any).mock.calls[0][1];
+      expect(url).toBe('/api/v1/users/u2');
+      expect(opts.method).toBe('DELETE');
       expect(res.deleted_user_id).toBe('u2');
     });
 
