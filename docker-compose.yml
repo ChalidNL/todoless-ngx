@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: Europe/Amsterdam
+      DEPLOY_ENV: production
     ports:
       - target: 80
         published: 7070
@@ -40,6 +41,8 @@ services:
     command: ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--migrationsDir=/pb_migrations", "--hooksDir=/pb_hooks", "--automigrate"]
     environment:
       TZ: Europe/Amsterdam
+      DEPLOY_ENV: production
+      COMMIT_SHA: unknown
     # No published ports — only accessible via nginx proxy on todoless-net
     volumes:
       - /DATA/AppData/todoless-ngx/pb_data:/pb_data

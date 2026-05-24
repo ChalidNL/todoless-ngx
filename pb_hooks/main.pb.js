@@ -95,15 +95,17 @@ routerAdd('GET', '/api/hook-health', (c) => c.json(200, { ok: true }));
 
 // ── Version endpoint — returns deployment info for environment comparison ──
 routerAdd('GET', '/api/version', (c) => {
-  var info = { branch: 'unknown', commit: 'unknown', env: 'unknown' };
+  var env = 'unknown';
+  var commit = 'unknown';
   try {
     var os = $os;
-    info.env = String(os.getenv('DEPLOY_ENV') || 'unknown');
+    env = String(os.getenv('DEPLOY_ENV') || 'unknown');
+    commit = String(os.getenv('COMMIT_SHA') || 'unknown');
   } catch(e) { /* os not available */ }
   return c.json(200, {
     branch: 'main',
-    commit: '999a546',
-    env: 'production',
+    commit: commit,
+    env: env,
     pb: '0.35.1',
     note: 'See GitHub releases for full changelog'
   });
