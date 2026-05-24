@@ -373,7 +373,7 @@ describe('NewGlobalHeader', () => {
       const filterButton = buttons[0];
       fireEvent.click(filterButton);
       
-      const priorityButton = screen.getByText('tasks.priorityUrgent');
+      const priorityButton = screen.getByText('High');
       fireEvent.click(priorityButton);
       
       expect(onFilter).toHaveBeenCalled();
