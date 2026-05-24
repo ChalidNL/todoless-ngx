@@ -366,7 +366,7 @@ routerAdd('POST', '/api/register', (c) => {
         password: d.password,
         passwordConfirm: d.passwordConfirm,
         name: d.name || d.email.split('@')[0],
-        role: 'admin',
+        role: (memberType === 'agent') ? 'member' : 'admin',
         family_id: '',
         member_status: 'active',
         member_type: memberType
@@ -380,7 +380,7 @@ routerAdd('POST', '/api/register', (c) => {
       u.save(rec);
 
       return c.json(201, {
-        user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: 'admin', family_id: fam.id }
+        user: { id: rec.id, email: String(rec.get('email')||''), name: String(rec.get('name')||''), role: String(rec.get('role')||'member'), family_id: fam.id }
       });
     }
 
@@ -706,6 +706,13 @@ routerAdd('POST', '/api/v1', (c) => {
 
       var target = $app.findRecordById('users', targetId);
       if (!target) return c.json(404, { error: 'User not found' });
+
+      // Agents cannot be admin or owner
+      var targetMemberType = String(target.get('member_type') || '');
+      if (targetMemberType === 'agent' && (newRole === 'admin' || newRole === 'owner')) {
+        return c.json(400, { error: 'Agents cannot be assigned admin or owner roles.' });
+      }
+
       var u = $app.unsafeWithoutHooks();
       target.set('role', newRole);
       u.save(target);
