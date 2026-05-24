@@ -220,12 +220,9 @@ routerAdd('GET', '/api/debug-token', (c) => {
 });
 
 // ── Create invite code (server-side, bypasses PB API rules) ──
-// Supports type: 'human' (default) or 'agent'
-// If type='agent': also generates an API token (enabled=false), stored hashed, returned once.
 routerAdd('POST', '/api/invites/create', (c) => {
   try {
     var info = c.requestInfo();
-    console.log('INVITE_CREATE: type=' + String((info.body||{}).type) + ' body=' + JSON.stringify(info.body||{}));
     var auth = info && info.auth ? info.auth : null;
     if (!auth) return c.json(401, { error: 'Unauthorized' });
 
