@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Task, Item, userDisplayName } from '../../types';
+import { Task, Item, userDisplayName, Priority } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/pocketbase-client';
 import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, X, AlertTriangle, RotateCcw, Inbox } from 'lucide-react';
@@ -212,9 +212,9 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
         {/* Chip row — labels + assignee + shop + date (only when not done) */}
         {/* Tasks: chips visible in both collapsed and edit mode (labels+assignee always visible) */}
         {/* Items: chips always visible */}
-        {!isDone && (hasLabels || assignedUser || hasShop || dateStr || subtaskCount > 0 || (task?.priority && PRIORITY_COLORS[task.priority]) || task?.repeatInterval) && (
+        {!isDone && (hasLabels || assignedUser || hasShop || dateStr || subtaskCount > 0 || (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || (isTask && task?.repeatInterval)) && (
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
-            {isTask && entity.labels.map(labelId => {
+            {entity.labels.map(labelId => {
               const label = labels.find(l => l.id === labelId);
               return label ? (
                 <AttributeChip
@@ -227,7 +227,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 />
               ) : null;
             })}
-            {isTask && assignedUser && (
+            {assignedUser && (
               <AttributeChip
                 icon={<User className="w-3.5 h-3.5" />}
                 label={userDisplayName(assignedUser)}
@@ -236,7 +236,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 onClick={showMenu ? () => setValue({ assignedTo: null }) : () => toggleChipFilter('assignee', assignedUser.id, userDisplayName(assignedUser), '#10b981')}
               />
             )}
-            {isTask && dateStr && (
+            {dateStr && (
               <AttributeChip
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
                 label={dateStr}
@@ -268,12 +268,12 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 color="#8b5cf6"
               />
             )}
-            {isTask && task?.priority && PRIORITY_COLORS[task.priority] && (
+            {entity.priority && PRIORITY_COLORS[entity.priority as Priority] && (
               <AttributeChip
                 icon={<AlertTriangle className="w-3.5 h-3.5" />}
-                label={PRIORITY_LABELS[task.priority] || task.priority}
-                color={PRIORITY_COLORS[task.priority] || '#6b7280'}
-                onClick={showMenu ? () => setValue({ priority: null }) : () => toggleChipFilter('priority', task.priority!, PRIORITY_LABELS[task.priority] || task.priority, PRIORITY_COLORS[task.priority] || '#6b7280')}
+                label={PRIORITY_LABELS[entity.priority as Priority] || entity.priority}
+                color={PRIORITY_COLORS[entity.priority as Priority] || '#6b7280'}
+                onClick={showMenu ? () => setValue({ priority: null }) : () => toggleChipFilter('priority', entity.priority!, PRIORITY_LABELS[entity.priority as Priority] || entity.priority, PRIORITY_COLORS[entity.priority as Priority] || '#6b7280')}
               />
             )}
           </div>
@@ -363,7 +363,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
           <div className="mt-2 pt-2 border-t border-neutral-100">
             {/* Attribute buttons */}
             <div className="flex items-center gap-2">
-              {isTask && (
+              {(
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'labels' ? null : 'labels')}
                   className={`p-1.5 rounded transition-colors ${activeEditor === 'labels' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
@@ -373,7 +373,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   <Tag className="w-4 h-4" strokeWidth={1.75} />
                 </button>
               )}
-              {isTask && (
+              {(
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'assignee' ? null : 'assignee')}
                   className={`p-1.5 rounded transition-colors ${activeEditor === 'assignee' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
@@ -383,7 +383,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   <User className="w-4 h-4" strokeWidth={1.75} />
                 </button>
               )}
-              {isTask && (
+              {(
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'schedule' ? null : 'schedule')}
                   className={`p-1.5 rounded transition-colors ${activeEditor === 'schedule' ? 'bg-neutral-900 text-white' : 'hover:bg-neutral-100 text-neutral-500'}`}
@@ -407,17 +407,17 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   <SubtaskIcon className="w-4 h-4" />
                 </button>
               )}
-              {isTask && (
+              {(
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'priority' ? null : 'priority')}
                   className={`p-1.5 rounded transition-colors ${
-                    (task?.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
+                    (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || activeEditor === 'priority'
                       ? 'text-white'
                       : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
                   style={
-                    (task?.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
-                      ? { backgroundColor: task?.priority ? PRIORITY_COLORS[task.priority] : '#f59e0b' }
+                    (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || activeEditor === 'priority'
+                      ? { backgroundColor: entity.priority ? PRIORITY_COLORS[entity.priority as Priority] : '#f59e0b' }
                       : undefined
                   }
                   title="Priority"
@@ -630,8 +630,8 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
               </div>
             )}
 
-            {/* Priority editor (tasks only) */}
-            {activeEditor === 'priority' && isTask && (
+            {/* Priority editor */}
+            {activeEditor === 'priority' && (
               <div className="mt-2">
                 <div className="flex items-center gap-1.5">
                   {PRIORITY_ORDER.map((p) => (
@@ -642,11 +642,11 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                         setActiveEditor(null);
                       }}
                       className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                        task?.priority === p
+                        entity.priority === p
                           ? 'text-white shadow-sm'
                           : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                       }`}
-                      style={task?.priority === p ? { backgroundColor: PRIORITY_COLORS[p] } : undefined}
+                      style={entity.priority === p ? { backgroundColor: PRIORITY_COLORS[p] } : undefined}
                     >
                       {PRIORITY_LABELS[p]}
                     </button>
