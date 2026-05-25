@@ -339,7 +339,16 @@ class PocketBaseClient {
 
   async createTask(task: Partial<Task>) {
     try {
-      const userId = pb.authStore.record?.id || (pb.authStore.model as any)?.id;
+      let userId = pb.authStore.record?.id || (pb.authStore.model as any)?.id;
+      if (!userId && pb.authStore.isValid) {
+        // Auth token exists but record not loaded — refresh
+        try {
+          const authData = await pb.collection('users').authRefresh();
+          userId = (authData as any)?.record?.id;
+        } catch {
+          // refresh failed, fall through
+        }
+      }
       if (!userId) {
         this.showError('Not authenticated — please log in again');
         throw new Error('Not authenticated');
@@ -454,7 +463,15 @@ class PocketBaseClient {
 
   async createItem(item: Partial<Item>) {
     try {
-      const userId = pb.authStore.record?.id || (pb.authStore.model as any)?.id;
+      let userId = pb.authStore.record?.id || (pb.authStore.model as any)?.id;
+      if (!userId && pb.authStore.isValid) {
+        try {
+          const authData = await pb.collection('users').authRefresh();
+          userId = (authData as any)?.record?.id;
+        } catch {
+          // refresh failed, fall through
+        }
+      }
       if (!userId) {
         this.showError('Not authenticated — please log in again');
         throw new Error('Not authenticated');
