@@ -192,6 +192,23 @@ export const Settings = () => {
     }
   };
 
+  const generateRandomColor = () => {
+    const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const openAddLabelModal = () => {
+    setNewLabelColor(generateRandomColor());
+    setNewLabelName('');
+    setShowAddLabelModal(true);
+  };
+
+  const openAddShopModal = () => {
+    setNewShopColor(generateRandomColor());
+    setNewShopName('');
+    setShowAddShopModal(true);
+  };
+
   const handleAddLabel = () => {
     if (!newLabelName) return;
     addLabel({ name: newLabelName, color: newLabelColor });
@@ -717,7 +734,7 @@ export const Settings = () => {
           {showLabels && (
             <>
               <button
-                onClick={() => setShowAddLabelModal(true)}
+                onClick={openAddLabelModal}
                 className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
               >
                 <Plus className="w-4 h-4" />
@@ -778,7 +795,7 @@ export const Settings = () => {
           {showShops && (
             <>
               <button
-                onClick={() => setShowAddShopModal(true)}
+                onClick={openAddShopModal}
                 className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 mb-4"
               >
                 <Plus className="w-4 h-4" />
@@ -1141,14 +1158,31 @@ export const Settings = () => {
 
               <div>
                 <label className="block text-sm text-neutral-600 mb-1">Color</label>
-                <input
-                  type="color"
-                  value={newLabelColor}
-                  onChange={(e) => setNewLabelColor(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-9 h-9 rounded-md border border-neutral-300 cursor-pointer flex-shrink-0"
+                    style={{ backgroundColor: newLabelColor }}
+                    onClick={() => {
+                      const input = document.getElementById('label-color-input') as HTMLInputElement;
+                      input?.click();
+                    }}
+                  />
+                  <input
+                    id="label-color-input"
+                    type="color"
+                    value={newLabelColor}
+                    onChange={(e) => setNewLabelColor(e.target.value)}
+                    className="sr-only"
+                  />
+                  <input
+                    type="text"
+                    value={newLabelColor}
+                    onChange={(e) => setNewLabelColor(e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1 px-3 py-2 border border-neutral-200 rounded font-mono text-sm"
+                  />
+                </div>
               </div>
-
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddLabelModal(false)}
@@ -1188,12 +1222,30 @@ export const Settings = () => {
 
               <div>
                 <label className="block text-sm text-neutral-600 mb-1">Color</label>
-                <input
-                  type="color"
-                  value={newShopColor}
-                  onChange={(e) => setNewShopColor(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-9 h-9 rounded-md border border-neutral-300 cursor-pointer flex-shrink-0"
+                    style={{ backgroundColor: newShopColor }}
+                    onClick={() => {
+                      const input = document.getElementById('shop-color-input') as HTMLInputElement;
+                      input?.click();
+                    }}
+                  />
+                  <input
+                    id="shop-color-input"
+                    type="color"
+                    value={newShopColor}
+                    onChange={(e) => setNewShopColor(e.target.value)}
+                    className="sr-only"
+                  />
+                  <input
+                    type="text"
+                    value={newShopColor}
+                    onChange={(e) => setNewShopColor(e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1 px-3 py-2 border border-neutral-200 rounded font-mono text-sm"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -1228,18 +1280,22 @@ export const Settings = () => {
                   type="text"
                   value={editingLabelName}
                   onChange={(e) => setEditingLabelName(e.target.value)}
+                  placeholder="Label name"
                   className="w-full px-3 py-2 border border-neutral-200 rounded"
                 />
               </div>
 
               <div>
                 <label className="block text-sm text-neutral-600 mb-1">Color</label>
-                <input
-                  type="color"
-                  value={editingLabelColor}
-                  onChange={(e) => setEditingLabelColor(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-9 h-9 rounded-md border border-neutral-300 cursor-pointer flex-shrink-0"
+                    style={{ backgroundColor: editingLabelColor || '#3b82f6' }}
+                    onClick={() => { const i = document.getElementById('edit-label-color') as HTMLInputElement; i?.click(); }}
+                  />
+                  <input id="edit-label-color" type="color" value={editingLabelColor} onChange={(e) => setEditingLabelColor(e.target.value)} className="sr-only" />
+                  <input type="text" value={editingLabelColor} onChange={(e) => setEditingLabelColor(e.target.value)} placeholder="#3b82f6" className="flex-1 px-3 py-2 border border-neutral-200 rounded font-mono text-sm" />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -1278,18 +1334,22 @@ export const Settings = () => {
                   type="text"
                   value={editingShopName}
                   onChange={(e) => setEditingShopName(e.target.value)}
+                  placeholder="Shop name"
                   className="w-full px-3 py-2 border border-neutral-200 rounded"
                 />
               </div>
 
               <div>
                 <label className="block text-sm text-neutral-600 mb-1">Color</label>
-                <input
-                  type="color"
-                  value={editingShopColor}
-                  onChange={(e) => setEditingShopColor(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded"
-                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-9 h-9 rounded-md border border-neutral-300 cursor-pointer flex-shrink-0"
+                    style={{ backgroundColor: editingShopColor || '#3b82f6' }}
+                    onClick={() => { const i = document.getElementById('edit-shop-color') as HTMLInputElement; i?.click(); }}
+                  />
+                  <input id="edit-shop-color" type="color" value={editingShopColor} onChange={(e) => setEditingShopColor(e.target.value)} className="sr-only" />
+                  <input type="text" value={editingShopColor} onChange={(e) => setEditingShopColor(e.target.value)} placeholder="#3b82f6" className="flex-1 px-3 py-2 border border-neutral-200 rounded font-mono text-sm" />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
