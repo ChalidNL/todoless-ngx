@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, Item, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/pocketbase-client';
-import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, X, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ShoppingCart, ArrowLeftRight, X, AlertTriangle, RotateCcw, Inbox } from 'lucide-react';
 import { t } from '../../i18n/translations';
 
 // Subtask icon: square with dot inside
@@ -25,7 +25,7 @@ interface UnifiedCardProps {
 type UnifiedEditor = 'labels' | 'assignee' | 'schedule' | 'shop' | 'priority' | null;
 
 export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
-  const { updateTask, updateItem, deleteTask, deleteItem, labels, users, shops, tasks, addLabel, addShop, toggleChipFilter, isChipFilterActive, swapEntity, refreshEntries, showCompletionMessage } = useApp();
+  const { updateTask, updateItem, deleteTask, deleteItem, labels, users, shops, tasks, addLabel, addShop, toggleChipFilter, isChipFilterActive, swapEntity, refreshEntries, showCompletionMessage, moveTaskToStatus } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<UnifiedEditor>(null);
   const [titleDraft, setTitleDraft] = useState('');
@@ -273,7 +273,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 icon={<AlertTriangle className="w-3.5 h-3.5" />}
                 label={PRIORITY_LABELS[task.priority] || task.priority}
                 color={PRIORITY_COLORS[task.priority] || '#6b7280'}
-                onClick={showMenu ? () => setValue({ priority: null }) : undefined}
+                onClick={showMenu ? () => setValue({ priority: null }) : () => toggleChipFilter('priority', task.priority!, PRIORITY_LABELS[task.priority] || task.priority, PRIORITY_COLORS[task.priority] || '#6b7280')}
               />
             )}
           </div>
@@ -332,7 +332,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                     }
                   }
                 }}
-                placeholder=""
+                placeholder={t('tasks.newSubtaskTitle')}
                 className="flex-1 text-xs px-2 py-1.5 border border-neutral-200 rounded bg-white"
                 aria-label={t('tasks.newSubtaskTitle')}
               />
@@ -450,7 +450,18 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.75} />
                 </button>
               )}
-              {/* Swap button */}
+              <div className="flex-1" />
+              {/* Impact buttons: Backlog + Swap + Delete */}
+              {isTask && task!.status !== 'backlog' && (
+                <button
+                  onClick={() => { moveTaskToStatus(entity.id, 'backlog'); showCompletionMessage(t('tasks.movedToBacklog')); }}
+                  className="p-1.5 rounded transition-colors hover:bg-blue-50 text-blue-500"
+                  title={t('tasks.moveToBacklog') || 'Move to Backlog'}
+                  aria-label={t('tasks.moveToBacklog') || 'Move to Backlog'}
+                >
+                  <Inbox className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+              )}
               <button
                 onClick={() => swapEntity(entity.id)}
                 className="p-1.5 rounded transition-colors hover:bg-neutral-100 text-neutral-400"
@@ -459,7 +470,6 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
               >
                 <ArrowLeftRight className="w-4 h-4" strokeWidth={1.75} />
               </button>
-              <div className="flex-1" />
               <button
                 onClick={handleDelete}
                 className="p-1.5 rounded text-red-600 hover:bg-red-50"

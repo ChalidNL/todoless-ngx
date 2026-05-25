@@ -75,6 +75,9 @@ export const TasksView = () => {
             return rl === f.id;
           });
           break;
+        case 'priority':
+          filtered = filtered.filter((t) => t.priority === f.id);
+          break;
       }
     }
 

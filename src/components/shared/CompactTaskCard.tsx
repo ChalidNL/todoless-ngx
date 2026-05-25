@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/pocketbase-client';
-import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle, Inbox } from 'lucide-react';
 import { t } from '../../i18n/translations';
 
 // Subtask icon: square with dot inside
@@ -68,7 +68,7 @@ const ConfirmDialog = ({ title, confirmLabel, onConfirm, onCancel }: { title: st
 );
 
 export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardProps) => {
-  const { updateTask, deleteTask, labels, users, shops, tasks, addLabel, addTask, swapEntity, toggleChipFilter, isChipFilterActive, refreshEntries, showCompletionMessage } = useApp();
+  const { updateTask, deleteTask, labels, users, shops, tasks, addLabel, addTask, swapEntity, toggleChipFilter, isChipFilterActive, refreshEntries, showCompletionMessage, moveTaskToStatus } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [activeEditor, setActiveEditor] = useState<TaskEditor>(null);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -318,7 +318,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   icon={<AlertTriangle className="w-3.5 h-3.5" />}
                   label={PRIORITY_LABELS[task.priority] || task.priority}
                   color={PRIORITY_COLORS[task.priority] || '#6b7280'}
-                  onClick={showMenu ? clearPriority : undefined}
+                  onClick={showMenu ? clearPriority : () => toggleChipFilter('priority', task.priority, PRIORITY_LABELS[task.priority] || task.priority, PRIORITY_COLORS[task.priority] || '#6b7280')}
                 />
               )}
             </div>
@@ -377,7 +377,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                       }
                     }
                   }}
-                  placeholder=""
+                  placeholder={t('tasks.newSubtaskTitle')}
                   className="flex-1 text-xs px-2 py-1.5 border border-neutral-200 rounded bg-white"
                   aria-label={t('tasks.newSubtaskTitle')}
                 />
@@ -486,6 +486,18 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 >
                   <Flag className="w-4 h-4" strokeWidth={1.75} />
                 </button>
+                <div className="flex-1" />
+                {/* Impact buttons: Backlog + Swap + Delete */}
+                {task.status !== 'backlog' && (
+                  <button
+                    onClick={() => { moveTaskToStatus(task.id, 'backlog'); showCompletionMessage(t('tasks.movedToBacklog')); }}
+                    className="p-1.5 rounded transition-colors hover:bg-blue-50 text-blue-500"
+                    title={t('tasks.moveToBacklog') || 'Move to Backlog'}
+                    aria-label={t('tasks.moveToBacklog') || 'Move to Backlog'}
+                  >
+                    <Inbox className="w-4 h-4" strokeWidth={1.75} />
+                  </button>
+                )}
                 <button
                   onClick={() => swapEntity(task.id)}
                   className="p-1.5 rounded transition-colors hover:bg-neutral-100 text-neutral-400"
@@ -494,7 +506,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                 >
                   <ArrowLeftRight className="w-4 h-4" strokeWidth={1.75} />
                 </button>
-                <div className="flex-1" />
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   onMouseEnter={() => setIsDeleteHover(true)}

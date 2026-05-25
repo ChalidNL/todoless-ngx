@@ -70,6 +70,9 @@ export const InboxBacklog = () => {
             return rl === f.id;
           });
           break;
+        case 'priority':
+          filtered = filtered.filter((t) => t.priority === f.id);
+          break;
       }
     }
 
@@ -115,6 +118,7 @@ export const InboxBacklog = () => {
       assignedTo: metadata?.assignee,
       dueDate: metadata?.dueDate,
     } as any);
+    showCompletionMessage(t('inbox.taskAdded') || 'Task added to inbox');
   };
 
   const toggleSelect = (id: string) => {

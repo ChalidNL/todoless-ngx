@@ -88,6 +88,9 @@ function AppContent() {
         }
       }
 
+      // Force onboarding as completed — disable onboarding flow
+      localStorage.setItem(ONBOARDING_SEEN_KEY, getOnboardingSeenValueForUser((user as any)?.id ?? null));
+
       const onboardingSeenValue = localStorage.getItem(ONBOARDING_SEEN_KEY);
       const expectedOnboardingSeenValue = getOnboardingSeenValueForUser((user as any)?.id ?? null);
       const hasCompletedOnboarding =
