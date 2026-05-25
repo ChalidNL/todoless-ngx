@@ -436,6 +436,22 @@ class PocketBaseClient {
   }
 
   async deleteTask(id: string) {
+    // If this task is a subtask, remove its ID from parent's subtask_ids first
+    try {
+      const task = await pb.collection('tasks').getOne(id);
+      const linkedTo = (task as any).linked_to;
+      const linkedType = (task as any).linked_type;
+      if (linkedTo && linkedType === 'task') {
+        const parent = await pb.collection('tasks').getOne(linkedTo);
+        const ids: string[] = (parent as any).subtask_ids || [];
+        const filtered = ids.filter(sid => sid !== id);
+        if (filtered.length !== ids.length) {
+          await pb.collection('tasks').update(linkedTo, { subtask_ids: filtered });
+        }
+      }
+    } catch {
+      // Silently continue with delete even if parent cleanup fails
+    }
     await pb.collection('tasks').delete(id);
   }
 
