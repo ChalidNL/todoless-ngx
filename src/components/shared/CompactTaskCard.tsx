@@ -144,6 +144,10 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
     updateTask(task.id, { labels: [] });
   };
 
+  const clearPriority = () => {
+    updateTask(task.id, { priority: undefined });
+  };
+
   const removeLabel = (labelId: string) => {
     updateTask(task.id, {
       labels: task.labels.filter((id) => id !== labelId),
@@ -314,6 +318,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   icon={<AlertTriangle className="w-3.5 h-3.5" />}
                   label={PRIORITY_LABELS[task.priority] || task.priority}
                   color={PRIORITY_COLORS[task.priority] || '#6b7280'}
+                  onClick={showMenu ? clearPriority : undefined}
                 />
               )}
             </div>
