@@ -465,9 +465,14 @@ export const CompactTaskCard = ({ task, showCheckbox = true }: CompactTaskCardPr
                   onClick={() => setActiveEditor(activeEditor === 'priority' ? null : 'priority')}
                   className={`p-1.5 rounded transition-colors ${
                     (task.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
-                      ? 'bg-amber-100 text-amber-700'
+                      ? 'text-white'
                       : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
+                  style={
+                    (task.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
+                      ? { backgroundColor: task.priority ? PRIORITY_COLORS[task.priority] : '#f59e0b' }
+                      : undefined
+                  }
                   title="Priority"
                   aria-label="Edit priority"
                 >
