@@ -109,7 +109,7 @@ export const NewGlobalHeader = ({
                   <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                     <div className="p-2 border-b border-neutral-100">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-neutral-600">{t('settings.filters')}</span>
+                        <span className="text-xs font-semibold text-neutral-600">{t('filters.title')}</span>
                         <button onClick={() => setShowFilterDropdown(false)} className="p-0.5 hover:bg-neutral-100 rounded">
                           <X className="w-3.5 h-3.5 text-neutral-400" />
                         </button>

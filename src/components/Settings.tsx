@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from './AuthProvider';
 import { User, ApiToken, userDisplayName, Agent } from '../types';
 import { t } from '../i18n/translations';
-import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot, RefreshCw } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { AttributeChip } from './shared/AttributeChip';
 import { InviteManager } from './InviteManager';
@@ -867,8 +867,28 @@ export const Settings = () => {
           <div className="text-sm text-neutral-600">
             <p><span className="font-medium text-neutral-800">{t('settings.version')}:</span> <code>{appVersion}</code></p>
             <p><span className="font-medium text-neutral-800">{t('settings.commit')}:</span> <code>{appCommit}</code></p>
-
           </div>
+          <button
+            onClick={() => {
+              if ('caches' in window) {
+                caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).then(() => {
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(regs => {
+                      Promise.all(regs.map(r => r.unregister())).then(() => window.location.reload());
+                    });
+                  } else {
+                    window.location.reload();
+                  }
+                });
+              } else {
+                window.location.reload();
+              }
+            }}
+            className="w-full mt-2 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors flex items-center justify-center gap-1.5"
+          >
+            <RefreshCw className="w-3 h-3" />
+            {t('settings.update')}
+          </button>
         </div>
 
         {/* Logout */}
