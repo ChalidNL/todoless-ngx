@@ -121,6 +121,11 @@ interface TranslationStructure {
     newNote: string;
     content: string;
   };
+  filters: {
+    title: string;
+    noSavedFilters: string;
+    manageFilters: string;
+  };
   settings: {
     account: string;
     active: string;
@@ -459,6 +464,11 @@ export const translations: Record<Language, TranslationStructure> = {
       newNote: 'New Note',
       content: 'Content',
     },
+    filters: {
+      title: 'Filters',
+      noSavedFilters: 'No saved filters',
+      manageFilters: 'Manage your saved filters here.',
+    },
     settings: {
       account: 'Account',
       active: 'Active',
@@ -794,6 +804,11 @@ export const translations: Record<Language, TranslationStructure> = {
       title: 'Notes',
       newNote: 'Nouvelle note',
       content: 'Contenu',
+    },
+    filters: {
+      title: 'Filtres',
+      noSavedFilters: 'Aucun filtre enregistré',
+      manageFilters: 'Gérez vos filtres enregistrés ici.',
     },
     settings: {
       account: 'Compte',
@@ -1131,6 +1146,11 @@ export const translations: Record<Language, TranslationStructure> = {
       newNote: 'Nieuwe notitie',
       content: 'Inhoud',
     },
+    filters: {
+      title: 'Filters',
+      noSavedFilters: 'Geen opgeslagen filters',
+      manageFilters: 'Beheer je opgeslagen filters hier.',
+    },
     settings: {
       account: 'Account',
       active: 'Actief',
@@ -1466,6 +1486,11 @@ export const translations: Record<Language, TranslationStructure> = {
       title: 'Notizen',
       newNote: 'Neue Notiz',
       content: 'Inhalt',
+    },
+    filters: {
+      title: 'Filter',
+      noSavedFilters: 'Keine gespeicherten Filter',
+      manageFilters: 'Verwalte deine gespeicherten Filter hier.',
     },
     settings: {
       account: 'Konto',

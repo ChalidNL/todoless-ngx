@@ -817,60 +817,6 @@ export const Settings = () => {
           )}
         </div>
 
-        {/* Filter Views */}
-        <div className="mb-6 border-b border-neutral-200 pb-6">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center justify-between w-full mb-3"
-          >
-            <h2 className="text-lg font-semibold">{t('settings.filters')}</h2>
-            {showFilters ? (
-              <ChevronUp className="w-5 h-5 text-neutral-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-neutral-500" />
-            )}
-          </button>
-
-          {showFilters && (
-            <>
-              {filters.length === 0 ? (
-                <p className="text-sm text-neutral-500">{t('settings.noSavedFilters')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {filters.map(f => (
-                    <div key={f.id} className="flex items-center justify-between p-3 border border-neutral-200 rounded">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate">{f.name}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase ${f.type === 'task' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                            {f.type === 'task' ? t('common.tasks') : t('common.items')}
-                          </span>
-                        </div>
-                        <p className="text-xs text-neutral-500 mt-0.5">
-                          {f.chipFilters?.length || f.labelIds.length || 0} condition{f.chipFilters?.length !== 1 ? 's' : ''}
-                          {f.chipFilters?.map(cf => (
-                            <span key={cf.id} className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
-                              style={{ backgroundColor: cf.color ? `${cf.color}20` : '#f3f4f6', color: cf.color || '#6b7280' }}
-                            >{cf.label || cf.id}</span>
-                          ))}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => { deleteFilter(f.id); showCompletionMessage(t('common.success')); }}
-                        className="p-1.5 text-neutral-400 hover:text-red-500 rounded hover:bg-red-50 transition-colors"
-                        title={t('common.delete')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-
         {/* Integration Section — API Documentation */}
           <div className="mb-6 border-b border-neutral-200 pb-6">
             <button
