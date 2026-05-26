@@ -26,7 +26,7 @@ export const NewGlobalHeader = ({
 }: NewGlobalHeaderProps) => {
   const [inputValue, setInputValue] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const { filters, toggleChipFilter, clearChipFilters, activeChipFilters, addFilter, showCompletionMessage } = useApp();
+  const { filters, toggleChipFilter, clearChipFilters, activeChipFilters = [], addFilter, showCompletionMessage } = useApp();
 
   const typeFilters = filters.filter(f => f.type === type);
 

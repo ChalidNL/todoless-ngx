@@ -16,6 +16,11 @@ const defaultMockContext = {
   items: [],
   shops: [],
   appSettings: {},
+  activeChipFilters: [],
+  toggleChipFilter: vi.fn(),
+  clearChipFilters: vi.fn(),
+  addFilter: vi.fn(),
+  showCompletionMessage: vi.fn(),
 };
 
 describe('NewGlobalHeader', () => {
@@ -72,7 +77,8 @@ describe('NewGlobalHeader', () => {
       fireEvent.change(searchInput, { target: { value: 'New task' } });
       fireEvent.click(addButton);
       
-      expect(onAdd).toHaveBeenCalledWith('New task', {});
+      // onAdd now called with single argument (metadata parsing moved to parent)
+      expect(onAdd).toHaveBeenCalledWith('New task');
     });
 
     it('calls onAdd when Enter key is pressed', () => {
@@ -83,7 +89,7 @@ describe('NewGlobalHeader', () => {
       fireEvent.change(searchInput, { target: { value: 'New task' } });
       fireEvent.keyDown(searchInput, { key: 'Enter' });
       
-      expect(onAdd).toHaveBeenCalledWith('New task', {});
+      expect(onAdd).toHaveBeenCalledWith('New task');
     });
 
     it('does not call onAdd when input is empty', () => {
@@ -140,18 +146,14 @@ describe('NewGlobalHeader', () => {
     });
 
     it('shows filter panel when filter button is clicked', () => {
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        labels: [{ id: 'label1', name: 'urgent', color: '#ff0000' }],
-      });
       render(<NewGlobalHeader />);
       const buttons = screen.getAllByRole('button');
       const filterButton = buttons[0]; // First button is filter
       
       fireEvent.click(filterButton);
       
-      // Filter panel should appear
-      expect(screen.getByText('Labels')).toBeInTheDocument();
+      // Filter panel shows with title 'Filters'
+      expect(screen.getByText('Filters')).toBeInTheDocument();
     });
 
     it('hides filter panel when filter button is clicked again', () => {
@@ -162,7 +164,7 @@ describe('NewGlobalHeader', () => {
       fireEvent.click(filterButton); // Open
       fireEvent.click(filterButton); // Close
       
-      expect(screen.queryByText('Labels')).not.toBeInTheDocument();
+      expect(screen.queryByText('Filters')).not.toBeInTheDocument();
     });
 
     it('hides filters when showFilters is false', () => {
@@ -171,243 +173,63 @@ describe('NewGlobalHeader', () => {
       // Should only have add button, no filter button
       expect(buttons.length).toBe(1);
     });
-
-    it('calls onFilter with active filters when filters change', () => {
-      const onFilter = vi.fn();
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
-      
-      // Open filter panel
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      // onFilter should be called on mount with default filters
-      expect(onFilter).toHaveBeenCalled();
-    });
-
-    it('does not show Private quick filter button in filter panel', () => {
-      render(<NewGlobalHeader onFilter={vi.fn()} type="task" />);
-
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-
-      expect(screen.queryByRole('button', { name: /^private$/i })).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /completed/i })).toBeInTheDocument();
-    });
   });
 
-  describe('Type-specific functionality', () => {
-    it('shows task-specific filters when type is task', () => {
-      render(<NewGlobalHeader type="task" />);
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Priority')).toBeInTheDocument();
-    });
-
-    it('shows item-specific filters when type is item', () => {
+  describe('Filter dropdown with saved filters', () => {
+    it('shows saved filters when present', () => {
       mockUseApp.mockReturnValue({
         ...defaultMockContext,
-        items: [{ id: 'item1', name: 'Milk', category: 'Dairy', location: 'Fridge', completed: false, createdAt: Date.now() }],
-      });
-      render(<NewGlobalHeader type="item" />);
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      expect(screen.getByText('items.locationFilterHeader')).toBeInTheDocument();
-    });
-
-    it('shows calendar-specific filters when type is calendar', () => {
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        users: [{ id: 'user1', name: 'John', email: 'john@example.com' }],
-      });
-      render(<NewGlobalHeader type="calendar" />);
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      expect(screen.getByText('calendar.assignedFilterHeader')).toBeInTheDocument();
-      expect(screen.getByText('calendar.recurringFilter')).toBeInTheDocument();
-    });
-  });
-
-  describe('Metadata parsing', () => {
-    it('parses @me assignee when appSettings.currentUserId is set', () => {
-      const onAdd = vi.fn();
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        appSettings: { currentUserId: 'user123' },
-      });
-      
-      render(<NewGlobalHeader onAdd={onAdd} />);
-      const searchInput = screen.getByPlaceholderText('Search...');
-      const buttons = screen.getAllByRole('button');
-      const addButton = buttons[1];
-      
-      fireEvent.change(searchInput, { target: { value: 'Task @me' } });
-      fireEvent.click(addButton);
-      
-      expect(onAdd).toHaveBeenCalledWith('Task', { assignee: 'user123' });
-    });
-
-    it('parses @user assignee when user exists', () => {
-      const onAdd = vi.fn();
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        users: [{ id: 'user456', name: 'John', email: 'john@example.com' }],
-      });
-      
-      render(<NewGlobalHeader onAdd={onAdd} />);
-      const searchInput = screen.getByPlaceholderText('Search...');
-      const buttons = screen.getAllByRole('button');
-      const addButton = buttons[1];
-      
-      fireEvent.change(searchInput, { target: { value: 'Task @John' } });
-      fireEvent.click(addButton);
-      
-      expect(onAdd).toHaveBeenCalledWith('Task', { assignee: 'user456' });
-    });
-
-    it('parses #label when label exists', () => {
-      const onAdd = vi.fn();
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        labels: [{ id: 'label1', name: 'urgent', color: '#ff0000' }],
-      });
-      
-      render(<NewGlobalHeader onAdd={onAdd} />);
-      const searchInput = screen.getByPlaceholderText('Search...');
-      const buttons = screen.getAllByRole('button');
-      const addButton = buttons[1];
-      
-      fireEvent.change(searchInput, { target: { value: 'Task #urgent' } });
-      fireEvent.click(addButton);
-      
-      expect(onAdd).toHaveBeenCalledWith('Task', { labels: ['label1'] });
-    });
-
-    it('parses //date for due date', () => {
-      const onAdd = vi.fn();
-      render(<NewGlobalHeader onAdd={onAdd} />);
-      const searchInput = screen.getByPlaceholderText('Search...');
-      const buttons = screen.getAllByRole('button');
-      const addButton = buttons[1];
-      
-      fireEvent.change(searchInput, { target: { value: 'Task //2025-12-31' } });
-      fireEvent.click(addButton);
-      
-      const expectedDate = new Date('2025-12-31').getTime();
-      expect(onAdd).toHaveBeenCalledWith('Task', { dueDate: expectedDate });
-    });
-
-    it('parses multiple metadata tokens together', () => {
-      const onAdd = vi.fn();
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        appSettings: { currentUserId: 'user123' },
-        labels: [{ id: 'label1', name: 'urgent', color: '#ff0000' }],
-      });
-      
-      render(<NewGlobalHeader onAdd={onAdd} />);
-      const searchInput = screen.getByPlaceholderText('Search...');
-      const buttons = screen.getAllByRole('button');
-      const addButton = buttons[1];
-      
-      fireEvent.change(searchInput, { target: { value: 'Buy groceries @me #urgent //2025-12-31' } });
-      fireEvent.click(addButton);
-      
-      const expectedDate = new Date('2025-12-31').getTime();
-      expect(onAdd).toHaveBeenCalledWith('Buy groceries', { 
-        assignee: 'user123', 
-        labels: ['label1'], 
-        dueDate: expectedDate 
-      });
-    });
-  });
-
-  describe('Filter panel interactions', () => {
-    it('toggles label filters in filter panel', () => {
-      const onFilter = vi.fn();
-      mockUseApp.mockReturnValue({
-        ...defaultMockContext,
-        labels: [
-          { id: 'label1', name: 'urgent', color: '#ff0000' },
-          { id: 'label2', name: 'bug', color: '#00ff00' },
+        filters: [
+          { id: 'f1', name: 'Work tasks', type: 'task', chipFilters: [{ type: 'label', id: 'l1', label: 'work' }] },
         ],
       });
-      
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
+      render(<NewGlobalHeader type="task" />);
       const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
+      fireEvent.click(buttons[0]); // Open filter panel
       
-      // Click on first label
-      const labelButtons = screen.getAllByText('urgent');
-      fireEvent.click(labelButtons[0]);
-      
-      expect(onFilter).toHaveBeenCalled();
+      expect(screen.getByText('Work tasks')).toBeInTheDocument();
     });
 
-    it('toggles status filters for tasks', () => {
-      const onFilter = vi.fn();
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
+    it('shows empty state when no saved filters', () => {
+      render(<NewGlobalHeader type="task" />);
       const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
+      fireEvent.click(buttons[0]);
       
-      const statusButton = screen.getByText('tasks.statusTodo');
-      fireEvent.click(statusButton);
-      
-      expect(onFilter).toHaveBeenCalled();
+      expect(screen.getByText(/No saved filters/i)).toBeInTheDocument();
     });
 
-    it('toggles priority filters for tasks', () => {
-      const onFilter = vi.fn();
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
+    it('clears active chip filters when Clear all is clicked', () => {
+      const clearChipFilters = vi.fn();
+      mockUseApp.mockReturnValue({
+        ...defaultMockContext,
+        clearChipFilters,
+        activeChipFilters: [{ type: 'status', id: 'todo', label: 'To Do' }],
+      });
+      render(<NewGlobalHeader type="task" />);
       const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      const priorityButton = screen.getByText('High');
-      fireEvent.click(priorityButton);
-      
-      expect(onFilter).toHaveBeenCalled();
-    });
+      fireEvent.click(buttons[0]); // Open
 
-    it.skip('clears all filters when Clear All button is clicked', () => {
-      const onFilter = vi.fn();
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
-      const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
-      
-      // Set some filters
-      const statusButton = screen.getByText('tasks.statusTodo');
-      fireEvent.click(statusButton);
-      
-      // Clear all
-      const clearButton = screen.getByText('Clear All');
+      const clearButton = screen.getByText('Clear all');
       fireEvent.click(clearButton);
       
-      expect(onFilter).toHaveBeenCalled();
+      expect(clearChipFilters).toHaveBeenCalled();
     });
+  });
 
-    it('toggles completed filter', () => {
-      const onFilter = vi.fn();
-      render(<NewGlobalHeader onFilter={onFilter} type="task" />);
+  describe('Metadata parsing (delegated to parent)', () => {
+    it('passes raw input value to onAdd without parsing', () => {
+      const onAdd = vi.fn();
+      render(<NewGlobalHeader onAdd={onAdd} />);
+      const searchInput = screen.getByPlaceholderText('Search...');
       const buttons = screen.getAllByRole('button');
-      const filterButton = buttons[0];
-      fireEvent.click(filterButton);
+      const addButton = buttons[1];
       
-      const completedButton = screen.getByText('Completed');
-      fireEvent.click(completedButton);
+      // Metadata parsing is now done by parent (InboxBacklog),
+      // NewGlobalHeader just passes the raw string
+      fireEvent.change(searchInput, { target: { value: 'Task @me #urgent //2025-12-31' } });
+      fireEvent.click(addButton);
       
-      expect(onFilter).toHaveBeenCalled();
+      expect(onAdd).toHaveBeenCalledWith('Task @me #urgent //2025-12-31');
     });
   });
 });
