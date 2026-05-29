@@ -118,6 +118,10 @@ interface TranslationStructure {
     searchPlaceholder: string;
     confirmDelete: string;
     empty: string;
+    sortLabel: string;
+    sortCategory: string;
+    sortCategoryAlpha: string;
+    sortAlpha: string;
   };
   notes: {
     title: string;
@@ -469,6 +473,10 @@ export const translations: Record<Language, TranslationStructure> = {
       searchPlaceholder: 'Search items...',
       confirmDelete: 'Delete this item?',
       empty: 'Empty',
+      sortLabel: 'Sort',
+      sortCategory: 'By category',
+      sortCategoryAlpha: 'Category A-Z',
+      sortAlpha: 'A-Z',
     },
     notes: {
       title: 'Notes',
@@ -818,6 +826,10 @@ export const translations: Record<Language, TranslationStructure> = {
       searchPlaceholder: 'Rechercher des articles...',
       confirmDelete: 'Supprimer cet article ?',
       empty: 'Vide',
+      sortLabel: 'Trier',
+      sortCategory: 'Par catégorie',
+      sortCategoryAlpha: 'Catégorie A-Z',
+      sortAlpha: 'A-Z',
     },
     notes: {
       title: 'Notes',
@@ -1167,6 +1179,10 @@ export const translations: Record<Language, TranslationStructure> = {
       searchPlaceholder: 'Items zoeken...',
       confirmDelete: 'Dit item verwijderen?',
       empty: 'Leeg',
+      sortLabel: 'Sorteren',
+      sortCategory: 'Per categorie',
+      sortCategoryAlpha: 'Categorie A-Z',
+      sortAlpha: 'A-Z',
     },
     notes: {
       title: 'Notities',
@@ -1516,6 +1532,10 @@ export const translations: Record<Language, TranslationStructure> = {
       searchPlaceholder: 'Artikel suchen...',
       confirmDelete: 'Diesen Artikel löschen?',
       empty: 'Leer',
+      sortLabel: 'Sortieren',
+      sortCategory: 'Nach Kategorie',
+      sortCategoryAlpha: 'Kategorie A-Z',
+      sortAlpha: 'A-Z',
     },
     notes: {
       title: 'Notizen',

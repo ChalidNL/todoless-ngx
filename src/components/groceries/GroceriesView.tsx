@@ -12,6 +12,9 @@ export const GroceriesView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showBought, setShowBought] = useState(false);
   const [showSavedFilters, setShowSavedFilters] = useState(false);
+  const [sortMode, setSortMode] = useState<'category' | 'categoryAlpha' | 'alpha'>('category');
+
+  const stripEmoji = (cat: string): string => cat.replace(/^[^\w\s]+\s*/, '');
 
   const itemFilters = useMemo(() => filters.filter(f => f.type === 'item'), [filters]);
 
@@ -59,8 +62,11 @@ export const GroceriesView = () => {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     }
+    if (sortMode === 'categoryAlpha') {
+      return Object.entries(groups).sort(([a], [b]) => stripEmoji(a).localeCompare(stripEmoji(b)));
+    }
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [sortedActiveItems]);
+  }, [sortedActiveItems, sortMode]);
 
   const sortedBoughtItems = useMemo(() => {
     return [...filteredItems.filter((item) => item.completed)].sort((a, b) =>
@@ -191,11 +197,27 @@ export const GroceriesView = () => {
           <h2 className="font-semibold text-sm text-neutral-600 flex items-center gap-1.5">
             {t('items.title')} ({sortedActiveItems.length})
           </h2>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as 'category' | 'categoryAlpha' | 'alpha')}
+            className="text-xs border border-neutral-200 rounded px-2 py-1 bg-white text-neutral-600 cursor-pointer"
+            title={t('items.sortLabel')}
+          >
+            <option value="category">{t('items.sortCategory')}</option>
+            <option value="categoryAlpha">{t('items.sortCategoryAlpha')}</option>
+            <option value="alpha">{t('items.sortAlpha')}</option>
+          </select>
         </div>
         {sortedActiveItems.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingCart className="w-12 h-12 text-neutral-200 mx-auto mb-3" />
             <p className="text-neutral-400 text-sm">{t('groceries.empty') || 'No items yet'}</p>
+          </div>
+        ) : sortMode === 'alpha' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {sortedActiveItems.map((item) => (
+              <UnifiedCard key={item.id} entity={item} type="item" />
+            ))}
           </div>
         ) : (
           <div className="space-y-4">
