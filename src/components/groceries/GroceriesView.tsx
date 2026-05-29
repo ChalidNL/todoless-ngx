@@ -5,13 +5,7 @@ import { NewGlobalHeader } from '../shared/NewGlobalHeader';
 import { TopBar } from '../shared/TopBar';
 import { ChevronDown, ChevronUp, RotateCcw, ShoppingCart, X as XIcon, Save, ChevronRight } from 'lucide-react';
 import { t } from '../../i18n/translations';
-
-/** Extract category from title: first word, lowercased, strip trailing 's' */
-const getCategory = (title: string): string => {
-  const firstWord = title.trim().split(/\s+/)[0].toLowerCase();
-  // Strip trailing 's' or 'en' for Dutch plurals
-  return firstWord.replace(/(s|en)$/, '') || firstWord;
-};
+import { categorizeItem } from '../../lib/grocery-categories';
 
 export const GroceriesView = () => {
   const { items, addItem, uncheckAllDoneItems, showCompletionMessage, activeChipFilters, toggleChipFilter, clearChipFilters, filters, addFilter, deleteFilter } = useApp();
@@ -62,11 +56,11 @@ export const GroceriesView = () => {
     );
   }, [filteredItems]);
 
-  // Group active items by auto-detected category
+  // Group active items by supermarket category
   const groupedActive = useMemo(() => {
     const groups: Record<string, typeof sortedActiveItems> = {};
     for (const item of sortedActiveItems) {
-      const cat = getCategory(item.title);
+      const cat = categorizeItem(item.title);
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     }
