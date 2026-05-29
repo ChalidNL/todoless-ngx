@@ -211,7 +211,7 @@ export const InboxBacklog = () => {
 
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-6 pb-20">
           {/* Stat boxes — clickable as filters */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {statusSections.map((stat) => (
               <button
                 key={stat.key}
@@ -219,21 +219,21 @@ export const InboxBacklog = () => {
                   if (activeStatusFilter === stat.key) {
                     clearChipFilters();
                   } else {
-                    clearChipFilters(); // clear first, then set status
+                    clearChipFilters();
                     toggleChipFilter('status', stat.key, stat.label);
                   }
                 }}
-                className={`bg-white rounded-lg border p-3 text-left transition-all active:scale-95 ${
+                className={`bg-white rounded-lg border px-3 py-2 text-left transition-all active:scale-95 ${
                   activeStatusFilter === stat.key
                     ? 'border-neutral-900 ring-1 ring-neutral-900'
                     : 'border-neutral-200 hover:border-neutral-400'
                 }`}
               >
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1 mb-0.5">
                   {stat.icon}
-                  <span className="text-xs text-neutral-500">{stat.label}</span>
+                  <span className="text-[11px] text-neutral-500">{stat.label}</span>
                 </div>
-                <p className="text-xl font-bold">{stat.value}</p>
+                <p className="text-lg font-bold">{stat.value}</p>
               </button>
             ))}
           </div>
