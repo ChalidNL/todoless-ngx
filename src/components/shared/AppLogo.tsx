@@ -1,11 +1,33 @@
 import React from 'react';
-import { CheckSquare } from 'lucide-react';
 
 interface AppLogoProps {
   size?: 'sm' | 'md' | 'lg';
   showText?: boolean;
   variant?: 'light' | 'dark';
 }
+
+interface AppMarkProps {
+  className?: string;
+}
+
+export const AppMark = ({ className = '' }: AppMarkProps) => (
+  <svg
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    className={className}
+  >
+    <rect x="6" y="6" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="2.5" fill="none" />
+    <path
+      d="M14 24L20 30L34 16"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export const AppLogo = ({ size = 'md', showText = true, variant = 'dark' }: AppLogoProps) => {
   const sizes = {
@@ -24,9 +46,7 @@ export const AppLogo = ({ size = 'md', showText = true, variant = 'dark' }: AppL
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative">
-        <CheckSquare className={`${sizes[size]} ${colorClass}`} strokeWidth={2.5} />
-      </div>
+      <AppMark className={`${sizes[size]} ${colorClass} shrink-0`} />
       {showText && (
         <span className={`font-semibold ${colorClass} ${textSizes[size]}`}>
           todoless-ngx

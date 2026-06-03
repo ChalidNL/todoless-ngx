@@ -12,7 +12,8 @@ import { GroceriesView } from './components/groceries/GroceriesView';
 import { Settings } from './components/Settings';
 import { pb } from './lib/pocketbase';
 import { api } from './lib/pocketbase-client';
-import { Inbox as InboxIcon, CheckSquare, ShoppingCart, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
+import { Inbox as InboxIcon, ShoppingCart, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
+import { AppMark } from './components/shared/AppLogo';
 import { getOnboardingMode, OnboardingMode } from './lib/onboarding-gate';
 import { fetchSetupStatus } from './lib/bootstrap-status';
 import { t } from './i18n/translations';
@@ -214,7 +215,7 @@ function AppContent() {
 
   const navItems: { to: string; label: string; icon: React.ReactNode }[] = [
     { to: '/', label: t('common.inbox'), icon: <InboxIcon className="w-5 h-5" /> },
-    { to: '/tasks', label: t('common.tasks'), icon: <CheckSquare className="w-5 h-5" /> },
+    { to: '/tasks', label: t('common.tasks'), icon: <AppMark className="w-5 h-5" /> },
     { to: '/groceries', label: t('common.groceries'), icon: <ShoppingCart className="w-5 h-5" /> },
     { to: '/settings', label: t('common.settings'), icon: <SettingsIcon className="w-5 h-5" /> },
   ];
