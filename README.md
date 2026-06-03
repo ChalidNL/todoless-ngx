@@ -61,13 +61,11 @@ npm run dev
 
 ## Deployment
 - Production and development images are defined in `docker-compose.yml` and `docker-compose.dev.yml`
-- Deployment helper: `./scripts/deploy.sh <dev|main>`
 - Backend hooks and migrations live in `pb_hooks/` and `pb_migrations/`
 
 ## Security baseline
 - Keep real secrets out of git; use `.env` locally or a secret manager
 - Use `.env.example` as the template for new environments
-- Policy document: `docs/security/secrets-rotation-policy.md`
 
 ## Repository layout
 - `src/` — React app, views, components, context, and shared utilities

@@ -49,13 +49,10 @@ pb_data
 .pre-commit-config.yaml
 .gitleaks.toml
 eslint.config.mjs
-playwright.config.ts
 vitest.config.ts
 tsconfig.typecheck.json
 
 # Dev scripts
-run-local.ps1
-test_tasks_crud.sh
 regression_tests.py
 
 # Docker files (not needed inside the image)
