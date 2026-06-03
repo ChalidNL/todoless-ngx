@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CompactTaskCard } from './shared/CompactTaskCard';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
-import { Inbox, Clock, AlertTriangle, X as XIcon, Save, Check, ArrowRight } from 'lucide-react';
+import { Inbox, Rows2, AlertTriangle, X as XIcon, Save, Check, ArrowRight, CheckCheck } from 'lucide-react';
 import { t } from '../i18n/translations';
 
 export const InboxBacklog = () => {
@@ -105,10 +105,10 @@ export const InboxBacklog = () => {
 
   const displayedTasks = getFilteredTasks();
   const statusSections = [
-    { key: 'backlog', label: t('inbox.title'), value: backlogCount, icon: <Inbox className="w-4 h-4 text-blue-500" /> },
-    { key: 'todo', label: t('inbox.todo'), value: todoCount, icon: <Clock className="w-4 h-4 text-green-500" /> },
-    { key: 'done-today', label: t('inbox.doneToday'), value: doneToday, icon: <Clock className="w-4 h-4 text-emerald-500" /> },
-    { key: 'blocked', label: t('inbox.blocked'), value: blockedCount, icon: <AlertTriangle className="w-4 h-4 text-red-500" /> },
+    { key: 'backlog', label: t('inbox.title'), value: backlogCount, icon: <Inbox className="w-3.5 h-3.5 text-blue-500" /> },
+    { key: 'todo', label: 'Todo Sprint', value: todoCount, icon: <Rows2 className="w-3.5 h-3.5 text-green-500" /> },
+    { key: 'blocked', label: t('inbox.blocked'), value: blockedCount, icon: <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> },
+    { key: 'done-today', label: 'Done Sprint', value: doneToday, icon: <CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> },
   ];
 
   const hasAnyFilter = activeStatusFilter || activeChipFilters.some((f) => f.type !== 'status');
@@ -118,7 +118,6 @@ export const InboxBacklog = () => {
     addTask({
       title: value.trim(),
       status: 'backlog',
-      priority: 'medium',
       labels: metadata?.labels || [],
       assignedTo: metadata?.assignee,
       dueDate: metadata?.dueDate,
@@ -211,7 +210,7 @@ export const InboxBacklog = () => {
 
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-6 pb-20">
           {/* Stat boxes — clickable as filters */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             {statusSections.map((stat) => (
               <button
                 key={stat.key}
@@ -223,17 +222,17 @@ export const InboxBacklog = () => {
                     toggleChipFilter('status', stat.key, stat.label);
                   }
                 }}
-                className={`bg-white rounded-lg border px-3 py-2 text-left transition-all active:scale-95 ${
+                className={`bg-white rounded-md border px-2.5 py-2 text-left transition-all active:scale-95 min-h-[68px] ${
                   activeStatusFilter === stat.key
                     ? 'border-neutral-900 ring-1 ring-neutral-900'
                     : 'border-neutral-200 hover:border-neutral-400'
                 }`}
               >
-                <div className="flex items-center gap-1 mb-0.5">
+                <div className="flex items-center gap-1 mb-1">
                   {stat.icon}
-                  <span className="text-[11px] text-neutral-500">{stat.label}</span>
+                  <span className="text-[10px] leading-tight text-neutral-500">{stat.label}</span>
                 </div>
-                <p className="text-lg font-bold">{stat.value}</p>
+                <p className="text-base leading-none font-bold">{stat.value}</p>
               </button>
             ))}
           </div>

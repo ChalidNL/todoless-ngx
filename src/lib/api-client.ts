@@ -40,6 +40,8 @@ const normalizeTask = (r: any): Task => ({
   archived: !!r.archived, archivedAt: r.archived_at ? new Date(r.archived_at).getTime() : undefined,
   deleteAfter: r.delete_after ? new Date(r.delete_after).getTime() : undefined,
   isPrivate: !!r.is_private, labels: Array.isArray(r.labels) ? r.labels : [],
+  subtaskIds: Array.isArray(r.subtask_ids) ? r.subtask_ids : [],
+  focus: !!r.focus,
   linkedTo: r.linked_to, linkedType: r.linked_type, flag: !!r.flag,
   createdAt: r.created ? new Date(r.created).getTime() : Date.now(), createdBy: r.user,
 });

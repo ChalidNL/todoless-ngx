@@ -53,6 +53,7 @@ const normalizeTask = (record: any): Task => ({
   linkedItemIds: Array.isArray(record.linked_item_ids) ? record.linked_item_ids : [],
   linkedNoteIds: Array.isArray(record.linked_note_ids) ? record.linked_note_ids : [],
   subtaskIds: Array.isArray(record.subtask_ids) ? record.subtask_ids : [],
+  focus: !!record.focus,
   linkedTo: record.linked_to || undefined,
   linkedType: record.linked_type || undefined,
   flag: !!record.flag,

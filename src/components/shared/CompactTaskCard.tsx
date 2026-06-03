@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/pocketbase-client';
-import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle, Inbox, Target, GitBranch } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle, Inbox, Target, GitBranch, MoreHorizontal } from 'lucide-react';
 import { t } from '../../i18n/translations';
 
 // Subtask icon: square with dot inside
@@ -22,7 +22,7 @@ interface CompactTaskCardProps {
   urgent?: boolean;
 }
 
-type TaskEditor = 'labels' | 'assignee' | 'schedule' | 'priority' | null;
+type TaskEditor = 'labels' | 'assignee' | 'schedule' | 'priority' | 'subtasks' | 'others' | null;
 
 const DeleteConfirm = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
@@ -325,7 +325,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
             </div>
           )}
 
-          {/* Subtasks list — visible when card is expanded */}{showMenu && subtaskCount > 0 && (
+          {/* Subtasks list — visible when selected or when subtasks exist */}{showMenu && (activeEditor === 'subtasks' || subtaskCount > 0) && (
             <div className="mt-2 pt-2 border-t border-neutral-100 space-y-1.5">
               <div className="px-1">
                 <span className="text-xs font-medium text-neutral-500">{t('tasks.subtasks')} ({subtaskCount})</span>
@@ -356,8 +356,8 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
               ))}
             </div>
           )}
-          {/* Add subtask input — only when card is expanded */}
-          {showMenu && (
+          {/* Add subtask input — only when subtasks editor is selected */}
+          {showMenu && activeEditor === 'subtasks' && (
             <div className={`${subtaskCount > 0 ? 'mt-2' : 'mt-2 pt-2 border-t border-neutral-100'}`}>
               <div className="flex items-center gap-1.5 pl-2">
                 <input
@@ -451,9 +451,9 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                   <CalendarDays className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <button
-                  onClick={() => setShowMenu(true)}
+                  onClick={() => setActiveEditor(activeEditor === 'subtasks' ? null : 'subtasks')}
                   className={`p-1.5 rounded transition-colors ${
-                    subtaskCount > 0 || showMenu
+                    subtaskCount > 0
                       ? 'bg-purple-100 text-purple-700'
                       : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
@@ -465,13 +465,13 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                 <button
                   onClick={() => setActiveEditor(activeEditor === 'priority' ? null : 'priority')}
                   className={`p-1.5 rounded transition-colors ${
-                    (task.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
+                    task.priority && PRIORITY_COLORS[task.priority]
                       ? 'text-white'
                       : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
                   style={
-                    (task.priority && PRIORITY_COLORS[task.priority]) || activeEditor === 'priority'
-                      ? { backgroundColor: task.priority ? PRIORITY_COLORS[task.priority] : '#f59e0b' }
+                    task.priority && PRIORITY_COLORS[task.priority]
+                      ? { backgroundColor: PRIORITY_COLORS[task.priority] }
                       : undefined
                   }
                   title="Priority"
@@ -490,38 +490,13 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                 >
                   <Target className="w-4 h-4" strokeWidth={1.75} />
                 </button>
-                {/* Parent↔child toggle */}
                 <button
-                  onClick={async () => {
-                    if (task.linkedType === 'task' && task.linkedTo) {
-                      // This is a subtask — promote to standalone task
-                      updateTask(task.id, { linkedTo: null, linkedType: null });
-                      showCompletionMessage('Promoted to standalone task');
-                    } else {
-                      // This is a standalone task — ask for parent
-                      const parentTitle = window.prompt('Enter parent task title to link under:');
-                      if (!parentTitle || !parentTitle.trim()) return;
-                      const parentTask = tasks.find(t => t.title.toLowerCase() === parentTitle.trim().toLowerCase() && t.status !== 'done');
-                      if (parentTask) {
-                        updateTask(task.id, { linkedTo: parentTask.id, linkedType: 'task' });
-                        // Add to parent's subtaskIds
-                        const current = parentTask.subtaskIds || [];
-                        if (!current.includes(task.id)) {
-                          updateTask(parentTask.id, { subtaskIds: [...current, task.id] });
-                        }
-                        showCompletionMessage(`Linked under "${parentTask.title}"`);
-                      } else {
-                        showCompletionMessage('Parent task not found');
-                      }
-                    }
-                  }}
-                  className={`p-1.5 rounded transition-colors ${
-                    (task.linkedType === 'task' && task.linkedTo) ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300' : 'hover:bg-neutral-100 text-neutral-500'
-                  }`}
-                  title={task.linkedType === 'task' && task.linkedTo ? 'Promote to standalone' : 'Convert to subtask'}
-                  aria-label="Toggle parent/child"
+                  onClick={() => setActiveEditor(activeEditor === 'others' ? null : 'others')}
+                  className="p-1.5 rounded transition-colors hover:bg-neutral-100 text-neutral-500"
+                  title="Others"
+                  aria-label="Open other actions"
                 >
-                  <GitBranch className="w-4 h-4" strokeWidth={1.75} />
+                  <MoreHorizontal className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <button
                   onClick={() => updateTask(task.id, { flag: !task.flag, blocked: !task.flag })}
@@ -532,25 +507,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                   <Flag className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <div className="flex-1" />
-                {/* Impact buttons: Backlog + Swap + Delete */}
-                {task.status !== 'backlog' && (
-                  <button
-                    onClick={() => { moveTaskToStatus(task.id, 'backlog'); showCompletionMessage(t('tasks.movedToBacklog')); }}
-                    className="p-1.5 rounded transition-colors hover:bg-blue-50 text-blue-500"
-                    title={t('tasks.moveToBacklog') || 'Move to Backlog'}
-                    aria-label={t('tasks.moveToBacklog') || 'Move to Backlog'}
-                  >
-                    <Inbox className="w-4 h-4" strokeWidth={1.75} />
-                  </button>
-                )}
-                <button
-                  onClick={() => swapEntity(task.id)}
-                  className="p-1.5 rounded transition-colors hover:bg-neutral-100 text-neutral-400"
-                  title={t('tasks.swapToGroceryTooltip')}
-                  aria-label={t('tasks.swapToGroceryItem')}
-                >
-                  <ArrowLeftRight className="w-4 h-4" strokeWidth={1.75} />
-                </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   onMouseEnter={() => setIsDeleteHover(true)}
@@ -737,6 +693,19 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
               {activeEditor === 'priority' && (
                 <div className="mt-2">
                   <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        updateTask(task.id, { priority: null });
+                        setActiveEditor(null);
+                      }}
+                      className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                        !task.priority
+                          ? 'bg-neutral-900 text-white shadow-sm'
+                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                      }`}
+                    >
+                      None
+                    </button>
                     {PRIORITY_ORDER.map((p) => (
                       <button
                         key={p}
@@ -755,6 +724,69 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Others editor */}
+              {activeEditor === 'others' && (
+                <div className="mt-2 space-y-1.5">
+                  <button
+                    onClick={() => swapEntity(task.id)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 text-neutral-500" strokeWidth={1.75} />
+                    <span>Swap</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (task.linkedType === 'task' && task.linkedTo) {
+                        updateTask(task.id, { linkedTo: null, linkedType: null });
+                        showCompletionMessage('Promoted to standalone task');
+                        setActiveEditor(null);
+                        return;
+                      }
+
+                      const parentTitle = window.prompt('Enter parent task title to link under:');
+                      if (!parentTitle || !parentTitle.trim()) return;
+                      const parentTask = tasks.find(
+                        (t) => t.id !== task.id && t.title.toLowerCase() === parentTitle.trim().toLowerCase() && t.status !== 'done'
+                      );
+
+                      if (!parentTask) {
+                        showCompletionMessage('Parent task not found');
+                        return;
+                      }
+
+                      updateTask(task.id, { linkedTo: parentTask.id, linkedType: 'task' });
+                      const current = parentTask.subtaskIds || [];
+                      if (!current.includes(task.id)) {
+                        updateTask(parentTask.id, { subtaskIds: [...current, task.id] });
+                      }
+                      showCompletionMessage(`Linked under "${parentTask.title}"`);
+                      setActiveEditor(null);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded border transition-colors ${
+                      task.linkedType === 'task' && task.linkedTo
+                        ? 'border-purple-200 bg-purple-50 text-purple-700'
+                        : 'border-neutral-200 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <GitBranch className="w-4 h-4" strokeWidth={1.75} />
+                    <span>{task.linkedType === 'task' && task.linkedTo ? 'Convert child to parent' : 'Convert parent to child'}</span>
+                  </button>
+                  {task.status !== 'backlog' && (
+                    <button
+                      onClick={() => {
+                        moveTaskToStatus(task.id, 'backlog');
+                        showCompletionMessage(t('tasks.movedToBacklog'));
+                        setActiveEditor(null);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                    >
+                      <Inbox className="w-4 h-4" strokeWidth={1.75} />
+                      <span>Inbox</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
