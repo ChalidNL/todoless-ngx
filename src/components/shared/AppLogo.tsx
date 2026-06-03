@@ -12,17 +12,23 @@ interface AppMarkProps {
 
 export const AppMark = ({ className = '' }: AppMarkProps) => (
   <svg
-    viewBox="0 0 48 48"
+    viewBox="0 0 24 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
     className={className}
   >
-    <rect x="6" y="6" width="36" height="36" rx="8" stroke="currentColor" strokeWidth="2.5" fill="none" />
     <path
-      d="M14 24L20 30L34 16"
+      d="M14.25 4.25H8.4C6.63369 4.25 5.2 5.68369 5.2 7.45V15.55C5.2 17.3163 6.63369 18.75 8.4 18.75H16.5C18.2663 18.75 19.7 17.3163 19.7 15.55V10.75"
       stroke="currentColor"
-      strokeWidth="2.5"
+      strokeWidth="2.15"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10 13.3L13.15 16.15L21.15 8.15"
+      stroke="currentColor"
+      strokeWidth="2.15"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
