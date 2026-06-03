@@ -6,6 +6,7 @@ import { t } from '../i18n/translations';
 import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot, RefreshCw } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { AttributeChip } from './shared/AttributeChip';
+import { getCompactUserName, getMemberInitials, canChangeMemberRole, isOnlyAdmin } from '../lib/member-role-utils';
 import { InviteManager } from './InviteManager';
 import { api } from '../lib/pocketbase-client';
 import { pb } from '../lib/pocketbase';
@@ -49,7 +50,6 @@ export const Settings = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
-  const [editDisplayName, setEditDisplayName] = useState('');
   const [showAgentApproval, setShowAgentApproval] = useState(false);
   const [pendingAgents, setPendingAgents] = useState<{id: string; email: string; name: string; created: string}[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
@@ -147,14 +147,13 @@ export const Settings = () => {
     if (!currentUser) return;
     setEditFirstName(currentUser.firstName || '');
     setEditLastName(currentUser.lastName || '');
-    setEditDisplayName(currentUser.displayName || '');
     setEditingProfile(true);
   };
 
   const handleProfileSave = async () => {
     if (!currentUser) return;
     setProfileError('');
-    if (!editFirstName.trim() && !editLastName.trim() && !editDisplayName.trim()) {
+    if (!editFirstName.trim() && !editLastName.trim()) {
       setProfileError(t('common.error'));
       return;
     }
@@ -163,7 +162,6 @@ export const Settings = () => {
       name: fullName || currentUser.name,
       firstName: editFirstName.trim() || undefined,
       lastName: editLastName.trim() || undefined,
-      displayName: editDisplayName.trim() || undefined,
     } as Partial<User>);
     if (success) {
       setEditingProfile(false);
@@ -177,9 +175,11 @@ export const Settings = () => {
     setEditingProfile(false);
   };
 
-  const handleRoleChange = (role: 'owner' | 'admin' | 'member' | 'agent') => {
-    if (!currentUser) return;
-    updateUser(currentUser.id, { role });
+  const handleRoleChange = async (userId: string, role: 'admin' | 'member') => {
+    const success = await updateUser(userId, { role });
+    if (success) {
+      showCompletionMessage(role === 'admin' ? 'Admin bijgewerkt' : 'Member bijgewerkt');
+    }
   };
 
   const handleToggleMemberActive = async (user: User) => {
@@ -627,17 +627,6 @@ export const Settings = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm text-neutral-600 mb-1">Display Name</label>
-                <input
-                  type="text"
-                  value={editDisplayName}
-                  onChange={(e) => setEditDisplayName(e.target.value)}
-                  placeholder="Display name"
-                  className="w-full px-3 py-2 border border-neutral-200 rounded text-sm"
-                />
-              </div>
-
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleCancelProfileEdit}
@@ -672,7 +661,7 @@ export const Settings = () => {
 
           {showTeamMembers && (
             <>
-              {currentUser?.role === 'admin' && (
+              {(currentUser?.role === 'admin' || currentUser?.role === 'owner') && (
                 <div className="mb-6 p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
                   <h3 className="text-sm font-semibold mb-3">{t('members.inviteMember')}</h3>
                   <InviteManager />
@@ -682,63 +671,93 @@ export const Settings = () => {
               {users.length === 0 ? (
                 <p className="text-sm text-neutral-500 py-4">{t('members.noMembers')}</p>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {users.map(user => {
                     const isCurrentUser = currentUser?.id === user.id;
                     const isAdmin = user.role === 'admin';
                     const isOwner = user.role === 'owner';
                     const isAgent = user.role === 'agent';
-                    const roleColor = isOwner ? '#a855f7' : isAdmin ? '#f59e0b' : isAgent ? '#3b82f6' : '#6b7280';
-                    const roleLabel = isOwner ? t('settings.owner') : isAdmin ? 'Admin' : isAgent ? 'Agent' : t('settings.member');
                     const isActive = user.active ?? true;
-                    const firstName = user.firstName || '';
-                    const lastName = user.lastName || '';
-                    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || userDisplayName(user).charAt(0).toUpperCase();
-                    const adminCount = users.filter(u => u.role === 'admin').length;
-                    const hasOtherAdmin = adminCount > 0 && !isAdmin;
+                    const canManageRole = canChangeMemberRole(currentUser, user);
+                    const compactName = getCompactUserName(user);
+                    const initials = getMemberInitials({
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      name: user.name,
+                      email: user.email,
+                    });
+                    const memberRoleLabel = isOwner ? t('settings.owner') : isAdmin ? 'Admin' : isAgent ? 'Agent' : t('settings.member');
+                    const roleColor = isOwner ? '#a855f7' : isAdmin ? '#f59e0b' : isAgent ? '#3b82f6' : '#6b7280';
+                    const disableMemberRole = isAdmin && isOnlyAdmin(users, user.id);
 
                     return (
-                      <div key={user.id} className="flex items-center gap-2.5 p-2.5 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                          style={{ backgroundColor: roleColor }}>
+                      <div key={user.id} className="flex items-start gap-2.5 p-2.5 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                          style={{ backgroundColor: roleColor }}
+                        >
                           {initials}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-sm truncate">{userDisplayName(user)}</span>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-medium text-sm truncate">{compactName || userDisplayName(user)}</span>
                             {isCurrentUser && <span className="text-[10px] text-neutral-400">(you)</span>}
-                            <span className="inline-flex items-center px-1.5 h-5 rounded-full text-[10px] font-medium text-white"
-                              style={{ backgroundColor: roleColor }}>
-                              {roleLabel}
-                            </span>
                           </div>
                           <p className="text-[11px] text-neutral-500 truncate">{user.email}</p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <AttributeChip label={memberRoleLabel} color={roleColor} active />
+                            <AttributeChip
+                              label={isActive ? t('settings.active') : t('settings.blocked')}
+                              color={isActive ? '#16a34a' : '#dc2626'}
+                              active
+                            />
+                            {canManageRole && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRoleChange(user.id, 'admin')}
+                                  className={`inline-flex items-center px-2 h-7 rounded-full text-xs border transition-colors ${
+                                    isAdmin
+                                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                      : 'border-neutral-200 text-neutral-600 hover:border-amber-200 hover:text-amber-700'
+                                  }`}
+                                >
+                                  Admin
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRoleChange(user.id, 'member')}
+                                  disabled={disableMemberRole}
+                                  className={`inline-flex items-center px-2 h-7 rounded-full text-xs border transition-colors ${
+                                    !isAdmin
+                                      ? 'bg-neutral-900 text-white border-neutral-900'
+                                      : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                  {t('settings.member')}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className={`inline-flex items-center px-2 h-6 rounded-full text-[10px] font-medium ${
-                            isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {isActive ? t('settings.active') : t('settings.blocked')}
-                          </span>
-                          {currentUser?.role === 'admin' && !isCurrentUser && !isOwner && (
-                            <div className="flex gap-0.5">
-                              <button
-                                onClick={() => handleToggleMemberActive(user)}
-                                className="p-1 hover:bg-neutral-100 rounded text-neutral-400"
-                                title={isActive ? t('settings.blocked') : t('settings.unblock')}
-                              >
-                                {isActive ? <Lock className="w-3 h-3" /> : <Check className="w-3 h-3 text-green-600" />}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMember(user)}
-                                className="p-1 hover:bg-red-50 rounded text-red-400"
-                                title={t('common.delete')}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        {(currentUser?.role === 'admin' || currentUser?.role === 'owner') && !isCurrentUser && !isOwner && (
+                          <div className="flex items-center gap-0.5 flex-shrink-0 pt-0.5">
+                            <button
+                              onClick={() => handleToggleMemberActive(user)}
+                              className="p-1 hover:bg-neutral-100 rounded text-neutral-400"
+                              title={isActive ? t('settings.blocked') : t('settings.unblock')}
+                            >
+                              {isActive ? <Lock className="w-3 h-3" /> : <Check className="w-3 h-3 text-green-600" />}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMember(user)}
+                              className="p-1 hover:bg-red-50 rounded text-red-400"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Task, RepeatInterval, userDisplayName } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../lib/pocketbase-client';
-import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle, Inbox, Target, GitBranch, MoreHorizontal, Edit2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Trash2, Tag, User, CalendarDays, Flag, ArrowLeftRight, RotateCcw, X, AlertTriangle, Inbox, Target, GitBranch, MoreHorizontal, Edit2, MessageSquare } from 'lucide-react';
 import { t } from '../../i18n/translations';
 import { getRepeatLabel, getRepeatOptions } from '../../lib/repeat-options';
+import { getCompactUserName } from '../../lib/member-role-utils';
+import { buildFlagUpdate, getCommentButtonActive } from '../../lib/task-attribute-utils';
 
 // Subtask icon: square with dot inside
 const SubtaskIcon = ({ className }: { className?: string }) => (
@@ -23,7 +25,7 @@ interface CompactTaskCardProps {
   urgent?: boolean;
 }
 
-type TaskEditor = 'labels' | 'assignee' | 'schedule' | 'priority' | 'subtasks' | 'others' | null;
+type TaskEditor = 'labels' | 'assignee' | 'schedule' | 'priority' | 'subtasks' | 'comment' | 'others' | null;
 
 const DeleteConfirm = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
@@ -85,6 +87,9 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
   const [subtaskPendingDelete, setSubtaskPendingDelete] = useState<Task | null>(null);
   const [showParentPicker, setShowParentPicker] = useState(false);
   const [parentSearch, setParentSearch] = useState('');
+  const [commentDraft, setCommentDraft] = useState(task.blockedComment || '');
+  const [pendingFlagActivation, setPendingFlagActivation] = useState(false);
+  const [commentError, setCommentError] = useState('');
 
   // Edit mode inactivity timeout (60s)
   const lastInteractionRef = useRef(Date.now());
@@ -104,6 +109,14 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
   const trackInteraction = useCallback(() => {
     lastInteractionRef.current = Date.now();
   }, []);
+
+  useEffect(() => {
+    setCommentDraft(task.blockedComment || '');
+    if (!task.flag) {
+      setPendingFlagActivation(false);
+      setCommentError('');
+    }
+  }, [task.blockedComment, task.flag]);
 
   const isDone = task.status === 'done';
   const assignedUser = task.assignedTo ? users.find((u) => u.id === task.assignedTo) : null;
@@ -152,6 +165,56 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
 
   const clearPriority = () => {
     updateTask(task.id, { priority: null });
+  };
+
+  const openCommentEditor = (flagActivation = false) => {
+    setCommentDraft(task.blockedComment || '');
+    setCommentError('');
+    setPendingFlagActivation(flagActivation);
+    setActiveEditor('comment');
+  };
+
+  const commitComment = () => {
+    const trimmedComment = commentDraft.trim();
+
+    if (pendingFlagActivation) {
+      const result = buildFlagUpdate(task, commentDraft);
+      if ('error' in result) {
+        setCommentError(t('tasks.commentRequiredForFlag'));
+        return;
+      }
+      updateTask(task.id, result.update);
+      setPendingFlagActivation(false);
+      setCommentError('');
+      setActiveEditor(null);
+      return;
+    }
+
+    if (task.flag && !trimmedComment) {
+      setCommentError(t('tasks.commentRequiredForFlag'));
+      return;
+    }
+
+    updateTask(task.id, { blockedComment: trimmedComment || null });
+    setCommentError('');
+    setActiveEditor(null);
+  };
+
+  const handleToggleFlag = () => {
+    if (task.flag) {
+      const result = buildFlagUpdate(task, commentDraft || task.blockedComment || '');
+      if ('update' in result) {
+        updateTask(task.id, result.update);
+      }
+      setPendingFlagActivation(false);
+      setCommentError('');
+      if (activeEditor === 'comment') {
+        setActiveEditor(null);
+      }
+      return;
+    }
+
+    openCommentEditor(true);
   };
 
   const removeLabel = (labelId: string) => {
@@ -382,10 +445,10 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
               {assignedUser && (
                   <AttributeChip
                     icon={<User className="w-3.5 h-3.5" />}
-                    label={userDisplayName(assignedUser)}
+                    label={getCompactUserName(assignedUser)}
                   color="#10b981"
                   active={isAssigneeFiltered(assignedUser.id)}
-                  onClick={showMenu ? clearAssignee : () => toggleChipFilter('assignee', assignedUser.id, userDisplayName(assignedUser), '#10b981')}
+                  onClick={showMenu ? clearAssignee : () => toggleChipFilter('assignee', assignedUser.id, getCompactUserName(assignedUser), '#10b981')}
                 />
               )}
               {dateStr && !isDone && (
@@ -637,20 +700,34 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                   <Target className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <button
-                  onClick={() => setActiveEditor(activeEditor === 'others' ? null : 'others')}
-                  className="p-1.5 rounded transition-colors hover:bg-neutral-100 text-neutral-500"
-                  title="Others"
-                  aria-label="Open other actions"
+                  onClick={() => openCommentEditor()}
+                  className={`p-1.5 rounded transition-colors ${
+                    getCommentButtonActive(task) || activeEditor === 'comment'
+                      ? 'bg-neutral-900 text-white'
+                      : 'hover:bg-neutral-100 text-neutral-500'
+                  }`}
+                  title={t('tasks.comment')}
+                  aria-label={t('tasks.comment')}
                 >
-                  <MoreHorizontal className="w-4 h-4" strokeWidth={1.75} />
+                  <MessageSquare className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <button
-                  onClick={() => updateTask(task.id, { flag: !task.flag, blocked: !task.flag })}
+                  onClick={handleToggleFlag}
                   className={`p-1.5 rounded transition-colors ${task.flag ? 'bg-red-100 text-red-700' : 'hover:bg-neutral-100 text-neutral-500'}`}
                   title={t('tasks.flagTooltip')}
                   aria-label={t('tasks.toggleFlag')}
                 >
                   <Flag className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+                <button
+                  onClick={() => setActiveEditor(activeEditor === 'others' ? null : 'others')}
+                  className={`p-1.5 rounded transition-colors ${
+                    activeEditor === 'others' ? 'bg-neutral-200 text-neutral-700' : 'hover:bg-neutral-100 text-neutral-500'
+                  }`}
+                  title="Others"
+                  aria-label="Open other actions"
+                >
+                  <MoreHorizontal className="w-4 h-4" strokeWidth={1.75} />
                 </button>
                 <div className="flex-1" />
                 <button
@@ -831,6 +908,47 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Comment editor */}
+              {activeEditor === 'comment' && (
+                <div className="mt-2 space-y-2">
+                  <textarea
+                    value={commentDraft}
+                    onChange={(e) => {
+                      setCommentDraft(e.target.value);
+                      if (commentError) setCommentError('');
+                    }}
+                    placeholder={t('tasks.commentPlaceholder')}
+                    className={`w-full min-h-[88px] text-sm px-3 py-2 border rounded resize-none ${
+                      commentError ? 'border-red-300 bg-red-50/40' : 'border-neutral-200 bg-white'
+                    }`}
+                    aria-label={t('tasks.comment')}
+                    autoFocus
+                  />
+                  {commentError && (
+                    <p className="text-xs text-red-600">{commentError}</p>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => {
+                        setCommentDraft(task.blockedComment || '');
+                        setPendingFlagActivation(false);
+                        setCommentError('');
+                        setActiveEditor(null);
+                      }}
+                      className="px-3 py-1.5 border border-neutral-200 rounded text-sm text-neutral-600"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      onClick={commitComment}
+                      className="px-3 py-1.5 bg-neutral-900 text-white rounded text-sm"
+                    >
+                      {pendingFlagActivation ? t('tasks.addCommentAndFlag') : t('common.save')}
+                    </button>
                   </div>
                 </div>
               )}

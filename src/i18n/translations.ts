@@ -99,16 +99,7 @@ interface TranslationStructure {
     workspaceNameMissing: string;
   };
   tasks: {
-    title: string;
-    newTask: string;
-    dueDate: string;
-    assignee: string;
-    labels: string;
-    priority: string;
-    status: string;
-    completed: string;
-    inProgress: string;
-    todo: string;
+    [key: string]: string;
   };
   items: {
     title: string;
@@ -456,6 +447,10 @@ export const translations: Record<Language, TranslationStructure> = {
       completed: 'Completed',
       inProgress: 'In Progress',
       todo: 'To Do',
+      comment: 'Comment',
+      commentPlaceholder: 'Add context or a blocker note…',
+      commentRequiredForFlag: 'Add a comment before flagging this task.',
+      addCommentAndFlag: 'Add comment & flag',
       subtasks: 'Sub-tasks',
       subtaskAdded: 'Sub-task added',
       failedToCreateSubtask: 'Failed to create sub-task',
@@ -810,6 +805,10 @@ export const translations: Record<Language, TranslationStructure> = {
       completed: 'Terminé',
       inProgress: 'En cours',
       todo: 'À faire',
+      comment: 'Commentaire',
+      commentPlaceholder: 'Ajoutez du contexte ou un blocage…',
+      commentRequiredForFlag: 'Ajoutez un commentaire avant de signaler cette tâche.',
+      addCommentAndFlag: 'Ajouter un commentaire et signaler',
       subtasks: 'Sous-tâches',
       subtaskAdded: 'Sous-tâche ajoutée',
       failedToCreateSubtask: 'Échec de création de la sous-tâche',
@@ -1164,6 +1163,10 @@ export const translations: Record<Language, TranslationStructure> = {
       completed: 'Voltooid',
       inProgress: 'Bezig',
       todo: 'Te doen',
+      comment: 'Commentaar',
+      commentPlaceholder: 'Voeg context of een blokkade toe…',
+      commentRequiredForFlag: 'Voeg eerst een commentaar toe voordat je deze taak flagt.',
+      addCommentAndFlag: 'Commentaar toevoegen en flaggen',
       subtasks: 'Sub-taken',
       subtaskAdded: 'Sub-taak toegevoegd',
       failedToCreateSubtask: 'Sub-taak aanmaken mislukt',
@@ -1518,6 +1521,10 @@ export const translations: Record<Language, TranslationStructure> = {
       completed: 'Abgeschlossen',
       inProgress: 'In Bearbeitung',
       todo: 'Zu erledigen',
+      comment: 'Kommentar',
+      commentPlaceholder: 'Kontext oder Blocker hinzufügen…',
+      commentRequiredForFlag: 'Füge vor dem Markieren zuerst einen Kommentar hinzu.',
+      addCommentAndFlag: 'Kommentar hinzufügen und markieren',
       subtasks: 'Teilaufgaben',
       subtaskAdded: 'Teilaufgabe hinzugefügt',
       failedToCreateSubtask: 'Teilaufgabe konnte nicht erstellt werden',
@@ -1650,6 +1657,7 @@ export const translations: Record<Language, TranslationStructure> = {
       tokenName: 'Token-Name',
       tokenPermissions: 'Token-Berechtigungen',
       tuesday: 'Dienstag',
+      unblock: 'Entsperren',
       unlimited: 'Unbegrenzt',
       unnamed: 'Unbenannt',
       update: 'Aktualisieren',

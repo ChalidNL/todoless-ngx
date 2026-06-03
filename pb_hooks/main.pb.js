@@ -687,14 +687,16 @@ routerAdd('POST', '/api/v1', (c) => {
       if (!targetId || !newRole) return c.json(400, { error: 'user_id and role required' });
       if (['owner','admin','member','agent'].indexOf(newRole) === -1) return c.json(400, { error: 'Invalid role' });
 
-      // Max 1 admin: demote current admin before promoting another
+      // Max 1 admin: promoting a new admin demotes all other admins to member
       if (newRole === 'admin') {
         var existingAdmins = $app.findRecordsByFilter('users', 'role = "admin"', '', 0, 0);
-        var filtered = [];
+        var u2 = $app.unsafeWithoutHooks();
         for (var i = 0; i < existingAdmins.length; i++) {
-          if (existingAdmins[i].id !== targetId) filtered.push(existingAdmins[i]);
+          if (existingAdmins[i].id !== targetId) {
+            existingAdmins[i].set('role', 'member');
+            u2.save(existingAdmins[i]);
+          }
         }
-        if (filtered.length > 0) return c.json(400, { error: 'There can be only one admin. Demote the current admin first.' });
       }
 
       // Prevent current user from demoting themselves from admin if no other admin exists
