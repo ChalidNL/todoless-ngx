@@ -34,6 +34,21 @@ describe('member family utils', () => {
     expect(view.members.map((member) => member.id)).toEqual(['a1', 'm1']);
     expect(view.familyName).toBe('No family assigned');
   });
+
+  it('excludes unrelated users when the current family id is known', () => {
+    const view = buildFamilyMembershipView(
+      [
+        { id: 'c1', name: 'Chalid', email: 'chalid@example.com', role: 'admin', family_id: 'fam-main' },
+        { id: 'm1', name: 'Loubna', email: 'loubna@example.com', role: 'member', family_id: 'fam-main' },
+        { id: 'h1', name: 'Hamza', email: 'hamza@example.com', role: 'admin', family_id: 'fam-other' },
+        { id: 'x1', name: 'No Family', email: 'x1@example.com', role: 'member' },
+      ],
+      'fam-main',
+      'Gezin Chalid'
+    );
+
+    expect(view.members.map((member) => member.id)).toEqual(['c1', 'm1']);
+  });
 });
 
 describe('repeat schedule', () => {

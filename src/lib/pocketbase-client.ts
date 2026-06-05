@@ -838,7 +838,12 @@ class PocketBaseClient {
 
   async getUsers(): Promise<User[]> {
     if (!pb.authStore.isValid) return [];
-    const list = await pb.collection('users').getFullList({ sort: 'name' });
+    const userId = pb.authStore.record?.id;
+    const familyId = String((pb.authStore.record as any)?.family_id || '');
+    const filter = familyId
+      ? `id = "${userId}" || family_id = "${familyId}"`
+      : `id = "${userId}"`;
+    const list = await pb.collection('users').getFullList({ filter, sort: 'name' });
     return list.map(normalizeUser);
   }
 
@@ -1092,9 +1097,7 @@ class PocketBaseClient {
   }
 
   async getHouseholdUsers(): Promise<User[]> {
-    if (!pb.authStore.isValid) return [];
-    const list = await pb.collection('users').getFullList({ sort: 'name' });
-    return list.map(normalizeUser);
+    return this.getUsers();
   }
 
   // Family

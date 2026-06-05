@@ -272,7 +272,8 @@ routerAdd('GET', '/api/setup-status', (c) => {
   try {
     var u = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     var s = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0);
-    return c.json(200, { has_users: u.length > 0, setup_complete: s.length > 0 });
+    var hasUsers = u.length > 0;
+    return c.json(200, { has_users: hasUsers, setup_complete: hasUsers || s.length > 0 });
   } catch(e) { return c.json(200, { has_users: false, setup_complete: false }); }
 });
 
@@ -358,7 +359,11 @@ routerAdd('POST', '/api/register', (c) => {
 
     var existing = $app.findRecordsByFilter('users', '', '-created', 1, 0);
     var setupDone = $app.findRecordsByFilter('app_settings', 'setup_complete = true', '-created', 1, 0).length > 0;
-    if (existing.length === 0 || !setupDone) {
+    var shouldBootstrap = existing.length === 0;
+    if (!shouldBootstrap && !setupDone && !String(d.invite_code || '').trim()) {
+      throw new BadRequestError('Registration requires a valid invite code once the first account exists.', {});
+    }
+    if (shouldBootstrap) {
       // ── First user / setup flow ──
       if (!d.email || !d.password || d.password.length < 8) return c.json(400, { error: 'Email and password (min 8) required' });
       if (d.password !== d.passwordConfirm) return c.json(400, { error: 'Passwords do not match' });
@@ -678,7 +683,7 @@ routerAdd('POST', '/api/v1', (c) => {
       return c.json(200,{labels:labels,shops:shops,users:users});
     }
 
-    // ── Admin: set_role (max 1 admin) ──
+    // ── Admin: set_role (family scoped, single admin per family) ──
     if (action === 'set_role') {
       if (!auth) return c.json(401, { error: 'Unauthorized' });
       if (String(auth.get('role') || '') !== 'admin' && String(auth.get('role') || '') !== 'owner') return c.json(403, { error: 'Admin only' });
@@ -687,35 +692,43 @@ routerAdd('POST', '/api/v1', (c) => {
       if (!targetId || !newRole) return c.json(400, { error: 'user_id and role required' });
       if (['owner','admin','member','agent'].indexOf(newRole) === -1) return c.json(400, { error: 'Invalid role' });
 
-      // Max 1 admin: promoting a new admin demotes all other admins to member
-      if (newRole === 'admin') {
-        var existingAdmins = $app.findRecordsByFilter('users', 'role = "admin"', '', 0, 0);
-        var u2 = $app.unsafeWithoutHooks();
-        for (var i = 0; i < existingAdmins.length; i++) {
-          if (existingAdmins[i].id !== targetId) {
-            existingAdmins[i].set('role', 'member');
-            u2.save(existingAdmins[i]);
-          }
-        }
-      }
-
-      // Prevent current user from demoting themselves from admin if no other admin exists
-      if (newRole !== 'admin' && auth.id === targetId) {
-        var remainingAdmins = $app.findRecordsByFilter('users', 'role = "admin"', '', 0, 0);
-        var otherAdmins = [];
-        for (var i = 0; i < remainingAdmins.length; i++) {
-          if (remainingAdmins[i].id !== targetId) otherAdmins.push(remainingAdmins[i]);
-        }
-        if (otherAdmins.length === 0) return c.json(400, { error: 'You are the only admin. Promote someone else first.' });
-      }
+      var actorFamilyId = String(auth.get('family_id') || '').trim();
+      if (!actorFamilyId) return c.json(400, { error: 'Current admin has no family assigned' });
 
       var target = $app.findRecordById('users', targetId);
       if (!target) return c.json(404, { error: 'User not found' });
+
+      var targetFamilyId = String(target.get('family_id') || '').trim();
+      if (targetFamilyId !== actorFamilyId) {
+        return c.json(403, { error: 'You can only manage members in your own family.' });
+      }
 
       // Agents cannot be admin or owner
       var targetMemberType = String(target.get('member_type') || '');
       if (targetMemberType === 'agent' && (newRole === 'admin' || newRole === 'owner')) {
         return c.json(400, { error: 'Agents cannot be assigned admin or owner roles.' });
+      }
+
+      var familyAdmins = $app.findRecordsByFilter('users', 'family_id = "' + actorFamilyId + '" && (role = "admin" || role = "owner")', '', 0, 0);
+
+      // Keep a single admin/owner per family: promoting a new admin demotes the others in that family only.
+      if (newRole === 'admin' || newRole === 'owner') {
+        var u2 = $app.unsafeWithoutHooks();
+        for (var i = 0; i < familyAdmins.length; i++) {
+          if (familyAdmins[i].id !== targetId) {
+            familyAdmins[i].set('role', 'member');
+            u2.save(familyAdmins[i]);
+          }
+        }
+      }
+
+      // Prevent the only family admin from demoting themselves without promoting someone else first.
+      if (newRole !== 'admin' && newRole !== 'owner' && auth.id === targetId) {
+        var otherAdmins = [];
+        for (var i = 0; i < familyAdmins.length; i++) {
+          if (familyAdmins[i].id !== targetId) otherAdmins.push(familyAdmins[i]);
+        }
+        if (otherAdmins.length === 0) return c.json(400, { error: 'You are the only admin. Promote someone else first.' });
       }
 
       var u = $app.unsafeWithoutHooks();
