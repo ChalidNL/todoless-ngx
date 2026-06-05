@@ -27,6 +27,7 @@ const normalizeUser = (record: any): User => ({
   displayName: record.display_name || undefined,
   avatarUrl: record.avatar,
   role: (record.role || 'member') as User['role'],
+  member_status: record.member_status || undefined,
   family_id: record.family_id || undefined,
   active: record.member_status ? record.member_status === 'active' : (typeof record.active === 'boolean' ? record.active : true),
 });
@@ -866,14 +867,18 @@ class PocketBaseClient {
     }
 
     // Active/block changes must go through secured hook action.
-    if (typeof updates.active !== 'undefined') {
+    if (typeof updates.active !== 'undefined' || typeof updates.member_status !== 'undefined') {
+      const nextActive = typeof updates.active === 'boolean'
+        ? updates.active
+        : updates.member_status === 'active';
+
       const response = await fetch('/api/v1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': pb.authStore.token ? `Bearer ${pb.authStore.token}` : '',
         },
-        body: JSON.stringify({ action: 'set_user_block', user_id: id, blocked: !updates.active }),
+        body: JSON.stringify({ action: 'set_user_block', user_id: id, blocked: !nextActive }),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Failed to update user status' }));

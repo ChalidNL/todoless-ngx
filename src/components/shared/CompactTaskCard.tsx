@@ -349,22 +349,22 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
         ref={cardRef}
         onClick={trackInteraction}
         className={`rounded-lg border transition-colors ${
-        isDone
-          ? 'border-neutral-200 opacity-75'
-          : isFocusTask
-            ? 'border-violet-300 hover:border-violet-400 shadow-[0_0_0_1px_rgba(124,58,237,0.08)]'
-            : 'border-neutral-200 hover:border-neutral-300'
-      } ${
-        urgent
-          ? '!border-orange-400 !bg-orange-50'
-          : isFlagged
-            ? 'border-red-300 !bg-red-50'
-            : isOverdue
-              ? '!bg-orange-50'
-              : isFocusTask
-                ? '!bg-violet-50/70'
-                : 'bg-white'
-      } ${showMenu ? 'ring-1 ring-neutral-300 !bg-neutral-50' : ''}`}>
+          isDone
+            ? 'border-neutral-200 opacity-75'
+            : isFocusTask
+              ? 'border-violet-400 hover:border-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.12)]'
+              : 'border-neutral-200 hover:border-neutral-300'
+        } ${
+          urgent
+            ? '!border-orange-400 !bg-orange-50'
+            : isFlagged
+              ? 'border-red-300 !bg-red-50'
+              : isOverdue
+                ? '!bg-orange-50'
+                : isFocusTask
+                  ? '!bg-violet-100/80'
+                  : 'bg-white'
+        } ${showMenu ? 'ring-1 ring-neutral-300 !bg-neutral-50' : ''}`}>
         <div className="p-2.5">
           {/* Line 1: checkbox + title + hamburger */}
           <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
           </div>
 
           {/* Line 2: chips — labels, assignee, date, repeat, subtask progress (always visible) */}
-          {!isDone && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (task.priority && PRIORITY_COLORS[task.priority]) || !!task.repeatInterval || hasComment) && (
+          {!isDone && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (task.priority && PRIORITY_COLORS[task.priority]) || !!task.repeatInterval || hasComment || isFocusTask) && (
             <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
               {task.labels.map((labelId) => {
                 const label = labels.find((l) => l.id === labelId);
@@ -486,15 +486,27 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                   maxWidthClassName="max-w-[92px]"
                 />
               )}
+              {isFocusTask && (
+                <button
+                  type="button"
+                  onClick={() => updateTask(task.id, { focus: false })}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-violet-700 bg-violet-100 ring-1 ring-violet-300 transition-colors"
+                  aria-label={t('tasks.focus')}
+                  title={t('tasks.focus')}
+                >
+                  <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
+                </button>
+              )}
               {hasComment && (
-                <AttributeChip
-                  icon={<MessageSquare className="w-3.5 h-3.5" />}
-                  label={t('tasks.comment')}
-                  color="#2563eb"
+                <button
+                  type="button"
                   onClick={() => openCommentEditor()}
-                  compact
-                  ariaLabel={t('tasks.comment')}
-                />
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-blue-600 hover:bg-blue-50 transition-colors"
+                  aria-label={t('tasks.comment')}
+                  title={t('tasks.comment')}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.75} />
+                </button>
               )}
               {subtaskCount > 0 && (
                 <AttributeChip

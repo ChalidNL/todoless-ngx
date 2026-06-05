@@ -322,6 +322,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       focus: i.focus ?? false,
       completed: i.completed,
     }));
+    setTasks(fetchedTasks);
+    setItems(fetchedItems);
     setEntries([...taskEntries, ...itemEntries]);
   };
 
@@ -449,6 +451,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await Promise.all([
         pb.collection('tasks').subscribe('*', () => void refreshEntries()),
         pb.collection('items').subscribe('*', () => void refreshEntries()),
+        pb.collection('users').subscribe('*', () => void refreshUsers()),
         pb.collection('labels').subscribe('*', () => void refreshLabels()),
         pb.collection('shops').subscribe('*', () => void refreshShops()),
         pb.collection('invite_codes').subscribe('*', () => void refreshInvites()),
@@ -461,6 +464,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       pb.collection('tasks').unsubscribe();
       pb.collection('items').unsubscribe();
+      pb.collection('users').unsubscribe();
       pb.collection('labels').unsubscribe();
       pb.collection('shops').unsubscribe();
       pb.collection('invite_codes').unsubscribe();
@@ -472,14 +476,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!pb.authStore.isValid) return;
     if (sharedView) {
       void (async () => {
+        setEntries([]);
         setTasks(await api.getSharedTasks());
         setItems(await api.getSharedItems());
       })();
     } else {
-      void (async () => {
-        await refreshTasks();
-        await refreshItems();
-      })();
+      void refreshEntries();
     }
   }, [sharedView]);
 
@@ -499,7 +501,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addItem = (item: Omit<Item, 'id' | 'createdAt'>) => {
     void (async () => {
       await api.createItem(item);
-      await refreshItems();
+      await refreshEntries();
     })();
   };
 
@@ -507,7 +509,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     void (async () => {
       try {
         await api.createTask(task);
-        await refreshTasks();
+        await refreshEntries();
       } catch (error) {
         console.error('addTask failed:', error);
       }
@@ -565,14 +567,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const updateItem = (id: string, updates: Partial<Item>) => {
     void (async () => {
       await api.updateItem(id, updates);
-      await refreshItems();
+      await refreshEntries();
     })();
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
     void (async () => {
       await api.updateTask(id, updates);
-      await refreshTasks();
+      await refreshEntries();
     })();
   };
 
@@ -630,7 +632,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       await api.deleteUser(id);
       await refreshUsers();
-      await Promise.allSettled([refreshTasks(), refreshItems(), refreshNotes()]);
+      await Promise.allSettled([refreshEntries(), refreshNotes()]);
       showCompletionMessage('Member deleted');
       return true;
     } catch (error) {
@@ -643,7 +645,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteItem = (id: string) => {
     void (async () => {
       await api.deleteItem(id);
-      await refreshItems();
+      await refreshEntries();
       await refreshNotes();
     })();
   };
@@ -651,7 +653,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteTask = (id: string) => {
     void (async () => {
       await api.deleteTask(id);
-      await refreshTasks();
+      await refreshEntries();
       await refreshNotes();
     })();
   };
@@ -666,7 +668,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteLabel = (id: string) => {
     void (async () => {
       await api.deleteLabel(id);
-      await Promise.all([refreshLabels(), refreshTasks(), refreshItems(), refreshNotes()]);
+      await Promise.all([refreshLabels(), refreshEntries(), refreshNotes()]);
     })();
   };
 

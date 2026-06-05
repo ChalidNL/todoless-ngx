@@ -17,85 +17,97 @@ function toDate(value: number | string | Date): Date {
   return value instanceof Date ? new Date(value.getTime()) : new Date(value);
 }
 
+function toCalendarDate(value: number | string | Date): Date {
+  if (typeof value === 'string') {
+    const utcMidnightMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/);
+    if (utcMidnightMatch) {
+      const [, year, month, day] = utcMidnightMatch;
+      return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0);
+    }
+  }
+
+  return toDate(value);
+}
+
 function addMonthsPreservingDay(baseDate: Date, monthsToAdd: number): Date {
-  const year = baseDate.getUTCFullYear();
-  const monthIndex = baseDate.getUTCMonth() + monthsToAdd;
+  const year = baseDate.getFullYear();
+  const monthIndex = baseDate.getMonth() + monthsToAdd;
   const targetYear = year + Math.floor(monthIndex / 12);
   const normalizedMonth = ((monthIndex % 12) + 12) % 12;
-  const daysInMonth = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
-  const targetDay = Math.min(baseDate.getUTCDate(), daysInMonth);
+  const daysInMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+  const targetDay = Math.min(baseDate.getDate(), daysInMonth);
 
-  return new Date(Date.UTC(
+  return new Date(
     targetYear,
     normalizedMonth,
     targetDay,
-    baseDate.getUTCHours(),
-    baseDate.getUTCMinutes(),
-    baseDate.getUTCSeconds(),
-    baseDate.getUTCMilliseconds()
-  ));
+    baseDate.getHours(),
+    baseDate.getMinutes(),
+    baseDate.getSeconds(),
+    baseDate.getMilliseconds(),
+  );
 }
 
 function getMonthlyWeekdayParts(input: number | string | Date): MonthlyWeekdayParts {
-  const date = toDate(input);
-  const dayOfMonth = date.getUTCDate();
+  const date = toCalendarDate(input);
+  const dayOfMonth = date.getDate();
   const occurrenceIndex = Math.floor((dayOfMonth - 1) / 7);
-  const weekdayIndex = date.getUTCDay();
+  const weekdayIndex = date.getDay();
   const nextSameWeekday = new Date(date.getTime());
-  nextSameWeekday.setUTCDate(dayOfMonth + 7);
+  nextSameWeekday.setDate(dayOfMonth + 7);
 
   return {
     weekdayIndex,
     occurrenceIndex,
-    isLastOccurrence: nextSameWeekday.getUTCMonth() !== date.getUTCMonth(),
+    isLastOccurrence: nextSameWeekday.getMonth() !== date.getMonth(),
   };
 }
 
 function getNthWeekdayInMonth(baseDate: Date, monthsToAdd: number): Date {
   const targetMonthSeed = addMonthsPreservingDay(baseDate, monthsToAdd);
-  const targetYear = targetMonthSeed.getUTCFullYear();
-  const targetMonth = targetMonthSeed.getUTCMonth();
+  const targetYear = targetMonthSeed.getFullYear();
+  const targetMonth = targetMonthSeed.getMonth();
   const { weekdayIndex, occurrenceIndex, isLastOccurrence } = getMonthlyWeekdayParts(baseDate);
 
-  const firstDayOfMonth = new Date(Date.UTC(
+  const firstDayOfMonth = new Date(
     targetYear,
     targetMonth,
     1,
-    baseDate.getUTCHours(),
-    baseDate.getUTCMinutes(),
-    baseDate.getUTCSeconds(),
-    baseDate.getUTCMilliseconds()
-  ));
+    baseDate.getHours(),
+    baseDate.getMinutes(),
+    baseDate.getSeconds(),
+    baseDate.getMilliseconds(),
+  );
 
-  const firstWeekdayOffset = (weekdayIndex - firstDayOfMonth.getUTCDay() + 7) % 7;
+  const firstWeekdayOffset = (weekdayIndex - firstDayOfMonth.getDay() + 7) % 7;
   const firstWeekdayDate = 1 + firstWeekdayOffset;
   let targetDay = firstWeekdayDate + (occurrenceIndex * 7);
 
-  const daysInMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
 
   if (isLastOccurrence || targetDay > daysInMonth) {
-    const lastDayOfMonth = new Date(Date.UTC(
+    const lastDayOfMonth = new Date(
       targetYear,
       targetMonth,
       daysInMonth,
-      baseDate.getUTCHours(),
-      baseDate.getUTCMinutes(),
-      baseDate.getUTCSeconds(),
-      baseDate.getUTCMilliseconds()
-    ));
-    const reverseOffset = (lastDayOfMonth.getUTCDay() - weekdayIndex + 7) % 7;
+      baseDate.getHours(),
+      baseDate.getMinutes(),
+      baseDate.getSeconds(),
+      baseDate.getMilliseconds(),
+    );
+    const reverseOffset = (lastDayOfMonth.getDay() - weekdayIndex + 7) % 7;
     targetDay = daysInMonth - reverseOffset;
   }
 
-  return new Date(Date.UTC(
+  return new Date(
     targetYear,
     targetMonth,
     targetDay,
-    baseDate.getUTCHours(),
-    baseDate.getUTCMinutes(),
-    baseDate.getUTCSeconds(),
-    baseDate.getUTCMilliseconds()
-  ));
+    baseDate.getHours(),
+    baseDate.getMinutes(),
+    baseDate.getSeconds(),
+    baseDate.getMilliseconds(),
+  );
 }
 
 export function getRepeatDescriptor(
@@ -127,7 +139,7 @@ export function getRepeatDescriptor(
     return language === 'nl' ? 'Elke eerste maandag van de maand' : 'Every first Monday of the month';
   }
 
-  const date = toDate(dueDate);
+  const date = toCalendarDate(dueDate);
   const { weekdayIndex, occurrenceIndex, isLastOccurrence } = getMonthlyWeekdayParts(date);
   const weekday = language === 'nl' ? WEEKDAY_INDEX_TO_NAME_NL[weekdayIndex] : WEEKDAY_INDEX_TO_NAME_EN[weekdayIndex];
 
@@ -145,24 +157,24 @@ export function getRepeatDescriptor(
 }
 
 export function getNextRecurringDueDate(repeatInterval: RepeatInterval, baseDateIso: string): string {
-  const baseDate = toDate(baseDateIso);
+  const baseDate = toCalendarDate(baseDateIso);
   let nextDate: Date;
 
   switch (repeatInterval) {
     case 'day':
       nextDate = new Date(baseDate.getTime());
-      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      nextDate.setDate(nextDate.getDate() + 1);
       break;
     case 'week':
       nextDate = new Date(baseDate.getTime());
-      nextDate.setUTCDate(nextDate.getUTCDate() + 7);
+      nextDate.setDate(nextDate.getDate() + 7);
       break;
     case 'month':
       nextDate = addMonthsPreservingDay(baseDate, 1);
       break;
     case 'year':
       nextDate = new Date(baseDate.getTime());
-      nextDate.setUTCFullYear(nextDate.getUTCFullYear() + 1);
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
       break;
     case 'month_weekday':
       nextDate = getNthWeekdayInMonth(baseDate, 1);

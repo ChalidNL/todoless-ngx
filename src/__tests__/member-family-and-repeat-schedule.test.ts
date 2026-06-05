@@ -57,6 +57,16 @@ describe('repeat schedule', () => {
     expect(descriptor).toBe('Every second Monday of the month');
   });
 
+  it('describes UTC-midnight due dates using their calendar day instead of prior-day local offsets', () => {
+    const descriptor = getRepeatDescriptor('month_weekday', '2026-06-08T00:00:00.000Z', 'en');
+    expect(descriptor).toBe('Every second Monday of the month');
+  });
+
+  it('calculates the next monthly weekday recurrence from UTC-midnight due dates without shifting weekday', () => {
+    const nextDueDate = getNextRecurringDueDate('month_weekday', '2026-06-08T00:00:00.000Z');
+    expect(nextDueDate).toBe('2026-07-13T10:00:00.000Z');
+  });
+
   it('calculates the next monthly weekday recurrence from the due date pattern', () => {
     const nextDueDate = getNextRecurringDueDate('month_weekday', new Date('2026-06-08T09:00:00Z').toISOString());
     expect(nextDueDate).toBe('2026-07-13T09:00:00.000Z');

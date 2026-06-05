@@ -47,10 +47,14 @@ export interface User {
   active?: boolean;
 }
 
-/** Get the display name for a user: firstName > name > email */
-export function userDisplayName(user?: Pick<User, 'firstName' | 'name' | 'email'> | null): string {
+/** Get the display name for a user: first+last > display/full name > first name > email */
+export function userDisplayName(
+  user?: (Pick<User, 'firstName' | 'lastName' | 'displayName' | 'name' | 'email'> & { fullName?: string }) | null,
+): string {
   if (!user) return '';
-  return user.firstName || user.name || user.email?.split('@')[0] || '';
+
+  const fullName = [user.firstName, user.lastName].filter((part): part is string => !!part).join(' ').trim();
+  return fullName || user.displayName || user.fullName || user.name || user.firstName || user.email?.split('@')[0] || '';
 }
 
 export interface InviteCode {

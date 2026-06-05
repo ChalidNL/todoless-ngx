@@ -117,9 +117,9 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
       ref={cardRef}
       onClick={trackInteraction}
       className={`rounded-lg border transition-colors ${
-        isDone ? 'border-neutral-200 opacity-75' : isFocusHighlighted ? 'border-violet-300 hover:border-violet-400 shadow-[0_0_0_1px_rgba(124,58,237,0.08)]' : 'border-neutral-200 hover:border-neutral-300'
+        isDone ? 'border-neutral-200 opacity-75' : isFocusHighlighted ? 'border-violet-400 hover:border-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.12)]' : 'border-neutral-200 hover:border-neutral-300'
       } ${
-        isTaskFlagged ? '!bg-red-50' : isOverdue ? '!bg-orange-50' : isFocusHighlighted ? '!bg-violet-50/70' : 'bg-white'
+        isTaskFlagged ? '!bg-red-50' : isOverdue ? '!bg-orange-50' : isFocusHighlighted ? '!bg-violet-100/80' : 'bg-white'
       } ${showMenu ? 'ring-1 ring-neutral-300 !bg-neutral-50' : ''}`}>
       <div className="p-2.5">
         {/* Line 1: checkbox + title + badge(s) + hamburger */}
@@ -217,7 +217,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
         {/* Chip row — labels + assignee + shop + date (only when not done) */}
         {/* Tasks: chips visible in both collapsed and edit mode (labels+assignee always visible) */}
         {/* Items: chips always visible */}
-        {!isDone && ((isTask && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || !!task?.repeatInterval || hasTaskComment)) || (!isTask && hasShop)) && (
+        {!isDone && ((isTask && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || !!task?.repeatInterval || hasTaskComment || isFocusHighlighted)) || (!isTask && (hasShop || isFocusHighlighted))) && (
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
             {isTask && entity.labels.map(labelId => {
               const label = labels.find(l => l.id === labelId);
@@ -259,14 +259,27 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 maxWidthClassName="max-w-[92px]"
               />
             )}
+            {isFocusHighlighted && (
+              <button
+                type="button"
+                onClick={() => setValue({ focus: false })}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-full text-violet-700 bg-violet-100 ring-1 ring-violet-300 transition-colors"
+                aria-label={t('tasks.focus')}
+                title={t('tasks.focus')}
+              >
+                <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
             {isTask && hasTaskComment && (
-              <AttributeChip
-                icon={<MessageSquare className="w-3.5 h-3.5" />}
-                label={t('tasks.comment')}
-                color="#2563eb"
-                compact
-                ariaLabel={t('tasks.comment')}
-              />
+              <button
+                type="button"
+                onClick={() => setActiveEditor('comment')}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-full text-blue-600 hover:bg-blue-50 transition-colors"
+                aria-label={t('tasks.comment')}
+                title={t('tasks.comment')}
+              >
+                <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
             )}
             {currentShop && (
               <AttributeChip

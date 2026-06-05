@@ -190,6 +190,8 @@ interface TranslationStructure {
     openSwaggerDocs: string;
     admin: string;
     adminOnly: string;
+    activate: string;
+    you: string;
     autoFamilyJoinHint: string;
     deactivate: string;
     firstAdmin: string;
@@ -560,6 +562,8 @@ export const translations: Record<Language, TranslationStructure> = {
       openSwaggerDocs: 'Open Swagger Docs',
       admin: 'Admin',
       adminOnly: 'Admin only',
+      activate: 'Activate',
+      you: 'You',
       autoFamilyJoinHint: 'New members automatically join this family.',
       deactivate: 'Deactivate',
       firstAdmin: 'First admin',
@@ -928,6 +932,8 @@ export const translations: Record<Language, TranslationStructure> = {
       openSwaggerDocs: 'Ouvrir la documentation Swagger',
       admin: 'Admin',
       adminOnly: 'Admin uniquement',
+      activate: 'Activer',
+      you: 'Vous',
       autoFamilyJoinHint: 'Les nouveaux membres rejoignent automatiquement cette famille.',
       deactivate: 'Désactiver',
       firstAdmin: 'Premier admin',
@@ -1296,6 +1302,8 @@ export const translations: Record<Language, TranslationStructure> = {
       openSwaggerDocs: 'Open Swagger Docs',
       admin: 'Admin',
       adminOnly: 'Alleen admin',
+      activate: 'Activeer',
+      you: 'Jij',
       autoFamilyJoinHint: 'Nieuwe leden komen automatisch in deze familie.',
       deactivate: 'Deactiveer',
       firstAdmin: 'Eerste admin',
@@ -1664,6 +1672,8 @@ export const translations: Record<Language, TranslationStructure> = {
       openSwaggerDocs: 'Swagger-Dokumentation öffnen',
       admin: 'Admin',
       adminOnly: 'Nur Admin',
+      activate: 'Aktivieren',
+      you: 'Du',
       autoFamilyJoinHint: 'Neue Mitglieder treten dieser Familie automatisch bei.',
       deactivate: 'Deaktivieren',
       firstAdmin: 'Erster Admin',

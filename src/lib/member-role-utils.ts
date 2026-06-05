@@ -1,6 +1,6 @@
 import { User } from '../types';
 
-type CompactUser = Partial<Pick<User, 'firstName' | 'lastName' | 'name' | 'email' | 'role' | 'member_type'>> & Pick<User, 'email'>;
+type CompactUser = Partial<Pick<User, 'firstName' | 'lastName' | 'displayName' | 'name' | 'email' | 'role' | 'member_type'>> & Pick<User, 'email'>;
 
 export function isSystemAdminRole(role?: User['role'] | null): boolean {
   return role === 'admin' || role === 'owner';
@@ -33,6 +33,21 @@ export function getCompactUserName(user?: CompactUser | null): string {
 
   const emailPrefix = user.email?.split('@')[0]?.trim();
   return emailPrefix || '';
+}
+
+export function getMemberDisplayName(user?: CompactUser | null): string {
+  if (!user) return '';
+
+  const displayName = user.displayName?.trim();
+  if (displayName) return displayName;
+
+  const fullName = [user.firstName?.trim(), user.lastName?.trim()].filter(Boolean).join(' ').trim();
+  if (fullName) return fullName;
+
+  const name = user.name?.trim();
+  if (name) return name;
+
+  return user.email?.trim() || '';
 }
 
 export function getMemberInitials(user: CompactUser): string {

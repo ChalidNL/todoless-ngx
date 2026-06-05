@@ -6,7 +6,7 @@ import { t } from '../i18n/translations';
 import { ChevronDown, ChevronUp, Plus, Edit2, Trash2, X, LogOut, Eye, EyeOff, Copy, Check, Lock, ExternalLink, Plug, Bot, RefreshCw, Shield, Users } from 'lucide-react';
 import { NewGlobalHeader } from './shared/NewGlobalHeader';
 import { AttributeChip } from './shared/AttributeChip';
-import { getCompactUserName, getMemberInitials, canChangeMemberRole, getMemberRoleColor, isOnlyAdmin, isSystemAdminRole } from '../lib/member-role-utils';
+import { getMemberDisplayName, getMemberInitials, canChangeMemberRole, getMemberRoleColor, isOnlyAdmin, isSystemAdminRole } from '../lib/member-role-utils';
 import { buildFamilyMembershipView } from '../lib/member-family-utils';
 import { InviteManager } from './InviteManager';
 import { api } from '../lib/pocketbase-client';
@@ -220,7 +220,11 @@ export const Settings = () => {
 
   const handleToggleMemberActive = async (user: User) => {
     if (!canManageMembers) return;
-    await updateUser(user.id, { active: !(user.active ?? true) } as Partial<User>);
+    const nextActive = !(user.active ?? true);
+    await updateUser(user.id, {
+      active: nextActive,
+      member_status: nextActive ? 'active' : 'blocked',
+    } as Partial<User>);
   };
 
   const handleDeleteMember = async (user: User) => {
@@ -720,10 +724,11 @@ export const Settings = () => {
                         const isAgent = user.role === 'agent';
                         const isActive = user.active ?? true;
                         const canManageRole = canChangeMemberRole(currentUser, user);
-                        const compactName = getCompactUserName(user);
+                        const displayName = getMemberDisplayName(user);
                         const initials = getMemberInitials({
                           firstName: user.firstName,
                           lastName: user.lastName,
+                          displayName: user.displayName,
                           name: user.name,
                           email: user.email,
                         });
@@ -741,10 +746,16 @@ export const Settings = () => {
                               >
                                 {initials}
                               </div>
-                              <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                                <span className="font-medium text-neutral-900 truncate">{compactName || userDisplayName(user)}</span>
-                                <span className="text-xs text-neutral-500 truncate">{user.email}</span>
-                                {isCurrentUser && <span className="text-[10px] text-neutral-400">(you)</span>}
+                              <div className="flex-1 min-w-0 text-sm">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-medium text-neutral-900 truncate">{displayName || userDisplayName(user)}</span>
+                                  {isCurrentUser && (
+                                    <span className="inline-flex items-center h-5 px-2 rounded-full bg-neutral-100 text-[10px] font-medium uppercase tracking-wide text-neutral-500 flex-shrink-0">
+                                      {t('settings.you')}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="block text-xs text-neutral-500 truncate mt-0.5">{user.email}</span>
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                 <AttributeChip label={memberRoleLabel} color={roleColor} active />
@@ -772,7 +783,7 @@ export const Settings = () => {
                                   onClick={() => handleToggleMemberActive(user)}
                                   className="inline-flex items-center px-2.5 h-7 rounded-full text-xs font-medium border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition-colors"
                                 >
-                                  {isActive ? t('settings.deactivate') : t('settings.unblock')}
+                                  {isActive ? t('settings.deactivate') : t('settings.activate')}
                                 </button>
                                 {canManageRole && !isAdmin ? (
                                   <button
