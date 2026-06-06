@@ -201,8 +201,8 @@ export const GroceriesView = () => {
           <div className="space-y-4">
             {focusedActiveItems.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-orange-500" />
                   {t('tasks.focus')} ({focusedActiveItems.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
