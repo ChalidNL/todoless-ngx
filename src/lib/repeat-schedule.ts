@@ -4,6 +4,7 @@ const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth'] as const;
 const ORDINALS_NL = ['eerste', 'tweede', 'derde', 'vierde', 'vijfde'] as const;
 const WEEKDAY_INDEX_TO_NAME_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const WEEKDAY_INDEX_TO_NAME_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'] as const;
+const AMSTERDAM_TIME_ZONE = 'Europe/Amsterdam';
 
 type SupportedLanguage = 'nl' | 'en';
 
@@ -17,12 +18,35 @@ function toDate(value: number | string | Date): Date {
   return value instanceof Date ? new Date(value.getTime()) : new Date(value);
 }
 
+function getTimeZoneOffsetMinutes(date: Date, timeZone: string): number {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'longOffset',
+  });
+  const timeZoneName = formatter.formatToParts(date).find((part) => part.type === 'timeZoneName')?.value ?? 'GMT+00:00';
+  const match = timeZoneName.match(/GMT([+-])(\d{2}):(\d{2})/);
+
+  if (!match) {
+    return 0;
+  }
+
+  const [, sign, hours, minutes] = match;
+  const totalMinutes = (Number(hours) * 60) + Number(minutes);
+  return sign === '-' ? -totalMinutes : totalMinutes;
+}
+
+function createAmsterdamNoonDate(year: number, monthIndex: number, day: number): Date {
+  const utcGuess = new Date(Date.UTC(year, monthIndex, day, 12, 0, 0, 0));
+  const offsetMinutes = getTimeZoneOffsetMinutes(utcGuess, AMSTERDAM_TIME_ZONE);
+  return new Date(utcGuess.getTime() - (offsetMinutes * 60_000));
+}
+
 function toCalendarDate(value: number | string | Date): Date {
   if (typeof value === 'string') {
     const utcMidnightMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/);
     if (utcMidnightMatch) {
       const [, year, month, day] = utcMidnightMatch;
-      return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0);
+      return createAmsterdamNoonDate(Number(year), Number(month) - 1, Number(day));
     }
   }
 
@@ -30,84 +54,84 @@ function toCalendarDate(value: number | string | Date): Date {
 }
 
 function addMonthsPreservingDay(baseDate: Date, monthsToAdd: number): Date {
-  const year = baseDate.getFullYear();
-  const monthIndex = baseDate.getMonth() + monthsToAdd;
+  const year = baseDate.getUTCFullYear();
+  const monthIndex = baseDate.getUTCMonth() + monthsToAdd;
   const targetYear = year + Math.floor(monthIndex / 12);
   const normalizedMonth = ((monthIndex % 12) + 12) % 12;
-  const daysInMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
-  const targetDay = Math.min(baseDate.getDate(), daysInMonth);
+  const daysInMonth = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(baseDate.getUTCDate(), daysInMonth);
 
-  return new Date(
+  return new Date(Date.UTC(
     targetYear,
     normalizedMonth,
     targetDay,
-    baseDate.getHours(),
-    baseDate.getMinutes(),
-    baseDate.getSeconds(),
-    baseDate.getMilliseconds(),
-  );
+    baseDate.getUTCHours(),
+    baseDate.getUTCMinutes(),
+    baseDate.getUTCSeconds(),
+    baseDate.getUTCMilliseconds(),
+  ));
 }
 
 function getMonthlyWeekdayParts(input: number | string | Date): MonthlyWeekdayParts {
   const date = toCalendarDate(input);
-  const dayOfMonth = date.getDate();
+  const dayOfMonth = date.getUTCDate();
   const occurrenceIndex = Math.floor((dayOfMonth - 1) / 7);
-  const weekdayIndex = date.getDay();
+  const weekdayIndex = date.getUTCDay();
   const nextSameWeekday = new Date(date.getTime());
-  nextSameWeekday.setDate(dayOfMonth + 7);
+  nextSameWeekday.setUTCDate(dayOfMonth + 7);
 
   return {
     weekdayIndex,
     occurrenceIndex,
-    isLastOccurrence: nextSameWeekday.getMonth() !== date.getMonth(),
+    isLastOccurrence: nextSameWeekday.getUTCMonth() !== date.getUTCMonth(),
   };
 }
 
 function getNthWeekdayInMonth(baseDate: Date, monthsToAdd: number): Date {
   const targetMonthSeed = addMonthsPreservingDay(baseDate, monthsToAdd);
-  const targetYear = targetMonthSeed.getFullYear();
-  const targetMonth = targetMonthSeed.getMonth();
+  const targetYear = targetMonthSeed.getUTCFullYear();
+  const targetMonth = targetMonthSeed.getUTCMonth();
   const { weekdayIndex, occurrenceIndex, isLastOccurrence } = getMonthlyWeekdayParts(baseDate);
 
-  const firstDayOfMonth = new Date(
+  const firstDayOfMonth = new Date(Date.UTC(
     targetYear,
     targetMonth,
     1,
-    baseDate.getHours(),
-    baseDate.getMinutes(),
-    baseDate.getSeconds(),
-    baseDate.getMilliseconds(),
-  );
+    baseDate.getUTCHours(),
+    baseDate.getUTCMinutes(),
+    baseDate.getUTCSeconds(),
+    baseDate.getUTCMilliseconds(),
+  ));
 
-  const firstWeekdayOffset = (weekdayIndex - firstDayOfMonth.getDay() + 7) % 7;
+  const firstWeekdayOffset = (weekdayIndex - firstDayOfMonth.getUTCDay() + 7) % 7;
   const firstWeekdayDate = 1 + firstWeekdayOffset;
   let targetDay = firstWeekdayDate + (occurrenceIndex * 7);
 
-  const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const daysInMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
 
   if (isLastOccurrence || targetDay > daysInMonth) {
-    const lastDayOfMonth = new Date(
+    const lastDayOfMonth = new Date(Date.UTC(
       targetYear,
       targetMonth,
       daysInMonth,
-      baseDate.getHours(),
-      baseDate.getMinutes(),
-      baseDate.getSeconds(),
-      baseDate.getMilliseconds(),
-    );
-    const reverseOffset = (lastDayOfMonth.getDay() - weekdayIndex + 7) % 7;
+      baseDate.getUTCHours(),
+      baseDate.getUTCMinutes(),
+      baseDate.getUTCSeconds(),
+      baseDate.getUTCMilliseconds(),
+    ));
+    const reverseOffset = (lastDayOfMonth.getUTCDay() - weekdayIndex + 7) % 7;
     targetDay = daysInMonth - reverseOffset;
   }
 
-  return new Date(
+  return new Date(Date.UTC(
     targetYear,
     targetMonth,
     targetDay,
-    baseDate.getHours(),
-    baseDate.getMinutes(),
-    baseDate.getSeconds(),
-    baseDate.getMilliseconds(),
-  );
+    baseDate.getUTCHours(),
+    baseDate.getUTCMinutes(),
+    baseDate.getUTCSeconds(),
+    baseDate.getUTCMilliseconds(),
+  ));
 }
 
 export function getRepeatDescriptor(
