@@ -46,6 +46,7 @@ interface TranslationStructure {
     overdue: string;
     print: string;
     refresh: string;
+    restock: string;
     remove: string;
     retry: string;
     save: string;
@@ -108,7 +109,9 @@ interface TranslationStructure {
     category: string;
     searchPlaceholder: string;
     confirmDelete: string;
+    confirmRestock: string;
     empty: string;
+    restocked: string;
     sortLabel: string;
     sortCategory: string;
     sortCategoryAlpha: string;
@@ -395,6 +398,7 @@ export const translations: Record<Language, TranslationStructure> = {
       overdue: 'Overdue',
       print: 'Print',
       refresh: 'Refresh',
+      restock: 'Restock',
       remove: 'Remove',
       retry: 'Retry',
       save: 'Save',
@@ -480,7 +484,9 @@ export const translations: Record<Language, TranslationStructure> = {
       category: 'Category',
       searchPlaceholder: 'Search items...',
       confirmDelete: 'Delete this item?',
+      confirmRestock: 'Restock all completed groceries?',
       empty: 'Empty',
+      restocked: 'Groceries restocked',
       sortLabel: 'Sort',
       sortCategory: 'By category',
       sortCategoryAlpha: 'Category A-Z',
@@ -765,6 +771,7 @@ export const translations: Record<Language, TranslationStructure> = {
       overdue: 'En retard',
       print: 'Imprimer',
       refresh: 'Actualiser',
+      restock: 'Réranger',
       remove: 'Supprimer',
       retry: 'Réessayer',
       save: 'Enregistrer',
@@ -850,7 +857,9 @@ export const translations: Record<Language, TranslationStructure> = {
       category: 'Catégorie',
       searchPlaceholder: 'Rechercher des articles...',
       confirmDelete: 'Supprimer cet article ?',
+      confirmRestock: 'Remettre tous les articles terminés en stock ?',
       empty: 'Vide',
+      restocked: 'Courses réapprovisionnées',
       sortLabel: 'Trier',
       sortCategory: 'Par catégorie',
       sortCategoryAlpha: 'Catégorie A-Z',
@@ -1135,6 +1144,7 @@ export const translations: Record<Language, TranslationStructure> = {
       overdue: 'Verlopen',
       print: 'Afdrukken',
       refresh: 'Vernieuwen',
+      restock: 'Restock',
       remove: 'Verwijderen',
       retry: 'Opnieuw proberen',
       save: 'Opslaan',
@@ -1220,7 +1230,9 @@ export const translations: Record<Language, TranslationStructure> = {
       category: 'Categorie',
       searchPlaceholder: 'Items zoeken...',
       confirmDelete: 'Dit item verwijderen?',
+      confirmRestock: 'Alle afgewerkte boodschappen opnieuw aanvullen?',
       empty: 'Leeg',
+      restocked: 'Boodschappen opnieuw aangevuld',
       sortLabel: 'Sorteren',
       sortCategory: 'Per categorie',
       sortCategoryAlpha: 'Categorie A-Z',
@@ -1505,6 +1517,7 @@ export const translations: Record<Language, TranslationStructure> = {
       overdue: 'Überfällig',
       print: 'Drucken',
       refresh: 'Aktualisieren',
+      restock: 'Auffüllen',
       remove: 'Entfernen',
       retry: 'Erneut versuchen',
       save: 'Speichern',
@@ -1590,7 +1603,9 @@ export const translations: Record<Language, TranslationStructure> = {
       category: 'Kategorie',
       searchPlaceholder: 'Artikel suchen...',
       confirmDelete: 'Diesen Artikel löschen?',
+      confirmRestock: 'Alle erledigten Einkäufe wieder auffüllen?',
       empty: 'Leer',
+      restocked: 'Einkäufe wieder aufgefüllt',
       sortLabel: 'Sortieren',
       sortCategory: 'Nach Kategorie',
       sortCategoryAlpha: 'Kategorie A-Z',

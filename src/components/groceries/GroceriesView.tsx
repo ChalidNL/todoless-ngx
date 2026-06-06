@@ -69,6 +69,12 @@ export const GroceriesView = () => {
     });
   };
 
+  const handleRestockCompletedItems = () => {
+    if (!window.confirm(t('items.confirmRestock'))) return;
+    uncheckAllDoneItems();
+    showCompletionMessage(t('items.restocked'));
+  };
+
   const hasAnyFilter = activeChipFilters.length > 0;
 
   return (
@@ -249,15 +255,12 @@ export const GroceriesView = () => {
               </button>
               {sortedBoughtItems.length > 0 && (
                 <button
-                  onClick={() => {
-                    uncheckAllDoneItems();
-                    showCompletionMessage(t('common.completed') + ' reset');
-                  }}
+                  onClick={handleRestockCompletedItems}
                   className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded transition-colors"
-                  title={t('common.refresh')}
+                  title={t('common.restock')}
                 >
                   <RotateCcw className="w-3 h-3" />
-                  {t('common.refresh')}
+                  {t('common.restock')}
                 </button>
               )}
             </div>
