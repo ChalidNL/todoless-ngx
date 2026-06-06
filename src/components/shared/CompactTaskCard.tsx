@@ -444,7 +444,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
           </div>
 
           {/* Line 2: chips — labels, assignee, date, repeat, subtask progress (always visible) */}
-          {!isDone && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (task.priority && PRIORITY_COLORS[task.priority]) || !!task.repeatInterval || hasComment || isFocusTask) && (
+          {!isDone && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (task.priority && PRIORITY_COLORS[task.priority]) || !!task.repeatInterval || hasComment) && (
             <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
               {task.labels.map((labelId) => {
                 const label = labels.find((l) => l.id === labelId);
@@ -486,17 +486,6 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                   onClick={showMenu ? clearAllSchedule : () => task.repeatInterval && toggleChipFilter('repeat', task.repeatInterval, repeatLabel)}
                   maxWidthClassName="max-w-[92px]"
                 />
-              )}
-              {isFocusTask && (
-                <button
-                  type="button"
-                  onClick={() => updateTask(task.id, { focus: false })}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-violet-700 bg-violet-100 ring-1 ring-violet-300 transition-colors"
-                  aria-label={t('tasks.focus')}
-                  title={t('tasks.focus')}
-                >
-                  <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
-                </button>
               )}
               {hasComment && (
                 <button
@@ -732,7 +721,7 @@ export const CompactTaskCard = ({ task, showCheckbox = true, urgent = false }: C
                 <button
                   onClick={() => updateTask(task.id, { focus: !task.focus })}
                   className={`p-1.5 rounded transition-colors ${
-                    task.focus ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-300' : 'hover:bg-neutral-100 text-neutral-500'
+                    task.focus ? 'bg-orange-100 text-orange-700' : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
                   title={task.focus ? 'Remove focus' : 'Add focus'}
                   aria-label="Toggle focus"

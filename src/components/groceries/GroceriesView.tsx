@@ -177,15 +177,15 @@ export const GroceriesView = () => {
       )}
 
       {/* Active items */}
-      <div className="max-w-6xl mx-auto px-4 pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-sm text-neutral-600 flex items-center gap-1.5">
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-sm text-neutral-600">
             {t('items.title')} ({sortedActiveItems.length})
           </h2>
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as GrocerySortMode)}
-            className="text-xs border border-neutral-200 rounded px-2 py-1 bg-white text-neutral-600 cursor-pointer"
+            className="text-xs px-2 py-1 border border-neutral-200 rounded bg-white text-neutral-600"
             title={t('items.sortLabel')}
           >
             <option value="alpha">{t('items.sortAlpha')}</option>
@@ -201,11 +201,11 @@ export const GroceriesView = () => {
           <div className="space-y-4">
             {focusedActiveItems.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-orange-500" />
+                <h3 className="text-sm font-semibold text-orange-600 mb-2 px-1 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-orange-500" />
                   {t('tasks.focus')} ({focusedActiveItems.length})
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-2">
                   {focusedActiveItems.map((item) => (
                     <UnifiedCard key={item.id} entity={item} type="item" />
                   ))}
@@ -214,15 +214,10 @@ export const GroceriesView = () => {
             )}
 
             {sortMode === 'alpha' ? (
-              <div>
-                <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 px-1">
-                  {t('items.sortAlpha')} ({regularActiveItems.length})
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {regularActiveItems.map((item) => (
-                    <UnifiedCard key={item.id} entity={item} type="item" />
-                  ))}
-                </div>
+              <div className="space-y-2">
+                {regularActiveItems.map((item) => (
+                  <UnifiedCard key={item.id} entity={item} type="item" />
+                ))}
               </div>
             ) : (
               groupedActive.map(([category, catItems]) => (
@@ -230,7 +225,7 @@ export const GroceriesView = () => {
                   <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 px-1">
                     {category} ({catItems.length})
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="space-y-2">
                     {catItems.map((item) => (
                       <UnifiedCard key={item.id} entity={item} type="item" />
                     ))}
@@ -268,7 +263,7 @@ export const GroceriesView = () => {
             </div>
 
             {showBought && (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="mt-3 space-y-2">
                 {sortedBoughtItems.map((item) => (
                   <UnifiedCard key={item.id} entity={item} type="item" />
                 ))}

@@ -118,9 +118,23 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
       ref={cardRef}
       onClick={trackInteraction}
       className={`rounded-lg border transition-colors ${
-        isDone ? 'border-neutral-200 opacity-75' : isFocusHighlighted ? 'border-violet-400 hover:border-violet-500 shadow-[0_0_0_1px_rgba(124,58,237,0.12)]' : 'border-neutral-200 hover:border-neutral-300'
+        isDone
+          ? 'border-neutral-200 opacity-75'
+          : isFocusHighlighted
+            ? isTask
+              ? 'border-violet-500 hover:border-violet-600 shadow-[0_0_0_1px_rgba(124,58,237,0.18)]'
+              : 'border-orange-400 hover:border-orange-500 shadow-[0_0_0_1px_rgba(249,115,22,0.14)]'
+            : 'border-neutral-200 hover:border-neutral-300'
       } ${
-        isTaskFlagged ? '!bg-red-50' : isOverdue ? '!bg-orange-50' : isFocusHighlighted ? '!bg-violet-100/80' : 'bg-white'
+        isTaskFlagged
+          ? '!bg-red-50'
+          : isOverdue
+            ? '!bg-orange-50'
+            : isFocusHighlighted
+              ? isTask
+                ? '!bg-violet-200/70'
+                : '!bg-orange-50'
+              : 'bg-white'
       } ${showMenu ? 'ring-1 ring-neutral-300 !bg-neutral-50' : ''}`}>
       <div className="p-2.5">
         {/* Line 1: checkbox + title + badge(s) + hamburger */}
@@ -218,7 +232,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
         {/* Chip row — labels + assignee + shop + date (only when not done) */}
         {/* Tasks: chips visible in both collapsed and edit mode (labels+assignee always visible) */}
         {/* Items: chips always visible */}
-        {!isDone && ((isTask && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || !!task?.repeatInterval || hasTaskComment || isFocusHighlighted)) || (!isTask && (hasShop || isFocusHighlighted))) && (
+        {!isDone && ((isTask && (hasLabels || assignedUser || dateStr || subtaskCount > 0 || (entity.priority && PRIORITY_COLORS[entity.priority as Priority]) || !!task?.repeatInterval || hasTaskComment)) || (!isTask && hasShop)) && (
           <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-0.5">
             {isTask && entity.labels.map(labelId => {
               const label = labels.find(l => l.id === labelId);
@@ -259,17 +273,6 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 onClick={showMenu ? () => setValue({ dueDate: null, repeatInterval: null }) : () => task?.repeatInterval && toggleChipFilter('repeat', task.repeatInterval, repeatLabel)}
                 maxWidthClassName="max-w-[92px]"
               />
-            )}
-            {isFocusHighlighted && (
-              <button
-                type="button"
-                onClick={() => setValue({ focus: false })}
-                className="inline-flex items-center justify-center w-7 h-7 rounded-full text-violet-700 bg-violet-100 ring-1 ring-violet-300 transition-colors"
-                aria-label={t('tasks.focus')}
-                title={t('tasks.focus')}
-              >
-                <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
-              </button>
             )}
             {isTask && hasTaskComment && (
               <button
@@ -460,7 +463,7 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                 <button
                   onClick={() => setValue({ focus: !task!.focus })}
                   className={`p-1.5 rounded transition-colors ${
-                    task!.focus ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-300' : 'hover:bg-neutral-100 text-neutral-500'
+                    task!.focus ? 'bg-orange-100 text-orange-700' : 'hover:bg-neutral-100 text-neutral-500'
                   }`}
                   title={t('tasks.focus')}
                   aria-label={t('tasks.focus')}
@@ -480,18 +483,6 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
               )}
               {!isTask && (
                 <button
-                  onClick={() => setValue({ focus: !item!.focus })}
-                  className={`p-1.5 rounded transition-colors ${
-                    isItemFocused ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-300' : 'hover:bg-neutral-100 text-neutral-500'
-                  }`}
-                  title={t('tasks.focus')}
-                  aria-label={t('tasks.focus')}
-                >
-                  <Target className="w-4 h-4" strokeWidth={1.75} />
-                </button>
-              )}
-              {!isTask && (
-                <button
                   onClick={() => {
                     const next = activeEditor === 'shop' ? null : 'shop';
                     setActiveEditor(next);
@@ -502,6 +493,18 @@ export const UnifiedCard = ({ entity, type }: UnifiedCardProps) => {
                   aria-label={t('items.selectShopTooltip')}
                 >
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+              )}
+              {!isTask && (
+                <button
+                  onClick={() => setValue({ focus: !item!.focus })}
+                  className={`p-1.5 rounded transition-colors ${
+                    isItemFocused ? 'bg-orange-100 text-orange-700' : 'hover:bg-neutral-100 text-neutral-500'
+                  }`}
+                  title={t('tasks.focus')}
+                  aria-label={t('tasks.focus')}
+                >
+                  <Target className="w-4 h-4" strokeWidth={1.75} />
                 </button>
               )}
               <div className="flex-1" />
