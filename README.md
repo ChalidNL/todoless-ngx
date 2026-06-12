@@ -78,3 +78,11 @@ npm run dev
 - This repo is meant for self-hosted use
 - The app relies on PocketBase for auth, data storage, and realtime subscriptions
   
+
+## Live readiness notes
+- Terminate TLS in front of the app with a reverse proxy such as Caddy, Traefik, or Nginx Proxy Manager before exposing it publicly. The app container intentionally does not emit HSTS on plain HTTP; set HSTS only at the TLS terminator.
+- Keep the frontend production build same-origin: leave `VITE_POCKETBASE_URL` empty so API calls go through `/api`. Do not build customer-facing images with `localhost` PocketBase URLs.
+- PocketBase is intentionally not published directly; access it through the frontend nginx proxy. The proxy forwards `X-Forwarded-*` headers for logging/rate limiting.
+- Validate SMTP before go-live by running the invite/password-reset flow end-to-end.
+- Use PocketBase backup/export or a SQLite-safe backup method for `pb_data`; do not rely on raw file copies while the database is writing.
+- Pin release images or digests for production installs; `:latest`/`:dev` are for CasaOS/dev convenience and not reproducible release artifacts.
