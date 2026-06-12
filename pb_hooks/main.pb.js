@@ -177,50 +177,10 @@ routerAdd('POST', '/api/validate-create', function(c) {
   }
 });
 
-// ── One-shot: open all collection rules (run once after deploy) ──
-routerAdd('POST', '/api/open-rules', function(c) {
-  try {
-    var collections = ['tasks', 'items', 'subtasks', 'labels', 'shops', 'families', 'users', 'invite_codes', 'api_tokens', 'app_settings'];
-    var result = [];
-    for (var i = 0; i < collections.length; i++) {
-      try {
-        var col = $app.findCollectionByNameOrId(collections[i]);
-        if (col) {
-          col.listRule = '';
-          col.viewRule = '';
-          col.createRule = '';
-          col.updateRule = '';
-          col.deleteRule = '';
-          $app.save(col);
-          result.push(collections[i] + ': OK');
-        }
-      } catch(err) {
-        result.push(collections[i] + ': ' + String(err));
-      }
-    }
-    return c.json(200, { result: result });
-  } catch(e) {
-    return c.json(500, { error: String(e) });
-  }
-});
-
 // ─── Routes loaded from pb_hooks/routes/ ──
 // Note: routes/openapi.js registers GET /api/openapi.json (inline spec)
 // Note: routes/docs.js registers GET /api/docs + /api/swagger (Swagger UI HTML)
 // Note: routes/api-tokens.js registers CRUD for API tokens
-
-// ── Debug: test token generation (no auth required) ──
-routerAdd('GET', '/api/debug-token', (c) => {
-  try {
-    function _gt(len) { if(typeof len==='undefined')len=48;var c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',r='';for(var i=0;i<len;i++){r+=c.charAt(Math.floor(Math.random()*c.length));}return 'tl_'+r; }
-    function _ht(tok) { try { return $security.SHA256(tok); } catch(e){ var h=0;if(tok.length===0)return'd';for(var i=0;i<tok.length;i++){h=((h<<5)-h)+tok.charCodeAt(i);h=h&h;}return 'd_'+Math.abs(h).toString(16).padStart(8,'0');} }
-    var t = _gt(48);
-    var h = _ht(t);
-    return c.json(200, { token: t.substring(0,12) + '...', hash: h, ok: true });
-  } catch(e) {
-    return c.json(500, { error: String(e) });
-  }
-});
 
 // ── Create invite code (server-side, bypasses PB API rules) ──
 routerAdd('POST', '/api/invites/create', (c) => {
