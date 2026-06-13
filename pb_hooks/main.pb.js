@@ -516,6 +516,8 @@ routerAdd('POST', '/api/v1', (c) => {
     if(tokInfo && (action==='set_role'||action==='set_user_block'||action==='delete_user')) return c.json(403,{error:'API tokens cannot manage members'});
     if(reqPerm && !_hasPerm(reqPerm)) return c.json(403,{error:'Missing permission: '+reqPerm});
     function _canAccess(r){ if(!auth||!r)return false; var uid=String(r.get('user')||r.get('created_by')||''); if(uid&&uid===auth.id)return true; var af=String(auth.get('family_id')||''); if(!af||!uid)return false; try{var u=$app.findRecordById('users',uid); return String(u.get('family_id')||'')===af;}catch(e){return false;} }
+    function _freshAuth(){ if(!auth||!auth.id)return null; try { return $app.findRecordById('users', auth.id); } catch(e) { return null; } }
+    function _isFamilyAdmin(user){ var r=String(user&&user.get('role')||''); return r==='admin'||r==='owner'; }
 
     if (action === 'list') {
     var q = info.query || {};
@@ -661,13 +663,14 @@ routerAdd('POST', '/api/v1', (c) => {
     // ── Admin: set_role (family scoped, single admin per family) ──
     if (action === 'set_role') {
       if (!auth) return c.json(401, { error: 'Unauthorized' });
-      if (String(auth.get('role') || '') !== 'admin' && String(auth.get('role') || '') !== 'owner') return c.json(403, { error: 'Admin only' });
+      var actorRoleRecord = _freshAuth();
+      if (!actorRoleRecord || !_isFamilyAdmin(actorRoleRecord)) return c.json(403, { error: 'Admin only' });
       var targetId = String(gv(d, 'user_id', '')).trim();
       var newRole = String(gv(d, 'role', '')).trim();
       if (!targetId || !newRole) return c.json(400, { error: 'user_id and role required' });
       if (['owner','admin','member','agent'].indexOf(newRole) === -1) return c.json(400, { error: 'Invalid role' });
 
-      var actorFamilyId = String(auth.get('family_id') || '').trim();
+      var actorFamilyId = String(actorRoleRecord.get('family_id') || '').trim();
       if (!actorFamilyId) return c.json(400, { error: 'Current admin has no family assigned' });
 
       var target = $app.findRecordById('users', targetId);
@@ -676,6 +679,10 @@ routerAdd('POST', '/api/v1', (c) => {
       var targetFamilyId = String(target.get('family_id') || '').trim();
       if (targetFamilyId !== actorFamilyId) {
         return c.json(403, { error: 'You can only manage members in your own family.' });
+      }
+
+      if (String(target.get('role') || '') === 'owner' && newRole !== 'owner') {
+        return c.json(403, { error: 'Cannot demote the owner' });
       }
 
       // Agents cannot be admin or owner
@@ -698,7 +705,7 @@ routerAdd('POST', '/api/v1', (c) => {
       }
 
       // Prevent the only family admin from demoting themselves without promoting someone else first.
-      if (newRole !== 'admin' && newRole !== 'owner' && auth.id === targetId) {
+      if (newRole !== 'admin' && newRole !== 'owner' && actorRoleRecord.id === targetId) {
         var otherAdmins = [];
         for (var i = 0; i < familyAdmins.length; i++) {
           if (familyAdmins[i].id !== targetId) otherAdmins.push(familyAdmins[i]);
@@ -715,15 +722,15 @@ routerAdd('POST', '/api/v1', (c) => {
     // ── Admin: block/unblock member (family scoped, owner protected) ──
     if (action === 'set_user_block') {
       if (!auth) return c.json(401, { error: 'Unauthorized' });
-      var actorRole = String(auth.get('role') || '');
-      if (actorRole !== 'admin' && actorRole !== 'owner') return c.json(403, { error: 'Admin only' });
+      var actorBlockRecord = _freshAuth();
+      if (!actorBlockRecord || !_isFamilyAdmin(actorBlockRecord)) return c.json(403, { error: 'Admin only' });
       var targetIdBlock = String(gv(d, 'user_id', '')).trim();
       var blocked = gv(d, 'blocked', false);
       if (!targetIdBlock) return c.json(400, { error: 'user_id required' });
-      if (auth.id === targetIdBlock) return c.json(400, { error: 'Cannot block yourself' });
+      if (actorBlockRecord.id === targetIdBlock) return c.json(400, { error: 'Cannot block yourself' });
       var targetBlock = $app.findRecordById('users', targetIdBlock);
       if (!targetBlock) return c.json(404, { error: 'User not found' });
-      var actorFamilyBlock = String(auth.get('family_id') || '').trim();
+      var actorFamilyBlock = String(actorBlockRecord.get('family_id') || '').trim();
       if (!actorFamilyBlock || String(targetBlock.get('family_id') || '').trim() !== actorFamilyBlock) return c.json(403, { error: 'You can only manage members in your own family.' });
       if (String(targetBlock.get('role') || '') === 'owner') return c.json(403, { error: 'Cannot block the owner' });
       var ub = $app.unsafeWithoutHooks();
@@ -735,14 +742,14 @@ routerAdd('POST', '/api/v1', (c) => {
     // ── Admin: delete member (family scoped, owner/self protected) ──
     if (action === 'delete_user') {
       if (!auth) return c.json(401, { error: 'Unauthorized' });
-      var actorRoleDel = String(auth.get('role') || '');
-      if (actorRoleDel !== 'admin' && actorRoleDel !== 'owner') return c.json(403, { error: 'Admin only' });
+      var actorDeleteRecord = _freshAuth();
+      if (!actorDeleteRecord || !_isFamilyAdmin(actorDeleteRecord)) return c.json(403, { error: 'Admin only' });
       var targetIdDel = String(gv(d, 'user_id', '')).trim();
       if (!targetIdDel) return c.json(400, { error: 'user_id required' });
-      if (auth.id === targetIdDel) return c.json(400, { error: 'Cannot delete yourself' });
+      if (actorDeleteRecord.id === targetIdDel) return c.json(400, { error: 'Cannot delete yourself' });
       var targetDel = $app.findRecordById('users', targetIdDel);
       if (!targetDel) return c.json(404, { error: 'User not found' });
-      var actorFamilyDel = String(auth.get('family_id') || '').trim();
+      var actorFamilyDel = String(actorDeleteRecord.get('family_id') || '').trim();
       if (!actorFamilyDel || String(targetDel.get('family_id') || '').trim() !== actorFamilyDel) return c.json(403, { error: 'You can only manage members in your own family.' });
       if (String(targetDel.get('role') || '') === 'owner') return c.json(403, { error: 'Cannot delete the owner' });
       $app.delete(targetDel);

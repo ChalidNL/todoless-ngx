@@ -27,6 +27,7 @@ const normalizeUser = (record: any): User => ({
   displayName: record.display_name || undefined,
   avatarUrl: record.avatar,
   role: (record.role || 'member') as User['role'],
+  member_type: record.member_type || 'human',
   member_status: record.member_status || undefined,
   family_id: record.family_id || undefined,
   active: record.member_status ? record.member_status === 'active' : (typeof record.active === 'boolean' ? record.active : true),

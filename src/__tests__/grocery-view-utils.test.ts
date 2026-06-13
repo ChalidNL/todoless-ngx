@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { groupGroceriesByCategory, partitionFocusedGroceries, sortGroceriesAlpha, stripCategoryEmoji } from '../lib/grocery-view-utils';
+import { categorizeItem } from '../lib/grocery-categories';
 import type { Item } from '../types';
 
 const item = (overrides: Partial<Item>): Item => ({
@@ -41,10 +42,17 @@ describe('grocery view utils', () => {
     ]);
 
     expect(grouped.map(([category]) => stripCategoryEmoji(category))).toEqual([
-      'Brood & Ontbijt',
-      'Groente & Fruit',
-      'Zuivel & Eieren',
+      'Aardappelen, Groente & Fruit',
+      'Brood & Gebak',
+      'Zuivel, Boter & Eieren',
     ]);
+  });
+
+  it('keeps produce and juices in separate supermarket categories', () => {
+    expect(stripCategoryEmoji(categorizeItem('groenten'))).toBe('Aardappelen, Groente & Fruit');
+    expect(stripCategoryEmoji(categorizeItem('bananen'))).toBe('Aardappelen, Groente & Fruit');
+    expect(stripCategoryEmoji(categorizeItem('appelsap'))).toBe('Frisdrank & Sappen');
+    expect(stripCategoryEmoji(categorizeItem('sinaasappelsap'))).toBe('Frisdrank & Sappen');
   });
 
   it('partitions focused groceries into a dedicated top section', () => {
